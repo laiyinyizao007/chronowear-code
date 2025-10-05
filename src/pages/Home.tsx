@@ -1,35 +1,162 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, Cloud, MapPin } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface WeatherData {
+  location: string;
+  current: {
+    temperature: number;
+    humidity: number;
+    weatherDescription: string;
+    uvIndex: number;
+  };
+  daily: {
+    temperatureMax: number;
+    temperatureMin: number;
+    uvIndexMax: number;
+  };
+}
 
 export default function Home() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [recommendation, setRecommendation] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+
+  useEffect(() => {
+    loadWeatherAndRecommendation();
+  }, []);
+
+  const loadWeatherAndRecommendation = async () => {
+    try {
+      setLoading(true);
+      
+      // Get user's location
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // Cache for 5 minutes
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Fetch weather data
+      const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
+        'get-weather',
+        {
+          body: { lat: latitude, lng: longitude }
+        }
+      );
+
+      if (weatherError) throw weatherError;
+      setWeather(weatherData);
+
+      // Fetch user's garments
+      const { data: garments } = await supabase
+        .from('garments')
+        .select('type, color, material, brand');
+
+      // Generate AI recommendation
+      setRecommendationLoading(true);
+      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+        'generate-outfit-recommendation',
+        {
+          body: {
+            temperature: weatherData.current.temperature,
+            weatherDescription: weatherData.current.weatherDescription,
+            uvIndex: weatherData.current.uvIndex,
+            garments: garments || []
+          }
+        }
+      );
+
+      if (recError) throw recError;
+      setRecommendation(recommendationData.recommendation);
+
+    } catch (error: any) {
+      console.error('Error loading data:', error);
+      if (error.code === 1) {
+        toast({
+          title: "Location Access Denied",
+          description: "Please enable location access to get weather and outfit recommendations.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load weather data. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoading(false);
+      setRecommendationLoading(false);
+    }
+  };
+
+  const getUVLevel = (uvIndex: number): { level: string; color: string } => {
+    if (uvIndex < 3) return { level: "Low", color: "text-green-600" };
+    if (uvIndex < 6) return { level: "Moderate", color: "text-yellow-600" };
+    if (uvIndex < 8) return { level: "High", color: "text-orange-600" };
+    return { level: "Very High", color: "text-red-600" };
+  };
 
   return (
     <div className="space-y-6">
       {/* Weather Card */}
       <Card className="shadow-medium">
         <CardContent className="pt-6">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                <span>San Francisco, CA</span>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : weather ? (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>{weather.location}</span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold">{weather.current.temperature}°F</span>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <span className="text-sm">{weather.current.weatherDescription}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right space-y-1 text-sm">
+                  <div className="text-muted-foreground">High: {weather.daily.temperatureMax}°F</div>
+                  <div className="text-muted-foreground">Low: {weather.daily.temperatureMin}°F</div>
+                </div>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-bold">68°F</span>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Cloud className="w-4 h-4" />
-                  <span className="text-sm">Partly Cloudy</span>
+              
+              {/* UV Index */}
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <Sun className="w-5 h-5 text-yellow-500" />
+                <div className="flex-1">
+                  <div className="text-sm font-medium">UV Index</div>
+                  <div className="text-xs text-muted-foreground">
+                    {weather.current.uvIndex} - <span className={getUVLevel(weather.current.uvIndex).color}>
+                      {getUVLevel(weather.current.uvIndex).level}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="text-right space-y-1 text-sm">
-              <div className="text-muted-foreground">High: 72°F</div>
-              <div className="text-muted-foreground">Low: 58°F</div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              Unable to load weather data
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -38,20 +165,30 @@ export default function Home() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-accent" />
-            Today's Outfit Suggestion
+            AI Outfit Recommendation
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bg-muted rounded-lg p-6 text-center space-y-3">
-            <Sparkles className="w-12 h-12 mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">
-              Add garments to your closet to get AI-powered outfit recommendations!
-            </p>
-            <Button onClick={() => navigate("/closet")}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Garment
-            </Button>
-          </div>
+          {recommendationLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-accent" />
+            </div>
+          ) : recommendation ? (
+            <div className="bg-muted rounded-lg p-6">
+              <p className="text-sm leading-relaxed whitespace-pre-line">{recommendation}</p>
+            </div>
+          ) : (
+            <div className="bg-muted rounded-lg p-6 text-center space-y-3">
+              <Sparkles className="w-12 h-12 mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground">
+                Add garments to your closet to get personalized AI outfit recommendations!
+              </p>
+              <Button onClick={() => navigate("/closet")}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Garment
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
