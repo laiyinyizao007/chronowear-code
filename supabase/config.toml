@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.generate-outfit-recommendation]
 verify_jwt = true
+
+[functions.identify-garment]
+verify_jwt = true
+
+[functions.search-product-info]
+verify_jwt = true
