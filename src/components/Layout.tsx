@@ -44,17 +44,22 @@ export default function Layout() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-card border-b shadow-soft">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Shirt className="w-5 h-5 text-primary-foreground" />
+    <div className="min-h-screen bg-background">
+      {/* Top Header - Clean minimal design */}
+      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center">
+              <Shirt className="w-6 h-6 text-accent-foreground" />
             </div>
-            <h1 className="text-xl font-bold">ChronoWear</h1>
+            <h1 className="text-2xl font-bold tracking-tight">ChronoWear</h1>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleSignOut}
+            className="hover:bg-muted"
+          >
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </Button>
@@ -62,29 +67,33 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 pb-24">
+      <main className="container mx-auto px-6 py-8 pb-28">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-large z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-around items-center h-16">
+      {/* Bottom Navigation - Minimal with accent highlights */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 z-50">
+        <div className="container mx-auto px-6">
+          <div className="flex justify-around items-center h-20">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                  `flex flex-col items-center gap-1.5 px-5 py-2.5 rounded-xl transition-all duration-300 ${
                     isActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "text-foreground bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`
                 }
               >
-                <item.icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{item.label}</span>
+                {({ isActive }) => (
+                  <>
+                    <item.icon className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                    <span className="text-xs font-medium tracking-wide">{item.label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </div>

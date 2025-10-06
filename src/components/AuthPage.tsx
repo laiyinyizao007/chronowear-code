@@ -64,21 +64,21 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-      <Card className="w-full max-w-md shadow-large">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center">
-            <Shirt className="w-8 h-8 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md shadow-card border-0">
+        <CardHeader className="text-center space-y-6 pt-8">
+          <div className="mx-auto w-20 h-20 bg-accent rounded-2xl flex items-center justify-center shadow-medium">
+            <Shirt className="w-10 h-10 text-accent-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl">ChronoWear</CardTitle>
-            <CardDescription>Your AI Wardrobe & Styling Assistant</CardDescription>
+            <CardTitle className="text-3xl font-bold tracking-tight">ChronoWear</CardTitle>
+            <CardDescription className="text-base mt-2">Your AI Wardrobe & Styling Assistant</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5 px-8 pb-8">
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full h-12 text-base font-medium"
             onClick={handleGoogleAuth}
             disabled={loading}
           >
@@ -116,48 +116,48 @@ export default function AuthPage() {
             </div>
           </div>
 
-          <form onSubmit={handleEmailAuth} className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-12 text-base"
                   required
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-12 text-base"
                   required
                 />
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
               {isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>
 
-          <div className="text-center text-sm">
+          <div className="text-center text-sm pt-2">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
+              className="text-foreground hover:text-primary transition-colors font-medium"
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
