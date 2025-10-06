@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import OutfitCard from "@/components/OutfitCard";
 
 interface WeatherData {
   location: string;
@@ -28,6 +30,25 @@ export default function Home() {
   const [recommendation, setRecommendation] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
+  
+  // Mock outfit recommendations (will be replaced with AI-generated ones)
+  const outfitRecommendations = [
+    {
+      imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&h=700&fit=crop",
+      title: "Casual Chic",
+      description: "Perfect for a relaxed day out with friends"
+    },
+    {
+      imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=700&fit=crop",
+      title: "Smart Casual",
+      description: "Ideal for work meetings or dinner dates"
+    },
+    {
+      imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&h=700&fit=crop",
+      title: "Street Style",
+      description: "Express yourself with bold urban fashion"
+    }
+  ];
 
   useEffect(() => {
     loadWeatherAndRecommendation();
@@ -160,37 +181,62 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Today's Outfit Suggestion */}
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            AI Outfit Recommendation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recommendationLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-accent" />
-            </div>
-          ) : recommendation ? (
-            <div className="bg-muted rounded-lg p-6">
-              <p className="text-sm leading-relaxed whitespace-pre-line">{recommendation}</p>
-            </div>
-          ) : (
-            <div className="bg-muted rounded-lg p-6 text-center space-y-3">
-              <Sparkles className="w-12 h-12 mx-auto text-muted-foreground" />
-              <p className="text-muted-foreground">
-                Add garments to your closet to get personalized AI outfit recommendations!
-              </p>
-              <Button onClick={() => navigate("/closet")}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Garment
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Today's Outfit Recommendations */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-accent" />
+            Today's Picks
+          </h2>
+        </div>
+        
+        {recommendationLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          </div>
+        ) : (
+          <div className="relative -mx-4 px-4">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: false,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                {outfitRecommendations.map((outfit, index) => (
+                  <CarouselItem key={index} className="pl-4 basis-auto">
+                    <OutfitCard
+                      imageUrl={outfit.imageUrl}
+                      title={outfit.title}
+                      description={outfit.description}
+                      onClick={() => {
+                        toast({
+                          title: "Outfit Selected",
+                          description: `You selected: ${outfit.title}`,
+                        });
+                      }}
+                    />
+                  </CarouselItem>
+                ))}
+                <CarouselItem className="pl-4 basis-auto">
+                  <OutfitCard
+                    imageUrl=""
+                    title=""
+                    description=""
+                    isMoreCard
+                    onClick={() => navigate("/stylist")}
+                  />
+                </CarouselItem>
+              </CarouselContent>
+              <div className="flex gap-2 justify-center mt-6">
+                <CarouselPrevious className="static translate-y-0" />
+                <CarouselNext className="static translate-y-0" />
+              </div>
+            </Carousel>
+          </div>
+        )}
+      </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
