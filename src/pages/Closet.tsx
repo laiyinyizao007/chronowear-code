@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Filter, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,7 @@ export default function Closet() {
   const [productSuggestions, setProductSuggestions] = useState<ProductInfo[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
+  const [showManualForm, setShowManualForm] = useState(false);
 
   useEffect(() => {
     loadGarments();
@@ -256,89 +257,192 @@ export default function Closet() {
                 Add Garment
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-primary" />
-                    Add New Garment with AI
+                    Add New Garment
                   </div>
                 </DialogTitle>
               </DialogHeader>
               
-              {productSuggestions.length === 0 ? (
+              {productSuggestions.length === 0 && !showManualForm ? (
+                <div className="space-y-4 py-8">
+                  {/* Upload Image Option */}
+                  <div className="space-y-4">
+                    <label htmlFor="upload-input" className="cursor-pointer">
+                      <Card className="p-8 hover:shadow-large transition-all duration-300 hover:border-primary">
+                        <div className="text-center space-y-3">
+                          <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                            <Upload className="w-8 h-8 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg mb-1">Upload Image</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {uploadingImage ? "Uploading image..." : identifyingProducts ? "AI is identifying..." : "Choose from your gallery"}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
+                    </label>
+                    <input
+                      id="upload-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage || identifyingProducts}
+                    />
+
+                    {/* Camera Option */}
+                    <label htmlFor="camera-input" className="cursor-pointer">
+                      <Card className="p-8 hover:shadow-large transition-all duration-300 hover:border-primary">
+                        <div className="text-center space-y-3">
+                          <div className="w-16 h-16 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
+                            <Camera className="w-8 h-8 text-accent" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-lg mb-1">Take Photo</h3>
+                            <p className="text-sm text-muted-foreground">Use your camera</p>
+                          </div>
+                        </div>
+                      </Card>
+                    </label>
+                    <input
+                      id="camera-input"
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage || identifyingProducts}
+                    />
+
+                    {/* Manual Entry Option */}
+                    <Card 
+                      className="p-8 hover:shadow-large transition-all duration-300 hover:border-primary cursor-pointer"
+                      onClick={() => setShowManualForm(true)}
+                    >
+                      <div className="text-center space-y-3">
+                        <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
+                          <Edit3 className="w-8 h-8 text-foreground" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-1">Add Manually</h3>
+                          <p className="text-sm text-muted-foreground">Enter details yourself</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {(uploadingImage || identifyingProducts) && (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+              ) : showManualForm && productSuggestions.length === 0 ? (
                 <form onSubmit={handleAddGarment} className="space-y-4">
                   <input type="hidden" name="imageUrl" id="imageUrl" />
                   <div className="space-y-2">
-                    <Label htmlFor="image">Upload Image</Label>
+                    <Label htmlFor="manual-image">Upload Image</Label>
                     <Input
-                      id="image"
+                      id="manual-image"
                       type="file"
                       accept="image/*"
                       onChange={async (e) => {
-                        const url = await handleImageUpload(e);
-                        if (url) {
-                          (document.getElementById("imageUrl") as HTMLInputElement).value = url;
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        setUploadingImage(true);
+                        try {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (!user) throw new Error("Not authenticated");
+
+                          const fileExt = file.name.split(".").pop();
+                          const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                          const { error: uploadError } = await supabase.storage
+                            .from("garments")
+                            .upload(fileName, file);
+
+                          if (uploadError) throw uploadError;
+
+                          const { data: { publicUrl } } = supabase.storage
+                            .from("garments")
+                            .getPublicUrl(fileName);
+
+                          (document.getElementById("imageUrl") as HTMLInputElement).value = publicUrl;
+                        } catch (error: any) {
+                          toast.error("Failed to upload image");
+                        } finally {
+                          setUploadingImage(false);
                         }
                       }}
-                      disabled={uploadingImage || identifyingProducts}
+                      disabled={uploadingImage}
                     />
-                    {(uploadingImage || identifyingProducts) && (
-                      <p className="text-sm text-muted-foreground">
-                        {uploadingImage ? "Uploading image..." : "AI is identifying products..."}
-                      </p>
-                    )}
-                  </div>
-                <div className="space-y-2">
-                  <Label htmlFor="type">Type</Label>
-                  <Select name="type" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Top">Top</SelectItem>
-                      <SelectItem value="Pants">Pants</SelectItem>
-                      <SelectItem value="Outerwear">Outerwear</SelectItem>
-                      <SelectItem value="Dress">Dress</SelectItem>
-                      <SelectItem value="Shoes">Shoes</SelectItem>
-                      <SelectItem value="Accessories">Accessories</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="color">Color</Label>
-                    <Input id="color" name="color" placeholder="e.g., Blue" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="season">Season</Label>
-                    <Select name="season">
+                    <Label htmlFor="type">Type</Label>
+                    <Select name="type" required>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select season" />
+                        <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Spring">Spring</SelectItem>
-                        <SelectItem value="Summer">Summer</SelectItem>
-                        <SelectItem value="Fall">Fall</SelectItem>
-                        <SelectItem value="Winter">Winter</SelectItem>
-                        <SelectItem value="All-Season">All-Season</SelectItem>
+                        <SelectItem value="Top">Top</SelectItem>
+                        <SelectItem value="Pants">Pants</SelectItem>
+                        <SelectItem value="Outerwear">Outerwear</SelectItem>
+                        <SelectItem value="Dress">Dress</SelectItem>
+                        <SelectItem value="Shoes">Shoes</SelectItem>
+                        <SelectItem value="Accessories">Accessories</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="brand">Brand</Label>
-                    <Input id="brand" name="brand" placeholder="e.g., Nike" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="color">Color</Label>
+                      <Input id="color" name="color" placeholder="e.g., Blue" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="season">Season</Label>
+                      <Select name="season">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select season" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Spring">Spring</SelectItem>
+                          <SelectItem value="Summer">Summer</SelectItem>
+                          <SelectItem value="Fall">Fall</SelectItem>
+                          <SelectItem value="Winter">Winter</SelectItem>
+                          <SelectItem value="All-Season">All-Season</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="material">Material</Label>
-                    <Input id="material" name="material" placeholder="e.g., Cotton" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="brand">Brand</Label>
+                      <Input id="brand" name="brand" placeholder="e.g., Nike" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="material">Material</Label>
+                      <Input id="material" name="material" placeholder="e.g., Cotton" />
+                    </div>
                   </div>
-                </div>
-                  <Button type="submit" className="w-full" disabled={uploadingImage || identifyingProducts}>
-                    {uploadingImage ? "Uploading..." : identifyingProducts ? "Identifying..." : "Add Manually"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowManualForm(false)}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button type="submit" className="flex-1" disabled={uploadingImage}>
+                      {uploadingImage ? "Uploading..." : "Save Garment"}
+                    </Button>
+                  </div>
                 </form>
               ) : (
                 <div className="space-y-4">
@@ -375,10 +479,11 @@ export default function Closet() {
                         setProductSuggestions([]);
                         setSelectedProduct(null);
                         setUploadedImageUrl("");
+                        setShowManualForm(false);
                       }}
                       className="flex-1"
                     >
-                      Cancel
+                      Back
                     </Button>
                     <Button
                       onClick={handleSaveSelectedProduct}
