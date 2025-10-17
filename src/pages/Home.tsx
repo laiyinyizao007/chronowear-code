@@ -303,54 +303,70 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Weather Card */}
+      {/* Weather Card - Simplified */}
       <Card className="shadow-medium">
         <CardContent className="pt-6">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : weather ? (
-            <div className="space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>{weather.location}</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold">{weather.current.temperature}°F</span>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <span className="text-sm">{weather.current.weatherDescription}</span>
-                    </div>
-                  </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm">{weather.location}</span>
                 </div>
-                <div className="text-right space-y-1 text-sm">
-                  <div className="text-muted-foreground">High: {weather.daily.temperatureMax}°F</div>
-                  <div className="text-muted-foreground">Low: {weather.daily.temperatureMin}°F</div>
-                </div>
+                <div className="text-3xl font-bold">{weather.current.temperature}°F</div>
+                <div className="text-sm text-muted-foreground">{weather.current.weatherDescription}</div>
               </div>
-              
-              {/* UV Index */}
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <Sun className="w-5 h-5 text-yellow-500" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">UV Index</div>
-                  <div className="text-xs text-muted-foreground">
-                    {weather.current.uvIndex} - <span className={getUVLevel(weather.current.uvIndex).color}>
-                      {getUVLevel(weather.current.uvIndex).level}
-                    </span>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Range: </span>
+                  <span className="font-medium">{weather.daily.temperatureMin}° - {weather.daily.temperatureMax}°F</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+                  <Sun className="w-4 h-4 text-yellow-500" />
+                  <span className="text-sm">UV: {weather.current.uvIndex}</span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-2 text-muted-foreground text-sm">
               Unable to load weather data
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Trend Section */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Fashion Trends</h2>
+        <Card className="shadow-medium">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center space-y-2">
+                <div className="aspect-square bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-accent" />
+                </div>
+                <p className="text-sm font-medium">Minimalism</p>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-sm font-medium">Earth Tones</p>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="aspect-square bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-8 h-8 text-accent" />
+                </div>
+                <p className="text-sm font-medium">Oversized</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Today's Outfit Recommendations */}
       <div className="space-y-4">
@@ -461,6 +477,20 @@ export default function Home() {
               <div className="bg-secondary/30 rounded-sm p-6">
                 <p className="text-base leading-relaxed text-foreground/80 font-sans">{selectedOutfit.summary}</p>
               </div>
+
+              {/* Hairstyle Recommendation */}
+              {selectedOutfit.hairstyle && (
+                <div className="space-y-4 border-t border-border/30 pt-6">
+                  <h3 className="font-serif font-light text-2xl tracking-wide flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-accent" />
+                    Recommended Hairstyle
+                  </h3>
+                  <div className="bg-accent/10 rounded-lg p-4">
+                    <p className="font-medium mb-2">{selectedOutfit.hairstyle.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedOutfit.hairstyle.description}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-6">
                 <h3 className="font-serif font-light text-2xl tracking-wide">Outfit Items</h3>
@@ -581,6 +611,52 @@ export default function Home() {
                   </div>
                 </div>
               )}
+
+              {/* Save as OOTD Button */}
+              <div className="border-t border-border/30 pt-6">
+                <Button
+                  onClick={async () => {
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) throw new Error("Not authenticated");
+
+                      // Save outfit as OOTD
+                      const { error } = await supabase
+                        .from("ootd_records")
+                        .insert({
+                          user_id: user.id,
+                          date: new Date().toISOString().split('T')[0],
+                          garment_ids: selectedOutfit.items
+                            ?.filter((item: any) => item.garmentId)
+                            .map((item: any) => item.garmentId) || [],
+                          photo_url: selectedOutfit.items?.[0]?.imageUrl || "",
+                          notes: selectedOutfit.summary,
+                          weather: weather ? `${weather.current.temperature}°F, ${weather.current.weatherDescription}` : "",
+                          location: weather?.location || "",
+                        });
+
+                      if (error) throw error;
+
+                      toast({
+                        title: "Success",
+                        description: "Outfit saved to your OOTD diary!",
+                      });
+                      setShowOutfitDialog(false);
+                    } catch (error: any) {
+                      console.error('Error saving OOTD:', error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to save outfit",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Save as Today's OOTD
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

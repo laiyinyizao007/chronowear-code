@@ -71,6 +71,10 @@ Return your response in JSON format with this structure:
     {
       "title": "Style name (e.g., Casual Chic, Smart Office, Weekend Sporty)",
       "summary": "Brief 1-2 sentence explanation why this outfit works for the weather",
+      "hairstyle": {
+        "name": "Hairstyle name (e.g., Low Bun, Beach Waves, Sleek Ponytail)",
+        "description": "Why this hairstyle complements the outfit and weather"
+      },
       "items": [
         {
           "type": "top/bottom/shoes/outerwear/accessory",
@@ -89,7 +93,7 @@ Return your response in JSON format with this structure:
   ]
 }
 
-Generate 3-5 complete outfit combinations, each with 4-6 items. Make each outfit distinct in style and vibe. 
+Generate 3-5 complete outfit combinations, each with 4-6 items. Make each outfit distinct in style and vibe. Include a suitable hairstyle recommendation for each outfit.
 CRITICAL: 
 1. Use real, searchable brand names and product names for every item. For example:
    - "Uniqlo Supima Cotton T-Shirt"
@@ -97,7 +101,8 @@ CRITICAL:
    - "Nike Air Force 1 Sneakers"
    - "Zara Oversized Blazer"
 2. Set "fromCloset" to true ONLY when the item matches a garment from the closet list (same type AND brand)
-3. Include the "garmentId" field ONLY when "fromCloset" is true`;
+3. Include the "garmentId" field ONLY when "fromCloset" is true
+4. Suggest a hairstyle that complements the outfit's style and is weather-appropriate (e.g., updos for windy weather, protective styles for rain)`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

@@ -2,11 +2,18 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Upload, Loader2, Image as ImageIcon, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [fullBodyPhotoUrl, setFullBodyPhotoUrl] = useState<string>("");
+  const [stylePreference, setStylePreference] = useState<string>("");
+  const [geoLocation, setGeoLocation] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -19,16 +26,31 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      // Load user settings
+      const { data: settingsData, error: settingsError } = await supabase
         .from("user_settings")
         .select("full_body_photo_url")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (settingsError) throw settingsError;
 
-      if (data?.full_body_photo_url) {
-        setFullBodyPhotoUrl(data.full_body_photo_url);
+      if (settingsData?.full_body_photo_url) {
+        setFullBodyPhotoUrl(settingsData.full_body_photo_url);
+      }
+
+      // Load profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("style_preference, geo_location")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      if (profileData) {
+        setStylePreference(profileData.style_preference || "");
+        setGeoLocation(profileData.geo_location || "");
       }
     } catch (error: any) {
       console.error("Error loading settings:", error);
@@ -96,6 +118,33 @@ export default function Settings() {
     }
   };
 
+  const handleUpdateProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          style_preference: stylePreference,
+          geo_location: geoLocation,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast.success("Profile updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -115,6 +164,49 @@ export default function Settings() {
           Manage your profile and virtual try-on preferences
         </p>
       </div>
+
+      <Card className="shadow-medium">
+        <CardHeader>
+          <CardTitle>Personal Style</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Tell us about your style preferences for better outfit recommendations
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="style-preference">Style Preference</Label>
+            <Select value={stylePreference} onValueChange={setStylePreference}>
+              <SelectTrigger id="style-preference">
+                <SelectValue placeholder="Select your style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="casual">Casual</SelectItem>
+                <SelectItem value="formal">Formal</SelectItem>
+                <SelectItem value="street">Street Style</SelectItem>
+                <SelectItem value="minimalist">Minimalist</SelectItem>
+                <SelectItem value="bohemian">Bohemian</SelectItem>
+                <SelectItem value="sporty">Sporty</SelectItem>
+                <SelectItem value="vintage">Vintage</SelectItem>
+                <SelectItem value="elegant">Elegant</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="geo-location">Preferred Location</Label>
+            <Input
+              id="geo-location"
+              placeholder="e.g., New York, London"
+              value={geoLocation}
+              onChange={(e) => setGeoLocation(e.target.value)}
+            />
+          </div>
+
+          <Button onClick={handleUpdateProfile} className="w-full">
+            Save Preferences
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-medium">
         <CardHeader>
@@ -184,6 +276,22 @@ export default function Settings() {
             <p>• Wear form-fitting clothes for best results</p>
             <p>• Maximum file size: 5MB</p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-medium">
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            className="w-full text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
         </CardContent>
       </Card>
     </div>
