@@ -58,6 +58,8 @@ export default function OOTDDiary() {
   const [selectedProductIndices, setSelectedProductIndices] = useState<Set<number>>(new Set());
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<OOTDRecord | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   useEffect(() => {
     loadRecords();
@@ -147,8 +149,14 @@ export default function OOTDDiary() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (isProcessing) {
+      toast.error("Please wait for the current processing to complete");
+      return;
+    }
+
     setUploadingImage(true);
     setProcessingOutfit(true);
+    setProcessingProgress(0);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -157,6 +165,7 @@ export default function OOTDDiary() {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
+      setProcessingProgress(15);
       const { error: uploadError } = await supabase.storage
         .from("ootd-photos")
         .upload(fileName, file);
@@ -169,15 +178,22 @@ export default function OOTDDiary() {
 
       setCurrentPhotoUrl(publicUrl);
       setUploadingImage(false);
+      setProcessingProgress(30);
+
+      // Close dialog and start processing
+      setIsAddDialogOpen(false);
+      setIsProcessing(true);
 
       // Get location and weather
+      setProcessingProgress(40);
       await getLocationAndWeather();
 
       // Identify garments
-      toast.info("Identifying garments...");
+      setProcessingProgress(55);
       const garments = await identifyGarments(publicUrl);
 
       // Search product info for each garment
+      setProcessingProgress(70);
       const products: IdentifiedProduct[] = [];
       
       for (const garment of garments) {
@@ -204,16 +220,27 @@ export default function OOTDDiary() {
       const allIndices = new Set(products.map((_, index) => index));
       setSelectedProductIndices(allIndices);
       
+      setProcessingProgress(100);
+      
       if (products.length > 0) {
         toast.success(`Identified ${products.length} item${products.length > 1 ? 's' : ''}!`);
+      } else {
+        toast.info("No items identified");
       }
+
+      setIsAddDialogOpen(true);
+      setIsProcessing(false);
+      setProcessingProgress(0);
 
       return publicUrl;
     } catch (error: any) {
       toast.error("Failed to upload image");
+      setIsProcessing(false);
+      setProcessingProgress(0);
       return null;
     } finally {
       setProcessingOutfit(false);
+      setUploadingImage(false);
     }
   };
 
@@ -610,6 +637,21 @@ export default function OOTDDiary() {
           </DialogContent>
         </Dialog>
         </>
+      )}
+      
+      {isProcessing && (
+        <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 w-80 z-50">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="text-sm font-medium">Processing outfit...</span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-primary h-full transition-all duration-300"
+              style={{ width: `${processingProgress}%` }}
+            ></div>
+          </div>
+        </div>
       )}
     </div>
   );
