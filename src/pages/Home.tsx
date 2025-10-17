@@ -255,13 +255,27 @@ export default function Home() {
         description: "Item added to your closet!",
       });
 
-      // Update the item to show it's now in closet with the garment ID
+      const updatedItem = { ...item, fromCloset: true, garmentId: newGarment.id };
+
+      // Update the selected outfit in dialog
       setSelectedOutfit((prev: any) => ({
         ...prev,
         items: prev.items.map((i: any, idx: number) => 
-          idx === index ? { ...i, fromCloset: true, garmentId: newGarment.id } : i
+          idx === index ? updatedItem : i
         )
       }));
+
+      // Update the outfit in the main list so it shows CLOSET badge when dialog closes
+      setOutfits(prev => prev.map(outfit => 
+        outfit.title === selectedOutfit?.title 
+          ? {
+              ...outfit,
+              items: outfit.items.map((i: any, idx: number) => 
+                idx === index ? updatedItem : i
+              )
+            }
+          : outfit
+      ));
     } catch (error: any) {
       console.error('Error adding to closet:', error);
       toast({
