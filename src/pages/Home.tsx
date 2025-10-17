@@ -33,6 +33,7 @@ export default function Home() {
   const [outfits, setOutfits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [moreOutfitsLoading, setMoreOutfitsLoading] = useState(false);
   const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
   const [showOutfitDialog, setShowOutfitDialog] = useState(false);
   const [dialogLoadingImages, setDialogLoadingImages] = useState(false);
@@ -184,7 +185,7 @@ export default function Home() {
     if (!weather) return;
     
     try {
-      setRecommendationLoading(true);
+      setMoreOutfitsLoading(true);
       
       // Fetch user's garments
       const { data: garments } = await supabase
@@ -219,7 +220,7 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
-      setRecommendationLoading(false);
+      setMoreOutfitsLoading(false);
     }
   };
 
@@ -399,6 +400,7 @@ export default function Home() {
                     description=""
                     isMoreCard
                     onClick={loadMoreOutfits}
+                    isLoading={moreOutfitsLoading}
                   />
                 </CarouselItem>
               </CarouselContent>

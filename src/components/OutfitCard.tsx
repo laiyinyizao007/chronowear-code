@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 interface OutfitCardProps {
   imageUrl: string;
@@ -6,6 +7,7 @@ interface OutfitCardProps {
   description: string;
   isMoreCard?: boolean;
   onClick?: () => void;
+  isLoading?: boolean;
 }
 
 export default function OutfitCard({
@@ -14,17 +16,28 @@ export default function OutfitCard({
   description,
   isMoreCard,
   onClick,
+  isLoading = false,
 }: OutfitCardProps) {
   if (isMoreCard) {
     return (
       <Card 
         className="flex-shrink-0 w-[280px] h-[400px] cursor-pointer overflow-hidden shadow-card hover:shadow-large transition-all duration-300 flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10"
-        onClick={onClick}
+        onClick={isLoading ? undefined : onClick}
       >
         <div className="text-center space-y-3">
-          <div className="text-6xl font-bold text-primary">+</div>
-          <div className="text-xl font-semibold">More Outfits</div>
-          <p className="text-sm text-muted-foreground px-6">Discover more styles</p>
+          {isLoading ? (
+            <>
+              <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+              <div className="text-xl font-semibold">Generating...</div>
+              <p className="text-sm text-muted-foreground px-6">Creating new outfits</p>
+            </>
+          ) : (
+            <>
+              <div className="text-6xl font-bold text-primary">+</div>
+              <div className="text-xl font-semibold">More Outfits</div>
+              <p className="text-sm text-muted-foreground px-6">Discover more styles</p>
+            </>
+          )}
         </div>
       </Card>
     );
