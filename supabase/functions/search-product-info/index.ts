@@ -14,20 +14,49 @@ serve(async (req) => {
 
   try {
     const { brand, model } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const SERPAPI_KEY = Deno.env.get('SERPAPI_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!SERPAPI_KEY || !LOVABLE_API_KEY) {
+      throw new Error('API keys not configured');
     }
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     console.log('Searching product info for:', brand, model);
 
-    // Use AI to search for real product information and image URLs
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Step 1: Search for product using Google Shopping
+    const searchQuery = `${brand} ${model}`;
+    const serpApiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(searchQuery)}&api_key=${SERPAPI_KEY}`;
+    
+    console.log('Calling Google Shopping API...');
+    const serpResponse = await fetch(serpApiUrl);
+    
+    let productImageUrl = '';
+    let productPrice = '';
+    let productAvailability = '';
+    
+    if (serpResponse.ok) {
+      const serpData = await serpResponse.json();
+      console.log('Google Shopping results:', JSON.stringify(serpData).substring(0, 500));
+      
+      // Extract first product result
+      const shoppingResults = serpData.shopping_results || [];
+      if (shoppingResults.length > 0) {
+        const firstResult = shoppingResults[0];
+        productImageUrl = firstResult.thumbnail || '';
+        productPrice = firstResult.price || '';
+        productAvailability = firstResult.delivery ? 'In Stock' : 'Check Availability';
+        
+        console.log('Found product image:', productImageUrl);
+        console.log('Product price:', productPrice);
+      }
+    }
+
+    // Step 2: Use AI to generate additional product details
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -38,110 +67,96 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: `Search for the product "${brand} ${model}" and provide:
-1. A real product image URL (from official website, shopping sites, or product databases)
-2. Current retail price
-3. Style description
-4. Material information
-5. Available colors
-6. Current availability status
-
-Return ONLY valid JSON in this exact format:
+            content: `Generate detailed product information for "${brand} ${model}". Return ONLY valid JSON:
 {
-  "imageUrl": "https://real-product-image-url.com/image.jpg",
-  "price": "$XXX",
-  "style": "style description",
+  "style": "concise style description (1-2 sentences)",
   "material": "material type",
-  "color": "color name",
-  "availability": "In Stock"
+  "color": "primary color",
+  "features": ["feature 1", "feature 2", "feature 3"]
 }
 
-Important: The imageUrl must be a real, working URL to an actual product image, not a placeholder.`
+Be factual and avoid making up specific details if unsure.`
           }
         ],
         temperature: 0.3,
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
-    }
+    let aiDetails = {
+      style: "Classic style",
+      material: "Quality materials", 
+      color: "Standard",
+      features: ["Premium quality", "Comfortable fit", "Durable construction"]
+    };
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No content in AI response');
-    }
-
-    console.log('AI response:', content);
-
-    let productInfo;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        productInfo = JSON.parse(jsonMatch[0]);
-      } else {
-        productInfo = JSON.parse(content);
-      }
+    if (aiResponse.ok) {
+      const aiData = await aiResponse.json();
+      const content = aiData.choices?.[0]?.message?.content;
       
-      // Try to download and rehost the image
-      if (productInfo.imageUrl && productInfo.imageUrl.startsWith('http') && !productInfo.imageUrl.includes('placeholder')) {
+      if (content) {
         try {
-          console.log('Downloading image from:', productInfo.imageUrl);
-          const imageResponse = await fetch(productInfo.imageUrl, { redirect: 'follow' as RequestRedirect });
-          
-          if (imageResponse.ok) {
-            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-            const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
-            const arrayBuffer = await imageResponse.arrayBuffer();
-            const safe = (s: string) => s.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-            const path = `${safe(brand)}/${safe(model)}-${Date.now()}.${ext}`;
-            
-            const uint8 = new Uint8Array(arrayBuffer);
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('product-images')
-              .upload(path, uint8, {
-                contentType,
-                upsert: false
-              });
-
-            if (!uploadError && uploadData) {
-              const { data: { publicUrl } } = supabase.storage
-                .from('product-images')
-                .getPublicUrl(path);
-              
-              productInfo.imageUrl = publicUrl;
-              console.log('Image rehosted successfully:', publicUrl);
-            } else {
-              console.error('Failed to upload image:', uploadError ? JSON.stringify(uploadError) : 'unknown');
-            }
-          } else {
-            console.error('Failed to download source image:', imageResponse.status);
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            aiDetails = { ...aiDetails, ...JSON.parse(jsonMatch[0]) };
           }
-        } catch (imageError) {
-          console.error('Error downloading/uploading image:', imageError);
+        } catch (e) {
+          console.error('Failed to parse AI details:', e);
         }
       }
-      
-      // Fallback if no valid image
-      if (!productInfo.imageUrl || productInfo.imageUrl.includes('placeholder') || !productInfo.imageUrl.startsWith('http')) {
-        console.log('Using fallback image');
-        productInfo.imageUrl = `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`;
-      }
-    } catch (parseError) {
-      console.error('Failed to parse AI response as JSON:', content);
-      productInfo = {
-        imageUrl: `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`,
-        price: "$129",
-        style: "Modern casual style",
-        material: "Cotton blend",
-        color: "Various",
-        availability: "In Stock"
-      };
     }
+
+    // Step 3: Download and rehost the product image if available
+    if (productImageUrl && productImageUrl.startsWith('http')) {
+      try {
+        console.log('Downloading product image from:', productImageUrl);
+        const imageResponse = await fetch(productImageUrl, { redirect: 'follow' as RequestRedirect });
+        
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+          const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          const safe = (s: string) => s.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+          const path = `${safe(brand)}/${safe(model)}-${Date.now()}.${ext}`;
+          
+          const uint8 = new Uint8Array(arrayBuffer);
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(path, uint8, {
+              contentType,
+              upsert: false
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('product-images')
+              .getPublicUrl(path);
+            
+            productImageUrl = publicUrl;
+            console.log('Image rehosted successfully:', publicUrl);
+          }
+        }
+      } catch (imageError) {
+        console.error('Error downloading/uploading image:', imageError);
+      }
+    }
+
+    // Fallback image if no valid image found
+    if (!productImageUrl || !productImageUrl.startsWith('http')) {
+      console.log('Using fallback image');
+      productImageUrl = `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`;
+    }
+
+    const productInfo = {
+      imageUrl: productImageUrl,
+      price: productPrice || "$129",
+      style: aiDetails.style,
+      material: aiDetails.material,
+      color: aiDetails.color,
+      availability: productAvailability || "Check Availability",
+      features: aiDetails.features
+    };
+
+    console.log('Final product info:', productInfo);
 
     return new Response(
       JSON.stringify(productInfo),
