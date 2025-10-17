@@ -49,13 +49,21 @@ ${garments && garments.length > 0
   ? 'Based on the available garments, suggest a complete outfit combination. If the closet is missing key items for this weather, mention what should be added.'
   : 'Suggest what types of garments would be ideal for this weather (user can add them to their closet later).'}
 
-Include:
-1. Complete outfit suggestion (top, bottom, outerwear if needed, accessories)
-2. Brief explanation why this outfit works for the weather
-3. UV protection advice if UV index is moderate or higher
-4. Any additional tips (e.g., layering advice, fabric suggestions)
+Return your response in JSON format with this structure:
+{
+  "summary": "Brief explanation (2-3 sentences) why this outfit works for the weather",
+  "items": [
+    {
+      "type": "top/bottom/shoes/outerwear/accessory",
+      "name": "Item name",
+      "description": "Why this item works",
+      "fromCloset": true/false
+    }
+  ],
+  "tips": ["Additional styling or weather protection tips"]
+}
 
-Keep the response friendly, concise, and practical (around 150-200 words).`;
+Include 4-6 items total for a complete outfit. Be specific about colors, materials, and styles.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -80,11 +88,27 @@ Keep the response friendly, concise, and practical (around 150-200 words).`;
     }
 
     const data = await response.json();
-    const recommendation = data.choices[0].message.content;
+    let recommendation = data.choices[0].message.content;
+
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = recommendation.match(/```json\s*([\s\S]*?)\s*```/) || 
+                      recommendation.match(/```\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      recommendation = jsonMatch[1];
+    }
+
+    // Parse and validate the JSON response
+    let parsedRecommendation;
+    try {
+      parsedRecommendation = JSON.parse(recommendation);
+    } catch (e) {
+      console.error('Failed to parse AI response as JSON:', e);
+      throw new Error('Invalid AI response format');
+    }
 
     console.log('Generated recommendation');
 
-    return new Response(JSON.stringify({ recommendation }), {
+    return new Response(JSON.stringify(parsedRecommendation), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

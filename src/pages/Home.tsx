@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import OutfitCard from "@/components/OutfitCard";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface WeatherData {
   location: string;
@@ -27,9 +29,11 @@ export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [recommendation, setRecommendation] = useState<string>("");
+  const [recommendation, setRecommendation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
+  const [showOutfitDialog, setShowOutfitDialog] = useState(false);
   
   // Mock outfit recommendations (will be replaced with AI-generated ones)
   const outfitRecommendations = [
@@ -100,7 +104,7 @@ export default function Home() {
       );
 
       if (recError) throw recError;
-      setRecommendation(recommendationData.recommendation);
+      setRecommendation(recommendationData);
 
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -194,48 +198,39 @@ export default function Home() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
-        ) : (
-          <div className="relative -mx-4 px-4">
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-              }}
-              className="w-full"
-            >
-              <CarouselContent className="-ml-4">
-                {outfitRecommendations.map((outfit, index) => (
-                  <CarouselItem key={index} className="pl-4 basis-auto">
-                    <OutfitCard
-                      imageUrl={outfit.imageUrl}
-                      title={outfit.title}
-                      description={outfit.description}
-                      onClick={() => {
-                        toast({
-                          title: "Outfit Selected",
-                          description: `You selected: ${outfit.title}`,
-                        });
-                      }}
-                    />
-                  </CarouselItem>
-                ))}
-                <CarouselItem className="pl-4 basis-auto">
-                  <OutfitCard
-                    imageUrl=""
-                    title=""
-                    description=""
-                    isMoreCard
-                    onClick={() => navigate("/stylist")}
-                  />
-                </CarouselItem>
-              </CarouselContent>
-              <div className="flex gap-2 justify-center mt-6">
-                <CarouselPrevious className="static translate-y-0" />
-                <CarouselNext className="static translate-y-0" />
+        ) : recommendation ? (
+          <Card 
+            className="shadow-medium hover:shadow-large transition-all cursor-pointer p-6"
+            onClick={() => {
+              setSelectedOutfit(recommendation);
+              setShowOutfitDialog(true);
+            }}
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-accent" />
+                  Today's Recommended Outfit
+                </h3>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
               </div>
-            </Carousel>
-          </div>
-        )}
+              <p className="text-muted-foreground">{recommendation.summary}</p>
+              <div className="flex flex-wrap gap-2">
+                {recommendation.items?.slice(0, 4).map((item: any, index: number) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    <Shirt className="w-3 h-3 mr-1" />
+                    {item.name}
+                  </Badge>
+                ))}
+                {recommendation.items?.length > 4 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{recommendation.items.length - 4} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </Card>
+        ) : null}
       </div>
 
       {/* Quick Actions */}
@@ -270,6 +265,67 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Outfit Details Dialog */}
+      <Dialog open={showOutfitDialog} onOpenChange={setShowOutfitDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Sparkles className="w-6 h-6 text-accent" />
+              Today's Outfit Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedOutfit && (
+            <div className="space-y-6 mt-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm leading-relaxed">{selectedOutfit.summary}</p>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Outfit Items</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedOutfit.items?.map((item: any, index: number) => (
+                    <Card key={index} className="shadow-soft hover:shadow-medium transition-all">
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <Shirt className="w-5 h-5 text-primary" />
+                            <h4 className="font-semibold">{item.name}</h4>
+                          </div>
+                          {item.fromCloset && (
+                            <Badge variant="outline" className="text-xs bg-primary/10">
+                              From Closet
+                            </Badge>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="text-xs capitalize">
+                          {item.type}
+                        </Badge>
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {selectedOutfit.tips && selectedOutfit.tips.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Style Tips</h3>
+                  <div className="space-y-2">
+                    {selectedOutfit.tips.map((tip: string, index: number) => (
+                      <div key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className="text-accent font-semibold">•</span>
+                        <span>{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
