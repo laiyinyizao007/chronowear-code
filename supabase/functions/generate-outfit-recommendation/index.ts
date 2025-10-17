@@ -38,6 +38,20 @@ When recommending outfits, consider:
 
 Provide practical, stylish recommendations that keep the user comfortable and protected.`;
 
+    // Determine if umbrella/parasol is needed
+    const isRainy = weatherDescription.toLowerCase().includes('rain') || 
+                    weatherDescription.toLowerCase().includes('drizzle') || 
+                    weatherDescription.toLowerCase().includes('shower');
+    const needsUmbrella = isRainy;
+    const needsParasol = !isRainy && uvIndex >= 6; // High UV and not raining
+    
+    let umbrellaRequirement = '';
+    if (needsUmbrella) {
+      umbrellaRequirement = '\n\nIMPORTANT WEATHER REQUIREMENT: It is raining today. You MUST include a rain umbrella as an accessory in every outfit recommendation. Suggest stylish umbrellas from brands like Blunt, Totes, or Fulton.';
+    } else if (needsParasol) {
+      umbrellaRequirement = '\n\nIMPORTANT UV PROTECTION REQUIREMENT: UV index is high today. You MUST include a sun umbrella/parasol as an accessory in every outfit recommendation for sun protection. Suggest stylish parasols or UV-blocking umbrellas from brands like Coolibar, UV-Blocker, or stylish sun umbrellas.';
+    }
+
     const userPrompt = `Please recommend 3-5 different complete outfit combinations for today's weather conditions:
 - Temperature: ${temperature}°F
 - Weather: ${weatherDescription}
@@ -49,7 +63,7 @@ ${garments && garments.length > 0
   ? 'Based on the available garments, suggest different outfit combinations using items from the closet when possible. Set "fromCloset" to true ONLY for items that exactly match a garment ID from the list above (match by type AND brand). If the closet is missing key items for this weather, suggest new items with "fromCloset" set to false.'
   : 'Suggest different outfit combinations that would be ideal for this weather (user can add them to their closet later). Create diverse looks suitable for different occasions. All items should have "fromCloset" set to false.'}
 
-IMPORTANT: For each item, you MUST provide a real brand and specific model/product name that can be searched online.
+IMPORTANT: For each item, you MUST provide a real brand and specific model/product name that can be searched online.${umbrellaRequirement}
 
 Return your response in JSON format with this structure:
 {
