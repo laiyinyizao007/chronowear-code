@@ -261,6 +261,7 @@ export default function OOTDDiary() {
         selectedProductIndices.has(index)
       );
 
+      // Save OOTD record
       const recordData = {
         user_id: user.id,
         photo_url: currentPhotoUrl,
@@ -271,11 +272,37 @@ export default function OOTDDiary() {
         products: JSON.stringify(selectedProducts),
       };
 
-      const { error } = await supabase.from("ootd_records").insert([recordData]);
+      const { error: recordError } = await supabase.from("ootd_records").insert([recordData]);
 
-      if (error) throw error;
+      if (recordError) throw recordError;
 
-      toast.success("OOTD saved successfully!");
+      // Save each selected product to My Closet with product image
+      for (const product of selectedProducts) {
+        const garmentData = {
+          user_id: user.id,
+          image_url: product.imageUrl || currentPhotoUrl, // Use product image if available
+          type: product.type || "Other",
+          color: product.color || "",
+          season: "All-Season",
+          brand: product.brand || "",
+          material: product.material || "",
+        };
+
+        // Check if this product already exists to avoid duplicates
+        const { data: existing } = await supabase
+          .from("garments")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("brand", garmentData.brand)
+          .eq("type", garmentData.type)
+          .maybeSingle();
+
+        if (!existing) {
+          await supabase.from("garments").insert([garmentData]);
+        }
+      }
+
+      toast.success(`OOTD saved! ${selectedProducts.length} items added to closet.`);
       setIsAddDialogOpen(false);
       setCurrentPhotoUrl("");
       setCurrentLocation("");
