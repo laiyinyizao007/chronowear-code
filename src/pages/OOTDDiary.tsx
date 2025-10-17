@@ -409,41 +409,52 @@ export default function OOTDDiary() {
                     </div>
                   )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-2">
-                    {identifiedProducts.map((product, index) => (
-                      <div key={index} className="relative">
-                        <div 
-                          className={`cursor-pointer transition-all ${
-                            selectedProductIndices.has(index) ? 'ring-2 ring-primary' : ''
-                          }`}
-                          onClick={() => toggleProductSelection(index)}
-                        >
-                          <ProductCard
-                            brand={product.brand}
-                            model={product.model}
-                            price={product.price || ""}
-                            style={product.style || ""}
-                            features={product.features || []}
-                            imageUrl={product.imageUrl}
-                            material={product.material}
-                            color={product.color}
-                            availability={product.availability}
-                            selected={selectedProductIndices.has(index)}
-                            onSelect={() => toggleProductSelection(index)}
-                          />
-                        </div>
+                  {identifiedProducts.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-2">
+                        {identifiedProducts.map((product, index) => (
+                          <div key={index} className="relative">
+                            <div 
+                              className={`cursor-pointer transition-all ${
+                                selectedProductIndices.has(index) ? 'ring-2 ring-primary' : ''
+                              }`}
+                              onClick={() => toggleProductSelection(index)}
+                            >
+                              <ProductCard
+                                brand={product.brand}
+                                model={product.model}
+                                price={product.price || ""}
+                                style={product.style || ""}
+                                features={product.features || []}
+                                imageUrl={product.imageUrl}
+                                material={product.material}
+                                color={product.color}
+                                availability={product.availability}
+                                selected={selectedProductIndices.has(index)}
+                                onSelect={() => toggleProductSelection(index)}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      {selectedProductIndices.size} of {identifiedProducts.length} items selected
-                    </p>
-                    <Button onClick={handleSaveRecord}>
-                      Save OOTD
-                    </Button>
-                  </div>
+                      
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          {selectedProductIndices.size} of {identifiedProducts.length} items selected
+                        </p>
+                        <Button onClick={handleSaveRecord}>
+                          Save OOTD
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-8 text-center space-y-4">
+                      <p className="text-muted-foreground">No products identified from the image</p>
+                      <Button onClick={handleSaveRecord} variant="outline">
+                        Save Anyway
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </DialogContent>
