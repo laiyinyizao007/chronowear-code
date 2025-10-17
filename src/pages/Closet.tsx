@@ -5,7 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X } from "lucide-react";
+import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X, Scan, ChevronsUpDown, Check } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +51,10 @@ interface ProductInfo {
   material?: string;
   color?: string;
   availability?: string;
+  official_price?: number;
+  washing_frequency?: string;
+  care_instructions?: string;
+  type?: string;
 }
 
 export default function Closet() {
@@ -72,6 +78,21 @@ export default function Closet() {
     brands: [] as string[],
     seasons: [] as string[],
   });
+  const [newGarment, setNewGarment] = useState({
+    image_url: "",
+    type: "",
+    color: "",
+    season: "",
+    brand: "",
+    material: "",
+    washing_frequency: "",
+    care_instructions: "",
+    official_price: null as number | null,
+    acquired_date: new Date().toISOString().split('T')[0],
+  });
+  const [brandSearch, setBrandSearch] = useState("");
+  const [isScanningBarcode, setIsScanningBarcode] = useState(false);
+  const [isScanningLabel, setIsScanningLabel] = useState(false);
 
   // Extract unique filter options from garments
   const filterOptions = useMemo(() => {
@@ -227,6 +248,10 @@ export default function Closet() {
             material: productData?.material,
             color: productData?.color,
             availability: productData?.availability,
+            official_price: productData?.official_price,
+            washing_frequency: productData?.washing_frequency,
+            care_instructions: productData?.care_instructions,
+            type: productData?.type || result.type,
           };
         } catch (error) {
           console.error('Error fetching product info:', error);
@@ -236,12 +261,31 @@ export default function Closet() {
             price: result.price,
             style: result.style,
             features: result.features || [],
+            type: result.type,
           };
         }
       });
 
       const products = await Promise.all(productPromises);
       setProductSuggestions(products);
+      
+      // Pre-fill newGarment with first product data
+      if (products.length > 0) {
+        const firstProduct = products[0];
+        setNewGarment({
+          image_url: imageUrl,
+          type: firstProduct.type || "",
+          color: firstProduct.color || "",
+          season: "All-Season",
+          brand: firstProduct.brand || "",
+          material: firstProduct.material || "",
+          washing_frequency: firstProduct.washing_frequency || "",
+          care_instructions: firstProduct.care_instructions || "",
+          official_price: firstProduct.official_price || null,
+          acquired_date: new Date().toISOString().split('T')[0],
+        });
+      }
+      
       setProcessingProgress(100);
       
       toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified!`);
@@ -552,50 +596,138 @@ export default function Closet() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Type</Label>
-                    <Select name="type" required>
+                    <Select value={newGarment.type} onValueChange={(value) => setNewGarment({ ...newGarment, type: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Top">Top</SelectItem>
-                        <SelectItem value="Pants">Pants</SelectItem>
-                        <SelectItem value="Outerwear">Outerwear</SelectItem>
-                        <SelectItem value="Dress">Dress</SelectItem>
-                        <SelectItem value="Shoes">Shoes</SelectItem>
-                        <SelectItem value="Accessories">Accessories</SelectItem>
+                        <SelectItem value="top">Top</SelectItem>
+                        <SelectItem value="bottom">Bottom</SelectItem>
+                        <SelectItem value="dress">Dress</SelectItem>
+                        <SelectItem value="outerwear">Outerwear</SelectItem>
+                        <SelectItem value="shoes">Shoes</SelectItem>
+                        <SelectItem value="accessory">Accessory</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="color">Color</Label>
-                      <Input id="color" name="color" placeholder="e.g., Blue" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="season">Season</Label>
-                      <Select name="season">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select season" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Spring">Spring</SelectItem>
-                          <SelectItem value="Summer">Summer</SelectItem>
-                          <SelectItem value="Fall">Fall</SelectItem>
-                          <SelectItem value="Winter">Winter</SelectItem>
-                          <SelectItem value="All-Season">All-Season</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="color">Color</Label>
+                    <Select value={newGarment.color} onValueChange={(value) => setNewGarment({ ...newGarment, color: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="white">White</SelectItem>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="red">Red</SelectItem>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="yellow">Yellow</SelectItem>
+                        <SelectItem value="pink">Pink</SelectItem>
+                        <SelectItem value="brown">Brown</SelectItem>
+                        <SelectItem value="beige">Beige</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="brand">Brand</Label>
-                      <Input id="brand" name="brand" placeholder="e.g., Nike" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="material">Material</Label>
-                      <Input id="material" name="material" placeholder="e.g., Cotton" />
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Brand</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between">
+                          {newGarment.brand || "Select or enter brand"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Search brand..." 
+                            value={brandSearch}
+                            onValueChange={setBrandSearch}
+                          />
+                          <CommandEmpty>
+                            <Button 
+                              variant="ghost" 
+                              className="w-full"
+                              onClick={() => {
+                                setNewGarment({ ...newGarment, brand: brandSearch });
+                                setBrandSearch("");
+                              }}
+                            >
+                              Use "{brandSearch}"
+                            </Button>
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {["Nike", "Adidas", "Zara", "H&M", "Uniqlo", "Gucci", "Prada", "Louis Vuitton"].map((brand) => (
+                              <CommandItem
+                                key={brand}
+                                value={brand}
+                                onSelect={() => {
+                                  setNewGarment({ ...newGarment, brand });
+                                  setBrandSearch("");
+                                }}
+                              >
+                                <Check className={newGarment.brand === brand ? "mr-2 h-4 w-4" : "mr-2 h-4 w-4 opacity-0"} />
+                                {brand}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="material">Material</Label>
+                    <Input
+                      id="material"
+                      value={newGarment.material}
+                      onChange={(e) => setNewGarment({ ...newGarment, material: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="official_price">Official Price</Label>
+                    <Input
+                      id="official_price"
+                      type="number"
+                      value={newGarment.official_price || ""}
+                      onChange={(e) => setNewGarment({ ...newGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="washing_frequency">Washing Frequency</Label>
+                    <Input
+                      id="washing_frequency"
+                      value={newGarment.washing_frequency}
+                      onChange={(e) => setNewGarment({ ...newGarment, washing_frequency: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="care_instructions">Care Instructions</Label>
+                    <Textarea
+                      id="care_instructions"
+                      value={newGarment.care_instructions}
+                      onChange={(e) => setNewGarment({ ...newGarment, care_instructions: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => setIsScanningBarcode(true)}
+                    >
+                      <Scan className="mr-2 h-4 w-4" />
+                      Scan Barcode
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => setIsScanningLabel(true)}
+                    >
+                      <Camera className="mr-2 h-4 w-4" />
+                      Photo Label
+                    </Button>
                   </div>
                   <div className="flex gap-2">
                     <Button 
@@ -793,70 +925,137 @@ export default function Closet() {
                   {/* Type - Editable */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Type</Label>
-                    <Input
-                      value={selectedGarment.type}
-                      onChange={(e) => setSelectedGarment({ ...selectedGarment, type: e.target.value })}
-                      onBlur={async () => {
-                        try {
-                          const { error } = await supabase
-                            .from("garments")
-                            .update({ type: selectedGarment.type })
-                            .eq("id", selectedGarment.id);
-                          if (error) throw error;
+                    <Select 
+                      value={selectedGarment.type} 
+                      onValueChange={async (value) => {
+                        setSelectedGarment({ ...selectedGarment, type: value });
+                        const { error } = await supabase
+                          .from("garments")
+                          .update({ type: value })
+                          .eq("id", selectedGarment.id);
+                        if (error) toast.error("Failed to update type");
+                        else {
                           toast.success("Type updated");
                           loadGarments();
-                        } catch (error) {
-                          toast.error("Failed to update type");
                         }
                       }}
-                      className="mt-1"
-                    />
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">Top</SelectItem>
+                        <SelectItem value="bottom">Bottom</SelectItem>
+                        <SelectItem value="dress">Dress</SelectItem>
+                        <SelectItem value="outerwear">Outerwear</SelectItem>
+                        <SelectItem value="shoes">Shoes</SelectItem>
+                        <SelectItem value="accessory">Accessory</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Color - Editable */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Color</Label>
-                    <Input
-                      value={selectedGarment.color || ""}
-                      onChange={(e) => setSelectedGarment({ ...selectedGarment, color: e.target.value })}
-                      onBlur={async () => {
-                        try {
-                          const { error } = await supabase
-                            .from("garments")
-                            .update({ color: selectedGarment.color })
-                            .eq("id", selectedGarment.id);
-                          if (error) throw error;
+                    <Select 
+                      value={selectedGarment.color || ""} 
+                      onValueChange={async (value) => {
+                        setSelectedGarment({ ...selectedGarment, color: value });
+                        const { error } = await supabase
+                          .from("garments")
+                          .update({ color: value })
+                          .eq("id", selectedGarment.id);
+                        if (error) toast.error("Failed to update color");
+                        else {
                           toast.success("Color updated");
                           loadGarments();
-                        } catch (error) {
-                          toast.error("Failed to update color");
                         }
                       }}
-                      className="mt-1"
-                    />
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="white">White</SelectItem>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="red">Red</SelectItem>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="yellow">Yellow</SelectItem>
+                        <SelectItem value="pink">Pink</SelectItem>
+                        <SelectItem value="brown">Brown</SelectItem>
+                        <SelectItem value="beige">Beige</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Brand - Editable */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Brand</Label>
-                    <Input
-                      value={selectedGarment.brand || ""}
-                      onChange={(e) => setSelectedGarment({ ...selectedGarment, brand: e.target.value })}
-                      onBlur={async () => {
-                        try {
-                          const { error } = await supabase
-                            .from("garments")
-                            .update({ brand: selectedGarment.brand })
-                            .eq("id", selectedGarment.id);
-                          if (error) throw error;
-                          toast.success("Brand updated");
-                          loadGarments();
-                        } catch (error) {
-                          toast.error("Failed to update brand");
-                        }
-                      }}
-                      className="mt-1"
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between mt-1">
+                          {selectedGarment.brand || "Select or enter brand"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Search brand..." 
+                            value={brandSearch}
+                            onValueChange={setBrandSearch}
+                          />
+                          <CommandEmpty>
+                            <Button 
+                              variant="ghost" 
+                              className="w-full"
+                              onClick={async () => {
+                                setSelectedGarment({ ...selectedGarment, brand: brandSearch });
+                                const { error } = await supabase
+                                  .from("garments")
+                                  .update({ brand: brandSearch })
+                                  .eq("id", selectedGarment.id);
+                                if (error) toast.error("Failed to update brand");
+                                else {
+                                  toast.success("Brand updated");
+                                  loadGarments();
+                                }
+                                setBrandSearch("");
+                              }}
+                            >
+                              Use "{brandSearch}"
+                            </Button>
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {["Nike", "Adidas", "Zara", "H&M", "Uniqlo", "Gucci", "Prada", "Louis Vuitton"].map((brand) => (
+                              <CommandItem
+                                key={brand}
+                                value={brand}
+                                onSelect={async () => {
+                                  setSelectedGarment({ ...selectedGarment, brand });
+                                  const { error } = await supabase
+                                    .from("garments")
+                                    .update({ brand })
+                                    .eq("id", selectedGarment.id);
+                                  if (error) toast.error("Failed to update brand");
+                                  else {
+                                    toast.success("Brand updated");
+                                    loadGarments();
+                                  }
+                                  setBrandSearch("");
+                                }}
+                              >
+                                <Check className={selectedGarment.brand === brand ? "mr-2 h-4 w-4" : "mr-2 h-4 w-4 opacity-0"} />
+                                {brand}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   {/* Official Price - Editable */}
