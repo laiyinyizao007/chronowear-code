@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,7 @@ export default function Home() {
   const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
   const [showOutfitDialog, setShowOutfitDialog] = useState(false);
   const [dialogLoadingImages, setDialogLoadingImages] = useState(false);
+  const [addingToCloset, setAddingToCloset] = useState<{ [key: number]: boolean }>({});
   
   // Mock outfit recommendations (will be replaced with AI-generated ones)
   const outfitRecommendations = [
@@ -147,6 +148,53 @@ export default function Home() {
     );
     setDialogLoadingImages(false);
     return updated;
+  };
+
+  const handleAddToCloset = async (item: any, index: number) => {
+    try {
+      setAddingToCloset(prev => ({ ...prev, [index]: true }));
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from('garments').insert({
+        user_id: user.id,
+        type: item.type,
+        brand: item.brand,
+        color: item.color,
+        material: item.material,
+        image_url: item.imageUrl,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Item added to your closet!",
+      });
+
+      // Update the item to show it's now in closet
+      setSelectedOutfit((prev: any) => ({
+        ...prev,
+        items: prev.items.map((i: any, idx: number) => 
+          idx === index ? { ...i, fromCloset: true } : i
+        )
+      }));
+    } catch (error: any) {
+      console.error('Error adding to closet:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add item to closet",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingToCloset(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const handleBuyProduct = (item: any) => {
+    const searchQuery = encodeURIComponent(`${item.brand || ''} ${item.model || item.name}`.trim());
+    window.open(`https://www.google.com/search?q=${searchQuery}&tbm=shop`, '_blank');
   };
 
   const getUVLevel = (uvIndex: number): { level: string; color: string } => {
@@ -361,7 +409,7 @@ export default function Home() {
                         </div>
 
                         {/* Product Info */}
-                        <div className="p-4 space-y-2">
+                        <div className="p-4 space-y-3">
                           {/* Name */}
                           <h4 className="font-serif font-light text-base leading-tight text-foreground truncate">
                             {item.name}
@@ -379,9 +427,36 @@ export default function Home() {
                             </Badge>
                           </div>
 
-                          {/* From Closet indicator at bottom */}
-                          {item.fromCloset && (
-                            <p className="text-[9px] text-primary uppercase tracking-wider font-sans">
+                          {/* Actions for non-closet items */}
+                          {!item.fromCloset ? (
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => handleBuyProduct(item)}
+                              >
+                                <ShoppingCart className="w-3 h-3 mr-1" />
+                                Buy
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => handleAddToCloset(item, index)}
+                                disabled={addingToCloset[index]}
+                              >
+                                {addingToCloset[index] ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    Add to Closet
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-[9px] text-primary uppercase tracking-wider font-sans pt-2">
                               From Your Closet
                             </p>
                           )}
