@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X } from "lucide-react";
 import {
   AlertDialog,
@@ -15,7 +16,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -31,6 +31,8 @@ interface Garment {
   brand: string;
   material: string;
   last_worn_date: string | null;
+  usage_count: number;
+  washing_frequency: string | null;
 }
 
 interface ProductInfo {
@@ -264,6 +266,19 @@ export default function Closet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Get washing frequency recommendation
+      let washingFrequency = null;
+      if (product.material) {
+        try {
+          const { data: freqData } = await supabase.functions.invoke('recommend-washing-frequency', {
+            body: { material: product.material, type: "Top" }
+          });
+          washingFrequency = freqData?.frequency || null;
+        } catch (error) {
+          console.error('Failed to get washing frequency recommendation:', error);
+        }
+      }
+
       const { error } = await supabase.from("garments").insert({
         user_id: user.id,
         image_url: uploadedImageUrl,
@@ -272,6 +287,8 @@ export default function Closet() {
         season: "All-Season",
         brand: product.brand,
         material: product.material || "",
+        washing_frequency: washingFrequency,
+        usage_count: 0,
       });
 
       if (error) throw error;
@@ -301,14 +318,32 @@ export default function Closet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const material = formData.get("material") as string;
+      const type = formData.get("type") as string;
+
+      // Get washing frequency recommendation
+      let washingFrequency = null;
+      if (material) {
+        try {
+          const { data: freqData } = await supabase.functions.invoke('recommend-washing-frequency', {
+            body: { material, type }
+          });
+          washingFrequency = freqData?.frequency || null;
+        } catch (error) {
+          console.error('Failed to get washing frequency recommendation:', error);
+        }
+      }
+
       const { error } = await supabase.from("garments").insert({
         user_id: user.id,
         image_url: imageUrl,
-        type: formData.get("type") as string,
+        type,
         color: formData.get("color") as string,
         season: formData.get("season") as string,
         brand: formData.get("brand") as string,
-        material: formData.get("material") as string,
+        material,
+        washing_frequency: washingFrequency,
+        usage_count: 0,
       });
 
       if (error) throw error;
@@ -697,6 +732,11 @@ export default function Closet() {
                 {garment.brand && (
                   <p className="text-xs text-muted-foreground">{garment.brand}</p>
                 )}
+                {garment.usage_count > 0 && (
+                  <Badge variant="outline" className="text-xs mt-1">
+                    Worn {garment.usage_count}x
+                  </Badge>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -775,6 +815,47 @@ export default function Closet() {
                       </p>
                     </div>
                   )}
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground">Usage Count</h4>
+                    <p className="text-lg font-semibold">{selectedGarment.usage_count} times</p>
+                  </div>
+                  <div className="col-span-2">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Washing Frequency</h4>
+                    <div className="flex gap-2 items-center">
+                      <Select
+                        value={selectedGarment.washing_frequency || ""}
+                        onValueChange={async (value) => {
+                          try {
+                            const { error } = await supabase
+                              .from("garments")
+                              .update({ washing_frequency: value })
+                              .eq("id", selectedGarment.id);
+                            
+                            if (error) throw error;
+                            
+                            setSelectedGarment({ ...selectedGarment, washing_frequency: value });
+                            toast.success("Washing frequency updated");
+                            loadGarments();
+                          } catch (error) {
+                            toast.error("Failed to update washing frequency");
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Set washing frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="After each wear">After each wear</SelectItem>
+                          <SelectItem value="After 2-3 wears">After 2-3 wears</SelectItem>
+                          <SelectItem value="After 3-5 wears">After 3-5 wears</SelectItem>
+                          <SelectItem value="Weekly">Weekly</SelectItem>
+                          <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
+                          <SelectItem value="Monthly">Monthly</SelectItem>
+                          <SelectItem value="As needed">As needed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
