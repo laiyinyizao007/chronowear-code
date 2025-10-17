@@ -2,7 +2,17 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3 } from "lucide-react";
+import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +53,8 @@ export default function Closet() {
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [showManualForm, setShowManualForm] = useState(false);
+  const [selectedGarment, setSelectedGarment] = useState<Garment | null>(null);
+  const [deleteGarmentId, setDeleteGarmentId] = useState<string | null>(null);
 
   useEffect(() => {
     loadGarments();
@@ -228,6 +240,22 @@ export default function Closet() {
       loadGarments();
     } catch (error: any) {
       toast.error("Failed to add garment");
+    }
+  };
+
+  const handleDeleteGarment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("garments")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Garment deleted successfully!");
+      loadGarments();
+    } catch (error: any) {
+      toast.error("Failed to delete garment");
     }
   };
 
@@ -517,15 +545,31 @@ export default function Closet() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {garments.map((garment) => (
-            <Card key={garment.id} className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer">
+            <Card 
+              key={garment.id} 
+              className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
+              onClick={() => setSelectedGarment(garment)}
+            >
               <div className="aspect-square relative bg-muted">
                 <img
                   src={garment.image_url}
                   alt={garment.type}
                   className="w-full h-full object-cover"
                 />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteGarmentId(garment.id);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
               <CardContent className="p-3 space-y-1">
                 <h3 className="font-semibold text-sm">{garment.type}</h3>
@@ -540,6 +584,86 @@ export default function Closet() {
             </Card>
           ))}
         </div>
+
+        <AlertDialog open={!!deleteGarmentId} onOpenChange={(open) => !open && setDeleteGarmentId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Garment?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this garment from your closet.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteGarmentId) {
+                    handleDeleteGarment(deleteGarmentId);
+                    setDeleteGarmentId(null);
+                  }
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <Dialog open={!!selectedGarment} onOpenChange={(open) => !open && setSelectedGarment(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Garment Details</DialogTitle>
+            </DialogHeader>
+            {selectedGarment && (
+              <div className="space-y-4">
+                <img 
+                  src={selectedGarment.image_url} 
+                  alt={selectedGarment.type}
+                  className="w-full max-h-[60vh] object-contain rounded-lg"
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground">Type</h4>
+                    <p className="text-lg font-semibold">{selectedGarment.type}</p>
+                  </div>
+                  {selectedGarment.brand && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">Brand</h4>
+                      <p className="text-lg font-semibold">{selectedGarment.brand}</p>
+                    </div>
+                  )}
+                  {selectedGarment.color && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">Color</h4>
+                      <p className="text-lg font-semibold">{selectedGarment.color}</p>
+                    </div>
+                  )}
+                  {selectedGarment.season && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">Season</h4>
+                      <p className="text-lg font-semibold">{selectedGarment.season}</p>
+                    </div>
+                  )}
+                  {selectedGarment.material && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">Material</h4>
+                      <p className="text-lg font-semibold">{selectedGarment.material}</p>
+                    </div>
+                  )}
+                  {selectedGarment.last_worn_date && (
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground">Last Worn</h4>
+                      <p className="text-lg font-semibold">
+                        {new Date(selectedGarment.last_worn_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+        </>
       )}
     </div>
   );
