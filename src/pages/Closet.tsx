@@ -90,6 +90,7 @@ export default function Closet() {
     official_price: null as number | null,
     acquired_date: new Date().toISOString().split('T')[0],
   });
+  const [currency, setCurrency] = useState("USD");
   const [brandSearch, setBrandSearch] = useState("");
   const [isScanningBarcode, setIsScanningBarcode] = useState(false);
   const [isScanningLabel, setIsScanningLabel] = useState(false);
@@ -688,12 +689,29 @@ export default function Closet() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="official_price">Official Price</Label>
-                    <Input
-                      id="official_price"
-                      type="number"
-                      value={newGarment.official_price || ""}
-                      onChange={(e) => setNewGarment({ ...newGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
-                    />
+                    <div className="flex gap-2">
+                      <Select value={currency} onValueChange={setCurrency}>
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                          <SelectItem value="CNY">CNY</SelectItem>
+                          <SelectItem value="JPY">JPY</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="official_price"
+                        type="number"
+                        step="0.01"
+                        className="flex-1"
+                        value={newGarment.official_price || ""}
+                        onChange={(e) => setNewGarment({ ...newGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="washing_frequency">Washing Frequency</Label>
@@ -1061,27 +1079,41 @@ export default function Closet() {
                   {/* Official Price - Editable */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Official Price</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={selectedGarment.official_price || ""}
-                      onChange={(e) => setSelectedGarment({ ...selectedGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
-                      onBlur={async () => {
-                        try {
-                          const { error } = await supabase
-                            .from("garments")
-                            .update({ official_price: selectedGarment.official_price })
-                            .eq("id", selectedGarment.id);
-                          if (error) throw error;
-                          toast.success("Price updated");
-                          loadGarments();
-                        } catch (error) {
-                          toast.error("Failed to update price");
-                        }
-                      }}
-                      className="mt-1"
-                      placeholder="Enter price"
-                    />
+                    <div className="flex gap-2 mt-1">
+                      <Select value={currency} onValueChange={setCurrency}>
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                          <SelectItem value="CNY">CNY</SelectItem>
+                          <SelectItem value="JPY">JPY</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="flex-1"
+                        value={selectedGarment.official_price || ""}
+                        onChange={(e) => setSelectedGarment({ ...selectedGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
+                        onBlur={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from("garments")
+                              .update({ official_price: selectedGarment.official_price })
+                              .eq("id", selectedGarment.id);
+                            if (error) throw error;
+                            toast.success("Price updated");
+                            loadGarments();
+                          } catch (error) {
+                            toast.error("Failed to update price");
+                          }
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
 
                   {/* Usage Count - Read Only */}
@@ -1175,6 +1207,28 @@ export default function Closet() {
                       className="mt-1 min-h-[100px]"
                       placeholder="Enter care instructions..."
                     />
+                  </div>
+                  
+                  {/* Barcode and Photo Scanning */}
+                  <div className="col-span-2">
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setIsScanningBarcode(true)}
+                      >
+                        <Scan className="mr-2 h-4 w-4" />
+                        Scan Barcode
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setIsScanningLabel(true)}
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Photo Label
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
