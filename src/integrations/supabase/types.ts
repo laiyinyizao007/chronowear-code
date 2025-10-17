@@ -17,6 +17,7 @@ export type Database = {
       garments: {
         Row: {
           brand: string | null
+          care_instructions: string | null
           color: string | null
           created_at: string | null
           id: string
@@ -32,6 +33,7 @@ export type Database = {
         }
         Insert: {
           brand?: string | null
+          care_instructions?: string | null
           color?: string | null
           created_at?: string | null
           id?: string
@@ -47,6 +49,7 @@ export type Database = {
         }
         Update: {
           brand?: string | null
+          care_instructions?: string | null
           color?: string | null
           created_at?: string | null
           id?: string

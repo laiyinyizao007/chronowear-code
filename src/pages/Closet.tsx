@@ -33,6 +33,7 @@ interface Garment {
   last_worn_date: string | null;
   usage_count: number;
   washing_frequency: string | null;
+  care_instructions: string | null;
 }
 
 interface ProductInfo {
@@ -266,16 +267,18 @@ export default function Closet() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Get washing frequency recommendation
+      // Get washing frequency and care instructions recommendation
       let washingFrequency = null;
+      let careInstructions = null;
       if (product.material) {
         try {
           const { data: freqData } = await supabase.functions.invoke('recommend-washing-frequency', {
             body: { material: product.material, type: "Top" }
           });
           washingFrequency = freqData?.frequency || null;
+          careInstructions = freqData?.care_instructions || null;
         } catch (error) {
-          console.error('Failed to get washing frequency recommendation:', error);
+          console.error('Failed to get care recommendations:', error);
         }
       }
 
@@ -288,6 +291,7 @@ export default function Closet() {
         brand: product.brand,
         material: product.material || "",
         washing_frequency: washingFrequency,
+        care_instructions: careInstructions,
         usage_count: 0,
       });
 
@@ -321,16 +325,18 @@ export default function Closet() {
       const material = formData.get("material") as string;
       const type = formData.get("type") as string;
 
-      // Get washing frequency recommendation
+      // Get washing frequency and care instructions recommendation
       let washingFrequency = null;
+      let careInstructions = null;
       if (material) {
         try {
           const { data: freqData } = await supabase.functions.invoke('recommend-washing-frequency', {
             body: { material, type }
           });
           washingFrequency = freqData?.frequency || null;
+          careInstructions = freqData?.care_instructions || null;
         } catch (error) {
-          console.error('Failed to get washing frequency recommendation:', error);
+          console.error('Failed to get care recommendations:', error);
         }
       }
 
@@ -343,6 +349,7 @@ export default function Closet() {
         brand: formData.get("brand") as string,
         material,
         washing_frequency: washingFrequency,
+        care_instructions: careInstructions,
         usage_count: 0,
       });
 
@@ -856,6 +863,14 @@ export default function Closet() {
                       </Select>
                     </div>
                   </div>
+                  {selectedGarment.care_instructions && (
+                    <div className="col-span-2 mt-4">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Care Instructions</h4>
+                      <p className="text-sm leading-relaxed bg-muted/50 p-3 rounded-md">
+                        {selectedGarment.care_instructions}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -20,35 +20,44 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are a garment care expert. Your role is to provide accurate washing frequency recommendations based on garment materials and types.
+    const systemPrompt = `You are a garment care expert. Your role is to provide accurate washing frequency recommendations and detailed care instructions based on garment materials and types.
 
 Consider factors such as:
 - Material durability and care requirements
 - Typical usage patterns for the garment type
 - Best practices for fabric maintenance
 - Balance between hygiene and fabric longevity
+- Specific care needs (washing temperature, drying methods, ironing, dry cleaning, etc.)
 
-Provide practical, specific recommendations.`;
+Provide practical, specific recommendations that help preserve the garment's quality.`;
 
-    const userPrompt = `Please recommend a washing frequency for a garment with the following characteristics:
+    const userPrompt = `Please provide comprehensive care recommendations for a garment with the following characteristics:
 - Material: ${material || 'unknown'}
 - Type: ${type || 'unknown'}
 
-Based on the material and garment type, what is the recommended washing frequency?
+Based on the material and garment type:
 
-Choose the most appropriate option from these categories:
-- "After each wear" - for items worn close to skin, workout clothes, underwear
-- "After 2-3 wears" - for casual shirts, blouses, lightweight tops
-- "After 3-5 wears" - for jeans, pants, casual dresses
-- "Weekly" - for sweaters, cardigans, light jackets
-- "Bi-weekly" - for heavy sweaters, coats, structured blazers
-- "Monthly" - for outerwear, formal suits, winter coats
-- "As needed" - for accessories, bags, special occasion items
+1. Recommend the most appropriate washing frequency from these categories:
+   - "After each wear" - for items worn close to skin, workout clothes, underwear
+   - "After 2-3 wears" - for casual shirts, blouses, lightweight tops
+   - "After 3-5 wears" - for jeans, pants, casual dresses
+   - "Weekly" - for sweaters, cardigans, light jackets
+   - "Bi-weekly" - for heavy sweaters, coats, structured blazers
+   - "Monthly" - for outerwear, formal suits, winter coats
+   - "As needed" - for accessories, bags, special occasion items
+
+2. Provide detailed care instructions including:
+   - Washing temperature and method (machine/hand wash)
+   - Drying recommendations
+   - Ironing instructions if applicable
+   - Any special care notes (dry clean only, avoid bleach, etc.)
+   - Storage tips
 
 Return your response in JSON format:
 {
-  "frequency": "one of the options above",
-  "reason": "Brief 1-2 sentence explanation of why this frequency is recommended for this material and garment type"
+  "frequency": "one of the washing frequency options above",
+  "reason": "Brief 1-2 sentence explanation of why this frequency is recommended",
+  "care_instructions": "Detailed care instructions covering washing, drying, ironing, and any special considerations (3-5 sentences)"
 }`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -92,11 +101,12 @@ Return your response in JSON format:
       // Fallback recommendation
       parsedRecommendation = {
         frequency: "After 2-3 wears",
-        reason: "General recommendation for most garments"
+        reason: "General recommendation for most garments",
+        care_instructions: "Machine wash cold with similar colors. Tumble dry low or hang to dry. Iron on low heat if needed."
       };
     }
 
-    console.log('Generated washing frequency recommendation:', parsedRecommendation);
+    console.log('Generated care recommendation:', parsedRecommendation);
 
     return new Response(JSON.stringify(parsedRecommendation), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
