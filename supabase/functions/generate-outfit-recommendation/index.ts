@@ -20,10 +20,10 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Build garment inventory description
+    // Build garment inventory with IDs for matching
     const garmentInventory = garments && garments.length > 0
       ? `Available garments in closet:\n${garments.map((g: any) => 
-          `- ${g.type}: ${g.color}${g.material ? ` (${g.material})` : ''}${g.brand ? ` by ${g.brand}` : ''}`
+          `- ID: ${g.id}, Type: ${g.type}, Brand: ${g.brand || 'Unknown'}, Color: ${g.color}${g.material ? `, Material: ${g.material}` : ''}`
         ).join('\n')}`
       : 'User has no garments in their closet yet.';
 
@@ -46,8 +46,8 @@ Provide practical, stylish recommendations that keep the user comfortable and pr
 ${garmentInventory}
 
 ${garments && garments.length > 0 
-  ? 'Based on the available garments, suggest different outfit combinations. If the closet is missing key items for this weather, mention what should be added. Try to create diverse looks (casual, smart casual, sporty, etc.) from the available items.'
-  : 'Suggest different outfit combinations that would be ideal for this weather (user can add them to their closet later). Create diverse looks suitable for different occasions.'}
+  ? 'Based on the available garments, suggest different outfit combinations using items from the closet when possible. Set "fromCloset" to true ONLY for items that exactly match a garment ID from the list above (match by type AND brand). If the closet is missing key items for this weather, suggest new items with "fromCloset" set to false.'
+  : 'Suggest different outfit combinations that would be ideal for this weather (user can add them to their closet later). Create diverse looks suitable for different occasions. All items should have "fromCloset" set to false.'}
 
 IMPORTANT: For each item, you MUST provide a real brand and specific model/product name that can be searched online.
 
@@ -63,8 +63,11 @@ Return your response in JSON format with this structure:
           "name": "Item name",
           "brand": "Real brand name (e.g., Uniqlo, Zara, H&M, Nike)",
           "model": "Specific product name or style name",
+          "color": "Color of the item",
+          "material": "Material (optional)",
           "description": "Why this item works",
-          "fromCloset": true/false
+          "fromCloset": true/false,
+          "garmentId": "UUID from closet (only if fromCloset is true)"
         }
       ],
       "tips": ["1-2 styling or weather protection tips"]
@@ -73,11 +76,14 @@ Return your response in JSON format with this structure:
 }
 
 Generate 3-5 complete outfit combinations, each with 4-6 items. Make each outfit distinct in style and vibe. 
-CRITICAL: Use real, searchable brand names and product names for every item. For example:
-- "Uniqlo Supima Cotton T-Shirt"
-- "Levi's 501 Original Jeans"
-- "Nike Air Force 1 Sneakers"
-- "Zara Oversized Blazer"`;
+CRITICAL: 
+1. Use real, searchable brand names and product names for every item. For example:
+   - "Uniqlo Supima Cotton T-Shirt"
+   - "Levi's 501 Original Jeans"
+   - "Nike Air Force 1 Sneakers"
+   - "Zara Oversized Blazer"
+2. Set "fromCloset" to true ONLY when the item matches a garment from the closet list (same type AND brand)
+3. Include the "garmentId" field ONLY when "fromCloset" is true`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

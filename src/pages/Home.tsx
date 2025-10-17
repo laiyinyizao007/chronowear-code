@@ -90,7 +90,7 @@ export default function Home() {
       // Fetch user's garments
       const { data: garments } = await supabase
         .from('garments')
-        .select('type, color, material, brand, image_url');
+        .select('id, type, color, material, brand, image_url');
 
       // Generate AI recommendation
       setRecommendationLoading(true);
@@ -134,14 +134,30 @@ export default function Home() {
     setDialogLoadingImages(true);
     const updated = await Promise.all(
       (items || []).map(async (item) => {
-        // First check if item is from closet and has matching garment
+        // First check if item has garmentId (definitive proof it's from closet)
+        if (item.garmentId && garments?.length > 0) {
+          const matchingGarment = garments.find(g => g.id === item.garmentId);
+          if (matchingGarment?.image_url) {
+            return { ...item, imageUrl: matchingGarment.image_url, fromCloset: true };
+          }
+        }
+        
+        // If item claims to be from closet but no garmentId, verify by matching
         if (item.fromCloset && garments?.length > 0) {
           const matchingGarment = garments.find(g => 
             g.type?.toLowerCase() === item.type?.toLowerCase() &&
             g.brand?.toLowerCase() === item.brand?.toLowerCase()
           );
-          if (matchingGarment?.image_url) {
-            return { ...item, imageUrl: matchingGarment.image_url };
+          if (matchingGarment) {
+            return { 
+              ...item, 
+              imageUrl: matchingGarment.image_url, 
+              fromCloset: true,
+              garmentId: matchingGarment.id 
+            };
+          } else {
+            // Item claims fromCloset but no match found - mark as not from closet
+            item.fromCloset = false;
           }
         }
         
@@ -173,7 +189,7 @@ export default function Home() {
       // Fetch user's garments
       const { data: garments } = await supabase
         .from('garments')
-        .select('type, color, material, brand, image_url');
+        .select('id, type, color, material, brand, image_url');
 
       // Generate new AI recommendation
       const { data: recommendationData, error: recError } = await supabase.functions.invoke(
@@ -214,14 +230,23 @@ export default function Home() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from('garments').insert({
-        user_id: user.id,
-        type: item.type,
-        brand: item.brand,
-        color: item.color,
-        material: item.material,
-        image_url: item.imageUrl,
-      });
+      // Ensure we have an image URL before adding
+      if (!item.imageUrl) {
+        throw new Error("Item must have an image before adding to closet");
+      }
+
+      const { data: newGarment, error } = await supabase
+        .from('garments')
+        .insert({
+          user_id: user.id,
+          type: item.type,
+          brand: item.brand,
+          color: item.color,
+          material: item.material,
+          image_url: item.imageUrl,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -230,18 +255,18 @@ export default function Home() {
         description: "Item added to your closet!",
       });
 
-      // Update the item to show it's now in closet
+      // Update the item to show it's now in closet with the garment ID
       setSelectedOutfit((prev: any) => ({
         ...prev,
         items: prev.items.map((i: any, idx: number) => 
-          idx === index ? { ...i, fromCloset: true } : i
+          idx === index ? { ...i, fromCloset: true, garmentId: newGarment.id } : i
         )
       }));
     } catch (error: any) {
       console.error('Error adding to closet:', error);
       toast({
         title: "Error",
-        description: "Failed to add item to closet",
+        description: error.message || "Failed to add item to closet",
         variant: "destructive",
       });
     } finally {
@@ -346,7 +371,7 @@ export default function Home() {
                         setShowOutfitDialog(true);
                         const { data: garments } = await supabase
                           .from('garments')
-                          .select('type, color, material, brand, image_url');
+                          .select('id, type, color, material, brand, image_url');
                         const updatedItems = await enrichItemsWithImages(outfit.items || [], garments || []);
                         setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
                       }}
