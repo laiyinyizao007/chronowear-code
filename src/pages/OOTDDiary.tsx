@@ -361,6 +361,7 @@ export default function OOTDDiary() {
                               src={product.imageUrl} 
                               alt={product.model}
                               className="w-20 h-20 object-cover rounded"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; (e.currentTarget as HTMLImageElement).onerror = null; }}
                             />
                           )}
                           <div className="flex-1 min-w-0">

@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
@@ -93,20 +94,22 @@ Important: The imageUrl must be a real, working URL to an actual product image, 
           const imageResponse = await fetch(productInfo.imageUrl);
           
           if (imageResponse.ok) {
-            const imageBlob = await imageResponse.blob();
-            const fileName = `${brand.replace(/\s+/g, '-')}-${model.replace(/\s+/g, '-')}-${Date.now()}.jpg`;
+            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+            const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            const path = `${brand.replace(/\s+/g, '-')}/${model.replace(/\s+/g, '-')}-${Date.now()}.${ext}`;
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('product-images')
-              .upload(fileName, imageBlob, {
-                contentType: 'image/jpeg',
+              .upload(path, arrayBuffer, {
+                contentType,
                 upsert: false
               });
 
             if (!uploadError && uploadData) {
               const { data: { publicUrl } } = supabase.storage
                 .from('product-images')
-                .getPublicUrl(fileName);
+                .getPublicUrl(path);
               
               productInfo.imageUrl = publicUrl;
               console.log('Image rehosted successfully:', publicUrl);
