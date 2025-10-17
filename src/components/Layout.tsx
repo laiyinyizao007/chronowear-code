@@ -3,11 +3,21 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, Sun, CloudRain } from "lucide-react";
+
+interface WeatherData {
+  location: string;
+  current: {
+    temperature: number;
+    weatherDescription: string;
+    uvIndex: number;
+  };
+}
 
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,6 +38,31 @@ export default function Layout() {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    const loadWeather = async () => {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000
+          });
+        });
+
+        const { latitude, longitude } = position.coords;
+        const { data: weatherData } = await supabase.functions.invoke('get-weather', {
+          body: { lat: latitude, lng: longitude }
+        });
+
+        if (weatherData) setWeather(weatherData);
+      } catch (error) {
+        console.error('Failed to load weather:', error);
+      }
+    };
+
+    if (user) loadWeather();
+  }, [user]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -54,15 +89,34 @@ export default function Layout() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight">ChronoWear</h1>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate("/settings")}
-            className="hover:bg-muted"
-          >
-            <SettingsIcon className="w-4 h-4 mr-2" />
-            Settings
-          </Button>
+          <div className="flex items-center gap-4">
+            {weather && (
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  {weather.current.weatherDescription.toLowerCase().includes('rain') ? (
+                    <CloudRain className="w-4 h-4" />
+                  ) : (
+                    <Sun className="w-4 h-4" />
+                  )}
+                  <span>{weather.current.temperature}°F</span>
+                </div>
+                <span className="text-xs">{weather.current.weatherDescription}</span>
+                <div className="flex items-center gap-1">
+                  <Sun className="w-3 h-3 text-yellow-500" />
+                  <span className="text-xs">UV {weather.current.uvIndex}</span>
+                </div>
+              </div>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/settings")}
+              className="hover:bg-muted"
+            >
+              <SettingsIcon className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </div>
         </div>
       </header>
 

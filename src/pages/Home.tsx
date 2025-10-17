@@ -38,6 +38,8 @@ export default function Home() {
   const [showOutfitDialog, setShowOutfitDialog] = useState(false);
   const [dialogLoadingImages, setDialogLoadingImages] = useState(false);
   const [addingToCloset, setAddingToCloset] = useState<{ [key: number]: boolean }>({});
+  const [outfitImageUrl, setOutfitImageUrl] = useState<string>("");
+  const [generatingImage, setGeneratingImage] = useState(false);
   
   // Mock outfit recommendations (will be replaced with AI-generated ones)
   const outfitRecommendations = [
@@ -110,6 +112,11 @@ export default function Home() {
       if (recError) throw recError;
       setOutfits(recommendationData.outfits || []);
 
+      // Generate outfit image for the first outfit
+      if (recommendationData.outfits?.[0]) {
+        generateOutfitImage(recommendationData.outfits[0]);
+      }
+
     } catch (error: any) {
       console.error('Error loading data:', error);
       if (error.code === 1) {
@@ -128,6 +135,28 @@ export default function Home() {
     } finally {
       setLoading(false);
       setRecommendationLoading(false);
+    }
+  };
+
+  const generateOutfitImage = async (outfit: any) => {
+    try {
+      setGeneratingImage(true);
+      const { data, error } = await supabase.functions.invoke('generate-outfit-image', {
+        body: {
+          items: outfit.items || [],
+          weather: weather?.current,
+          hairstyle: outfit.hairstyle
+        }
+      });
+
+      if (error) throw error;
+      if (data?.imageUrl) {
+        setOutfitImageUrl(data.imageUrl);
+      }
+    } catch (error) {
+      console.error('Error generating outfit image:', error);
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
@@ -207,6 +236,11 @@ export default function Home() {
 
       if (recError) throw recError;
       setOutfits(recommendationData.outfits || []);
+      
+      // Generate outfit image for the first outfit
+      if (recommendationData.outfits?.[0]) {
+        generateOutfitImage(recommendationData.outfits[0]);
+      }
       
       toast({
         title: "New Outfits Generated",
@@ -303,42 +337,6 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
-      {/* Weather Card - Simplified */}
-      <Card className="shadow-medium">
-        <CardContent className="pt-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : weather ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{weather.location}</span>
-                </div>
-                <div className="text-3xl font-bold">{weather.current.temperature}°F</div>
-                <div className="text-sm text-muted-foreground">{weather.current.weatherDescription}</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Range: </span>
-                  <span className="font-medium">{weather.daily.temperatureMin}° - {weather.daily.temperatureMax}°F</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
-                  <Sun className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm">UV: {weather.current.uvIndex}</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-2 text-muted-foreground text-sm">
-              Unable to load weather data
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Trend Section */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Fashion Trends</h2>
@@ -368,13 +366,18 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Today's Outfit Recommendations */}
+      {/* Today's Pick - Single Outfit */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-accent" />
-            Today's Picks
+            Today's Pick
           </h2>
+          {outfits.length > 0 && (
+            <Button variant="outline" size="sm" onClick={loadMoreOutfits} disabled={moreOutfitsLoading}>
+              {moreOutfitsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh"}
+            </Button>
+          )}
         </div>
         
         {recommendationLoading ? (
@@ -382,50 +385,78 @@ export default function Home() {
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
         ) : outfits.length > 0 ? (
-          <div className="relative -mx-4 px-4">
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-              }}
-              className="w-full"
-            >
-              <CarouselContent className="-ml-4">
-                {outfits.map((outfit, index) => (
-                  <CarouselItem key={index} className="pl-4 basis-auto">
-                    <OutfitRecommendationCard
-                      title={outfit.title}
-                      items={outfit.items || []}
-                      summary={outfit.summary || ""}
-                      onClick={async () => {
-                        setSelectedOutfit(outfit);
-                        setShowOutfitDialog(true);
-                        const { data: garments } = await supabase
-                          .from('garments')
-                          .select('id, type, color, material, brand, image_url');
-                        const updatedItems = await enrichItemsWithImages(outfit.items || [], garments || []);
-                        setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
-                      }}
-                    />
-                  </CarouselItem>
-                ))}
-                <CarouselItem className="pl-4 basis-auto">
-                  <OutfitCard
-                    imageUrl=""
-                    title=""
-                    description=""
-                    isMoreCard
-                    onClick={loadMoreOutfits}
-                    isLoading={moreOutfitsLoading}
-                  />
-                </CarouselItem>
-              </CarouselContent>
-              <div className="flex gap-2 justify-center mt-6">
-                <CarouselPrevious className="static translate-y-0" />
-                <CarouselNext className="static translate-y-0" />
+          <Card className="shadow-medium overflow-hidden">
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Left: AI Generated Outfit Image */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">{outfits[0].title}</h3>
+                  <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                    {generatingImage ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                      </div>
+                    ) : outfitImageUrl ? (
+                      <img 
+                        src={outfitImageUrl} 
+                        alt="Today's outfit"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        <Sparkles className="w-12 h-12" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">{outfits[0].summary}</p>
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={async () => {
+                      setSelectedOutfit(outfits[0]);
+                      setShowOutfitDialog(true);
+                      const { data: garments } = await supabase
+                        .from('garments')
+                        .select('id, type, color, material, brand, image_url');
+                      const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                      setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                    }}
+                  >
+                    View Details
+                  </Button>
+                </div>
+
+                {/* Right: Item List */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground">Items Needed</h4>
+                  <div className="space-y-2">
+                    {outfits[0].items?.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
+                        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                          <Shirt className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.type}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {item.color} {item.brand && `• ${item.brand}`}
+                          </p>
+                        </div>
+                        {item.fromCloset && (
+                          <Badge variant="secondary" className="text-xs">CLOSET</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {outfits[0].hairstyle && (
+                    <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                      <p className="text-sm font-medium mb-1">Hairstyle Suggestion</p>
+                      <p className="text-xs text-muted-foreground">{outfits[0].hairstyle}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </Carousel>
-          </div>
+            </CardContent>
+          </Card>
         ) : null}
       </div>
 

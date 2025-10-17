@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.recommend-washing-frequency]
 verify_jwt = true
+
+[functions.generate-outfit-image]
+verify_jwt = true
