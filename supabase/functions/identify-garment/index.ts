@@ -34,7 +34,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Analyze this clothing item image and identify the top 3 most likely brands and models. For each, provide: brand name, model/product name, estimated price (in USD), style description, and key features. Return ONLY valid JSON in this exact format: {"results": [{"brand": "string", "model": "string", "price": "string", "style": "string", "features": ["string"]}]}'
+                text: 'Analyze this outfit photo and identify ALL visible clothing items and accessories separately. For EACH item (tops, bottoms, shoes, bags, accessories, outerwear, etc.), provide the top 3 most likely brands and models. Return ONLY valid JSON in this exact format: {"results": [{"brand": "string", "model": "string", "type": "Top/Bottom/Shoes/Bag/Accessory/Outerwear", "price": "string", "style": "string", "features": ["string"]}]}. Include separate entries for each distinct item visible in the photo (e.g., if you see a jacket, shirt, pants, and shoes, provide 3 options for EACH of these 4 items, resulting in 12 total results).'
               },
               {
                 type: 'image_url',

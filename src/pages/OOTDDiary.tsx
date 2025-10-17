@@ -395,40 +395,40 @@ export default function OOTDDiary() {
                   />
                 </div>
 
-                {identifiedProducts.length > 0 && (
-                  <div className="space-y-3">
-                    <Label>Identified Items (Select to Save)</Label>
-                    <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
-                      {identifiedProducts.map((product, index) => (
-                        <Card key={index} className="p-3">
-                          <div className="flex gap-3 items-start">
-                            <Checkbox 
-                              checked={selectedProductIndices.has(index)}
-                              onCheckedChange={() => toggleProductSelection(index)}
-                              className="mt-1"
-                            />
-                            {product.imageUrl && (
-                              <img 
-                                src={product.imageUrl} 
-                                alt={product.model}
-                                className="w-20 h-20 object-cover rounded"
-                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; (e.currentTarget as HTMLImageElement).onerror = null; }}
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm truncate">{product.brand}</h4>
-                              <p className="text-xs text-muted-foreground truncate">{product.model}</p>
-                              <p className="text-xs text-muted-foreground">{product.type}</p>
-                              {product.price && (
-                                <p className="text-sm font-medium mt-1">{product.price}</p>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+              {identifiedProducts.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Identified Items - Select items to save with this outfit</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+                    {identifiedProducts.map((product, index) => (
+                      <div key={index} className="relative">
+                        <div 
+                          className={`cursor-pointer transition-all ${
+                            selectedProductIndices.has(index) ? 'ring-2 ring-primary' : ''
+                          }`}
+                          onClick={() => toggleProductSelection(index)}
+                        >
+                          <ProductCard
+                            brand={product.brand}
+                            model={product.model}
+                            price={product.price || ""}
+                            style={product.style || ""}
+                            features={product.features || []}
+                            imageUrl={product.imageUrl}
+                            material={product.material}
+                            color={product.color}
+                            availability={product.availability}
+                            selected={selectedProductIndices.has(index)}
+                            onSelect={() => toggleProductSelection(index)}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                  <p className="text-xs text-muted-foreground text-center">
+                    {selectedProductIndices.size} of {identifiedProducts.length} items selected
+                  </p>
+                </div>
+              )}
 
                 <div className="space-y-2">
                   <Label htmlFor="date">Date</Label>
