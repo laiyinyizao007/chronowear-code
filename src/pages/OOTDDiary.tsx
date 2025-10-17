@@ -351,9 +351,15 @@ export default function OOTDDiary() {
             </Button>
           </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Log Today's Outfit</DialogTitle>
-              </DialogHeader>
+              {!currentPhotoUrl ? (
+                <DialogHeader>
+                  <DialogTitle>Log Today's Outfit</DialogTitle>
+                </DialogHeader>
+              ) : (
+                <DialogHeader>
+                  <DialogTitle>确认选择的单品</DialogTitle>
+                </DialogHeader>
+              )}
               
               {!currentPhotoUrl ? (
                 <div className="space-y-4 py-8">
@@ -388,10 +394,6 @@ export default function OOTDDiary() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <DialogHeader>
-                    <DialogTitle>Confirm Your Outfit</DialogTitle>
-                    <p className="text-sm text-muted-foreground">Select the items you want to include in this outfit</p>
-                  </DialogHeader>
 
                   <div className="space-y-2">
                     <img 
