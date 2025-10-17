@@ -351,47 +351,40 @@ export default function Home() {
                           )}
                           
                           {/* Badge Overlay */}
-                          <div className="absolute top-3 right-3 flex flex-col gap-2">
-                            {item.fromCloset && (
-                              <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-background/95 backdrop-blur-sm border-primary/30 text-primary font-sans">
-                                From Closet
+                          {item.fromCloset && (
+                            <div className="absolute top-2 right-2">
+                              <Badge variant="outline" className="text-[8px] uppercase tracking-wider bg-background/90 backdrop-blur-sm border-primary/30 text-primary font-sans px-1.5 py-0.5">
+                                Closet
                               </Badge>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Product Info */}
-                        <div className="p-5 space-y-3">
-                          {/* Type */}
-                          <div>
-                            <Badge variant="secondary" className="text-[11px] uppercase tracking-wider font-sans font-normal bg-muted">
+                        <div className="p-4 space-y-2">
+                          {/* Name */}
+                          <h4 className="font-serif font-light text-base leading-tight text-foreground truncate">
+                            {item.name}
+                          </h4>
+
+                          {/* Brand & Type */}
+                          <div className="flex items-center justify-between gap-2">
+                            {item.brand && (
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans font-light">
+                                {item.brand}
+                              </p>
+                            )}
+                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider font-sans font-normal bg-muted px-1.5 py-0">
                               {item.type}
                             </Badge>
                           </div>
 
-                          {/* Name */}
-                          <h4 className="font-serif font-light text-xl leading-tight text-foreground">
-                            {item.name}
-                          </h4>
-
-                          {/* Brand */}
-                          {item.brand && (
-                            <p className="text-sm text-muted-foreground uppercase tracking-widest font-sans font-light">
-                              {item.brand}
+                          {/* From Closet indicator at bottom */}
+                          {item.fromCloset && (
+                            <p className="text-[9px] text-primary uppercase tracking-wider font-sans">
+                              From Your Closet
                             </p>
                           )}
-
-                          {/* Style - if provided by AI */}
-                          {item.style && (
-                            <p className="text-xs text-muted-foreground font-sans italic leading-relaxed pt-1">
-                              {item.style}
-                            </p>
-                          )}
-
-                          {/* Description */}
-                          <p className="text-sm text-muted-foreground font-sans leading-relaxed border-t border-border/30 pt-3">
-                            {item.description}
-                          </p>
                         </div>
                       </CardContent>
                     </Card>
