@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, addDays, subDays, addWeeks, subWeeks } from "date-fns";
 import ProductCard from "@/components/ProductCard";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
 import {
@@ -64,6 +64,8 @@ export default function OOTDDiary() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [removingBackground, setRemovingBackground] = useState(false);
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('month');
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     loadRecords();
@@ -528,112 +530,290 @@ export default function OOTDDiary() {
           {/* Calendar Header */}
           <Card className="shadow-soft mb-6">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-serif font-light">
-                  {format(currentMonth, "MMMM yyyy")}
+                  {viewMode === 'month' && format(currentMonth, "MMMM yyyy")}
+                  {viewMode === 'week' && `Week of ${format(startOfWeek(currentDate), "MMM d, yyyy")}`}
+                  {viewMode === 'day' && format(currentDate, "MMMM d, yyyy")}
                 </h2>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setCurrentMonth(new Date())}
-                  >
-                    <CalendarIcon className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
+                <div className="flex gap-4">
+                  {/* View Mode Toggles */}
+                  <div className="flex gap-1 bg-muted rounded-lg p-1">
+                    <Button
+                      variant={viewMode === 'day' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('day')}
+                      className="text-xs"
+                    >
+                      3 Days
+                    </Button>
+                    <Button
+                      variant={viewMode === 'week' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('week')}
+                      className="text-xs"
+                    >
+                      Week
+                    </Button>
+                    <Button
+                      variant={viewMode === 'month' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('month')}
+                      className="text-xs"
+                    >
+                      Month
+                    </Button>
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => {
+                        if (viewMode === 'month') setCurrentMonth(subMonths(currentMonth, 1));
+                        if (viewMode === 'week') setCurrentDate(subWeeks(currentDate, 1));
+                        if (viewMode === 'day') setCurrentDate(subDays(currentDate, 3));
+                      }}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => {
+                        const today = new Date();
+                        setCurrentMonth(today);
+                        setCurrentDate(today);
+                      }}
+                    >
+                      <CalendarIcon className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => {
+                        if (viewMode === 'month') setCurrentMonth(addMonths(currentMonth, 1));
+                        if (viewMode === 'week') setCurrentDate(addWeeks(currentDate, 1));
+                        if (viewMode === 'day') setCurrentDate(addDays(currentDate, 3));
+                      }}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-4">
-            {/* Day Headers */}
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
-                {day}
-              </div>
-            ))}
+          {viewMode === 'month' && (
+            <div className="grid grid-cols-7 gap-4">
+              {/* Day Headers */}
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+                  {day}
+                </div>
+              ))}
 
-            {/* Calendar Days */}
-            {(() => {
-              const monthStart = startOfMonth(currentMonth);
-              const monthEnd = endOfMonth(currentMonth);
-              const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-              
-              // Add padding for days before month starts
-              const startDay = monthStart.getDay();
-              const paddingDays = Array(startDay).fill(null);
-              
-              return [...paddingDays, ...days].map((day, index) => {
-                if (!day) {
-                  return <div key={`empty-${index}`} className="aspect-square" />;
-                }
+              {/* Calendar Days */}
+              {(() => {
+                const monthStart = startOfMonth(currentMonth);
+                const monthEnd = endOfMonth(currentMonth);
+                const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
                 
-                const dayRecords = records.filter(r => isSameDay(new Date(r.date), day));
-                const hasRecord = dayRecords.length > 0;
-                const isToday = isSameDay(day, new Date());
+                const startDay = monthStart.getDay();
+                const paddingDays = Array(startDay).fill(null);
                 
-                return (
-                  <Card 
-                    key={day.toISOString()}
-                    className={`aspect-square overflow-hidden cursor-pointer transition-all hover:shadow-large ${
-                      !isSameMonth(day, currentMonth) ? 'opacity-50' : ''
-                    } ${isToday ? 'ring-2 ring-primary' : ''}`}
-                    onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
-                  >
-                    <CardContent className="p-0 h-full relative">
-                      {hasRecord ? (
-                        <>
-                          <img
-                            src={dayRecords[0].photo_url}
-                            alt={`OOTD ${format(day, 'd')}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
-                          <div className="absolute bottom-2 left-2 right-2">
-                            <div className="text-2xl font-serif font-light text-foreground">
-                              {format(day, 'd')}
+                return [...paddingDays, ...days].map((day, index) => {
+                  if (!day) {
+                    return <div key={`empty-${index}`} className="aspect-square" />;
+                  }
+                  
+                  const dayRecords = records.filter(r => isSameDay(new Date(r.date), day));
+                  const hasRecord = dayRecords.length > 0;
+                  const isToday = isSameDay(day, new Date());
+                  
+                  return (
+                    <Card 
+                      key={day.toISOString()}
+                      className={`aspect-square overflow-hidden cursor-pointer transition-all hover:shadow-large ${
+                        !isSameMonth(day, currentMonth) ? 'opacity-50' : ''
+                      } ${isToday ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
+                    >
+                      <CardContent className="p-0 h-full relative">
+                        {hasRecord ? (
+                          <>
+                            <img
+                              src={dayRecords[0].photo_url}
+                              alt={`OOTD ${format(day, 'd')}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                            <div className="absolute bottom-2 left-2 right-2">
+                              <div className="text-2xl font-serif font-light text-foreground">
+                                {format(day, 'd')}
+                              </div>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteRecordId(dayRecords[0].id);
+                              }}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <span className="text-2xl font-light text-muted-foreground">
+                              {format(day, 'd')}
+                            </span>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteRecordId(dayRecords[0].id);
-                            }}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </>
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <span className="text-2xl font-light text-muted-foreground">
-                            {format(day, 'd')}
-                          </span>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              })()}
+            </div>
+          )}
+
+          {/* Week View */}
+          {viewMode === 'week' && (
+            <div className="grid grid-cols-7 gap-4">
+              {(() => {
+                const weekStart = startOfWeek(currentDate);
+                const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+                
+                return days.map((day) => {
+                  const dayRecords = records.filter(r => isSameDay(new Date(r.date), day));
+                  const hasRecord = dayRecords.length > 0;
+                  const isToday = isSameDay(day, new Date());
+                  
+                  return (
+                    <div key={day.toISOString()} className="space-y-2">
+                      <div className="text-center">
+                        <div className="text-sm font-medium text-muted-foreground">{format(day, 'EEE')}</div>
+                        <div className={`text-lg font-serif font-light ${isToday ? 'text-primary' : ''}`}>
+                          {format(day, 'd')}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              });
-            })()}
-          </div>
+                      </div>
+                      <Card 
+                        className={`aspect-[3/4] overflow-hidden cursor-pointer transition-all hover:shadow-large ${
+                          isToday ? 'ring-2 ring-primary' : ''
+                        }`}
+                        onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
+                      >
+                        <CardContent className="p-0 h-full relative">
+                          {hasRecord ? (
+                            <>
+                              <img
+                                src={dayRecords[0].photo_url}
+                                alt={`OOTD ${format(day, 'MMM d')}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteRecordId(dayRecords[0].id);
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-full bg-muted/30">
+                              <span className="text-4xl font-light text-muted-foreground/30">+</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
+
+          {/* 3-Day View */}
+          {viewMode === 'day' && (
+            <div className="grid grid-cols-3 gap-6">
+              {(() => {
+                const days = [
+                  subDays(currentDate, 1),
+                  currentDate,
+                  addDays(currentDate, 1)
+                ];
+                
+                return days.map((day) => {
+                  const dayRecords = records.filter(r => isSameDay(new Date(r.date), day));
+                  const hasRecord = dayRecords.length > 0;
+                  const isToday = isSameDay(day, new Date());
+                  
+                  return (
+                    <div key={day.toISOString()} className="space-y-3">
+                      <div className="text-center">
+                        <div className="text-sm font-medium text-muted-foreground">{format(day, 'EEEE')}</div>
+                        <div className={`text-2xl font-serif font-light ${isToday ? 'text-primary' : ''}`}>
+                          {format(day, 'MMM d, yyyy')}
+                        </div>
+                      </div>
+                      <Card 
+                        className={`aspect-[3/4] overflow-hidden cursor-pointer transition-all hover:shadow-large ${
+                          isToday ? 'ring-2 ring-primary' : ''
+                        }`}
+                        onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
+                      >
+                        <CardContent className="p-0 h-full relative">
+                          {hasRecord ? (
+                            <>
+                              <img
+                                src={dayRecords[0].photo_url}
+                                alt={`OOTD ${format(day, 'MMM d')}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                              <div className="absolute bottom-4 left-4 right-4">
+                                {dayRecords[0].location && (
+                                  <p className="text-xs text-foreground/90 mb-1">📍 {dayRecords[0].location}</p>
+                                )}
+                                {dayRecords[0].weather && (
+                                  <p className="text-xs text-foreground/90">🌤️ {dayRecords[0].weather}</p>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteRecordId(dayRecords[0].id);
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-full bg-muted/30">
+                              <span className="text-6xl font-light text-muted-foreground/30">+</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          )}
         
         <AlertDialog open={!!deleteRecordId} onOpenChange={(open) => !open && setDeleteRecordId(null)}>
           <AlertDialogContent>
