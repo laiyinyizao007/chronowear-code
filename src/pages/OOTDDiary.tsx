@@ -246,10 +246,7 @@ export default function OOTDDiary() {
     }
   };
 
-  const handleAddRecord = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-
+  const handleSaveRecord = async () => {
     if (!currentPhotoUrl) {
       toast.error("Please upload a photo");
       return;
@@ -267,10 +264,10 @@ export default function OOTDDiary() {
       const recordData = {
         user_id: user.id,
         photo_url: currentPhotoUrl,
-        date: formData.get("date") as string,
-        location: formData.get("location") as string || currentLocation,
-        weather: formData.get("weather") as string || currentWeather,
-        notes: formData.get("notes") as string,
+        date: format(new Date(), "yyyy-MM-dd"),
+        location: currentLocation || "",
+        weather: currentWeather || "",
+        notes: "",
         products: JSON.stringify(selectedProducts),
       };
 
@@ -285,6 +282,7 @@ export default function OOTDDiary() {
       setCurrentWeather("");
       setIdentifiedProducts([]);
       setSelectedProductIndices(new Set());
+      setShowProductConfirmation(false);
       loadRecords();
     } catch (error: any) {
       toast.error("Failed to save OOTD");
@@ -388,14 +386,28 @@ export default function OOTDDiary() {
                     </div>
                   )}
                 </div>
-              ) : showProductConfirmation ? (
+              ) : (
                 <div className="space-y-4">
                   <DialogHeader>
-                    <DialogTitle>Confirm Identified Items</DialogTitle>
+                    <DialogTitle>Confirm Your Outfit</DialogTitle>
                     <p className="text-sm text-muted-foreground">Select the items you want to include in this outfit</p>
                   </DialogHeader>
+
+                  <div className="space-y-2">
+                    <img 
+                      src={currentPhotoUrl} 
+                      alt="Uploaded outfit" 
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                  </div>
+
+                  {currentLocation && (
+                    <div className="text-sm text-muted-foreground">
+                      📍 {currentLocation} {currentWeather && `• ${currentWeather}`}
+                    </div>
+                  )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto p-2">
                     {identifiedProducts.map((product, index) => (
                       <div key={index} className="relative">
                         <div 
@@ -426,66 +438,11 @@ export default function OOTDDiary() {
                     <p className="text-sm text-muted-foreground">
                       {selectedProductIndices.size} of {identifiedProducts.length} items selected
                     </p>
-                    <Button onClick={() => setShowProductConfirmation(false)}>
-                      Continue
+                    <Button onClick={handleSaveRecord}>
+                      Save OOTD
                     </Button>
                   </div>
                 </div>
-              ) : (
-              <form onSubmit={handleAddRecord} className="space-y-4 max-h-[70vh] overflow-y-auto">
-                <div className="space-y-2">
-                  <img 
-                    src={currentPhotoUrl} 
-                    alt="Uploaded outfit" 
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    name="date"
-                    type="date"
-                    defaultValue={format(new Date(), "yyyy-MM-dd")}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input 
-                      id="location" 
-                      name="location" 
-                      placeholder="Auto-detected" 
-                      value={currentLocation}
-                      onChange={(e) => setCurrentLocation(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="weather">Weather</Label>
-                    <Input 
-                      id="weather" 
-                      name="weather" 
-                      placeholder="Auto-detected" 
-                      value={currentWeather}
-                      onChange={(e) => setCurrentWeather(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    name="notes"
-                    placeholder="How did you feel in this outfit?"
-                    rows={3}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={!currentPhotoUrl}>
-                  Save OOTD
-                </Button>
-              </form>
               )}
             </DialogContent>
         </Dialog>
