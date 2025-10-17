@@ -55,6 +55,7 @@ export default function Closet() {
   const [showManualForm, setShowManualForm] = useState(false);
   const [selectedGarment, setSelectedGarment] = useState<Garment | null>(null);
   const [deleteGarmentId, setDeleteGarmentId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     loadGarments();
@@ -102,6 +103,12 @@ export default function Closet() {
         .getPublicUrl(fileName);
 
       setUploadedImageUrl(publicUrl);
+      setUploadingImage(false);
+      
+      // Close dialog and start processing
+      setIsAddDialogOpen(false);
+      setIsProcessing(true);
+      toast.loading("AI is identifying products...", { id: 'processing' });
       
       // Auto-identify products after upload
       await identifyProducts(publicUrl);
@@ -109,6 +116,7 @@ export default function Closet() {
       return publicUrl;
     } catch (error: any) {
       toast.error("Failed to upload image");
+      setIsProcessing(false);
       return null;
     } finally {
       setUploadingImage(false);
@@ -118,8 +126,6 @@ export default function Closet() {
   const identifyProducts = async (imageUrl: string) => {
     setIdentifyingProducts(true);
     try {
-      toast.info("AI is identifying products...");
-      
       const { data: identifyData, error: identifyError } = await supabase.functions.invoke(
         'identify-garment',
         { body: { imageUrl } }
@@ -162,10 +168,16 @@ export default function Closet() {
 
       const products = await Promise.all(productPromises);
       setProductSuggestions(products);
-      toast.success("Products identified! Select one to save.");
+      
+      toast.dismiss('processing');
+      toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified! Select one to save.`);
+      setIsAddDialogOpen(true);
+      setIsProcessing(false);
     } catch (error: any) {
       console.error('Error identifying products:', error);
+      toast.dismiss('processing');
       toast.error("Failed to identify products");
+      setIsProcessing(false);
     } finally {
       setIdentifyingProducts(false);
     }
@@ -664,6 +676,13 @@ export default function Closet() {
           </DialogContent>
         </Dialog>
         </>
+      )}
+      
+      {isProcessing && (
+        <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 flex items-center gap-3 z-50">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <span className="text-sm font-medium">Processing your garment...</span>
+        </div>
       )}
     </div>
   );
