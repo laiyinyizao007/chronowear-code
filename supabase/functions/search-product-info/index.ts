@@ -100,9 +100,10 @@ Important: The imageUrl must be a real, working URL to an actual product image, 
             const safe = (s: string) => s.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
             const path = `${safe(brand)}/${safe(model)}-${Date.now()}.${ext}`;
             
+            const uint8 = new Uint8Array(arrayBuffer);
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('product-images')
-              .upload(path, arrayBuffer, {
+              .upload(path, uint8, {
                 contentType,
                 upsert: false
               });
