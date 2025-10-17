@@ -20,38 +20,8 @@ serve(async (req) => {
 
     console.log('Searching product info for:', brand, model);
 
-    // Generate product image using AI
-    const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: [
-          {
-            role: 'user',
-            content: `Generate a high-quality product photo of ${brand} ${model} on a clean white background, professional e-commerce style photography`
-          }
-        ],
-        modalities: ["image", "text"]
-      }),
-    });
-
-    let imageUrl = `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`; // fallback
-    
-    if (imageResponse.ok) {
-      const imageData = await imageResponse.json();
-      const generatedImage = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      if (generatedImage) {
-        imageUrl = generatedImage;
-        console.log('Generated product image successfully');
-      }
-    }
-
-    // Get product information
-    const infoResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Use AI to search for real product information and image URLs
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -62,38 +32,70 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: `Provide detailed product information for ${brand} ${model}. Return ONLY valid JSON in this exact format: {"price": "$XX", "style": "description", "material": "material type", "color": "primary color", "availability": "In Stock"}`
+            content: `Search for the product "${brand} ${model}" and provide:
+1. A real product image URL (from official website, shopping sites, or product databases)
+2. Current retail price
+3. Style description
+4. Material information
+5. Available colors
+6. Current availability status
+
+Return ONLY valid JSON in this exact format:
+{
+  "imageUrl": "https://real-product-image-url.com/image.jpg",
+  "price": "$XXX",
+  "style": "style description",
+  "material": "material type",
+  "color": "color name",
+  "availability": "In Stock"
+}
+
+Important: The imageUrl must be a real, working URL to an actual product image, not a placeholder.`
           }
         ],
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     });
 
-    let productInfo = {
-      imageUrl,
-      price: "$129",
-      style: "Modern casual style",
-      material: "Cotton blend",
-      color: "Various",
-      availability: "In Stock"
-    };
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI API error:', response.status, errorText);
+      throw new Error(`AI API error: ${response.status}`);
+    }
 
-    if (infoResponse.ok) {
-      const data = await infoResponse.json();
-      const content = data.choices?.[0]?.message?.content;
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
 
-      if (content) {
-        console.log('AI info response:', content);
-        try {
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsedInfo = JSON.parse(jsonMatch[0]);
-            productInfo = { ...productInfo, ...parsedInfo, imageUrl };
-          }
-        } catch (parseError) {
-          console.error('Failed to parse product info:', parseError);
-        }
+    if (!content) {
+      throw new Error('No content in AI response');
+    }
+
+    console.log('AI response:', content);
+
+    let productInfo;
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        productInfo = JSON.parse(jsonMatch[0]);
+      } else {
+        productInfo = JSON.parse(content);
       }
+      
+      // Validate image URL
+      if (!productInfo.imageUrl || productInfo.imageUrl.includes('placeholder') || !productInfo.imageUrl.startsWith('http')) {
+        console.log('Invalid or placeholder image URL, using fallback');
+        productInfo.imageUrl = `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`;
+      }
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', content);
+      productInfo = {
+        imageUrl: `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`,
+        price: "$129",
+        style: "Modern casual style",
+        material: "Cotton blend",
+        color: "Various",
+        availability: "In Stock"
+      };
     }
 
     return new Response(
