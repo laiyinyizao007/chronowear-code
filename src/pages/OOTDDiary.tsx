@@ -56,6 +56,7 @@ export default function OOTDDiary() {
   const [currentWeather, setCurrentWeather] = useState("");
   const [identifiedProducts, setIdentifiedProducts] = useState<IdentifiedProduct[]>([]);
   const [selectedProductIndices, setSelectedProductIndices] = useState<Set<number>>(new Set());
+  const [showProductConfirmation, setShowProductConfirmation] = useState(false);
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<OOTDRecord | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -224,6 +225,7 @@ export default function OOTDDiary() {
       
       if (products.length > 0) {
         toast.success(`Identified ${products.length} item${products.length > 1 ? 's' : ''}!`);
+        setShowProductConfirmation(true);
       } else {
         toast.info("No items identified");
       }
@@ -341,6 +343,7 @@ export default function OOTDDiary() {
             setCurrentWeather("");
             setIdentifiedProducts([]);
             setSelectedProductIndices(new Set());
+            setShowProductConfirmation(false);
           }
         }}>
           <DialogTrigger asChild>
@@ -385,20 +388,14 @@ export default function OOTDDiary() {
                     </div>
                   )}
                 </div>
-              ) : (
-              <form onSubmit={handleAddRecord} className="space-y-4 max-h-[70vh] overflow-y-auto">
-                <div className="space-y-2">
-                  <img 
-                    src={currentPhotoUrl} 
-                    alt="Uploaded outfit" 
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                </div>
-
-              {identifiedProducts.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Identified Items - Select items to save with this outfit</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
+              ) : showProductConfirmation ? (
+                <div className="space-y-4">
+                  <DialogHeader>
+                    <DialogTitle>Confirm Identified Items</DialogTitle>
+                    <p className="text-sm text-muted-foreground">Select the items you want to include in this outfit</p>
+                  </DialogHeader>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-2">
                     {identifiedProducts.map((product, index) => (
                       <div key={index} className="relative">
                         <div 
@@ -424,11 +421,25 @@ export default function OOTDDiary() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {selectedProductIndices.size} of {identifiedProducts.length} items selected
-                  </p>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      {selectedProductIndices.size} of {identifiedProducts.length} items selected
+                    </p>
+                    <Button onClick={() => setShowProductConfirmation(false)}>
+                      Continue
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ) : (
+              <form onSubmit={handleAddRecord} className="space-y-4 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-2">
+                  <img 
+                    src={currentPhotoUrl} 
+                    alt="Uploaded outfit" 
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="date">Date</Label>
