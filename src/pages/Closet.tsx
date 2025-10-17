@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X } from "lucide-react";
 import {
   AlertDialog,
@@ -91,6 +92,28 @@ export default function Closet() {
       return true;
     });
   }, [garments, filters]);
+
+  // Get active filter tags
+  const activeFilterTags = useMemo(() => {
+    const tags: Array<{ category: keyof typeof filters; value: string; label: string }> = [];
+    
+    filters.types.forEach(type => tags.push({ category: 'types', value: type, label: type }));
+    filters.colors.forEach(color => tags.push({ category: 'colors', value: color, label: color }));
+    filters.brands.forEach(brand => tags.push({ category: 'brands', value: brand, label: brand }));
+    filters.seasons.forEach(season => tags.push({ category: 'seasons', value: season, label: season }));
+    
+    return tags;
+  }, [filters]);
+
+  const hasActiveFilters = activeFilterTags.length > 0;
+
+  // Remove individual filter tag
+  const removeFilterTag = (category: keyof typeof filters, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [category]: prev[category].filter((item: string) => item !== value)
+    }));
+  };
 
   useEffect(() => {
     loadGarments();
@@ -327,29 +350,36 @@ export default function Closet() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">My Closet</h1>
-          <p className="text-muted-foreground">
-            {filteredGarments.length} {filteredGarments.length === garments.length ? 'items' : `of ${garments.length} items`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setIsFilterOpen(true)}
-          >
-            <Filter className="w-4 h-4" />
-          </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Garment
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">My Closet</h1>
+            <p className="text-muted-foreground">
+              {filteredGarments.length} {filteredGarments.length === garments.length ? 'items' : `of ${garments.length} items`}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant={hasActiveFilters ? "default" : "outline"}
+              size="icon"
+              onClick={() => setIsFilterOpen(true)}
+              className="relative"
+            >
+              <Filter className="w-4 h-4" />
+              {hasActiveFilters && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                  {activeFilterTags.length}
+                </span>
+              )}
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Garment
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   <div className="flex items-center gap-2">
@@ -587,9 +617,32 @@ export default function Closet() {
                   </div>
                 </div>
               )}
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
+
+        {/* Active Filter Tags */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-muted-foreground">Active filters:</span>
+            {activeFilterTags.map((tag, index) => (
+              <Badge
+                key={`${tag.category}-${tag.value}-${index}`}
+                variant="secondary"
+                className="gap-1 pr-1"
+              >
+                {tag.label}
+                <button
+                  onClick={() => removeFilterTag(tag.category, tag.value)}
+                  className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {garments.length === 0 ? (
