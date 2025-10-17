@@ -56,6 +56,7 @@ export default function Closet() {
   const [selectedGarment, setSelectedGarment] = useState<Garment | null>(null);
   const [deleteGarmentId, setDeleteGarmentId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   useEffect(() => {
     loadGarments();
@@ -81,9 +82,15 @@ export default function Closet() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (isProcessing) {
+      toast.error("Please wait for the current processing to complete");
+      return;
+    }
+
     setUploadingImage(true);
     setProductSuggestions([]);
     setSelectedProduct(null);
+    setProcessingProgress(0);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -92,6 +99,7 @@ export default function Closet() {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
+      setProcessingProgress(20);
       const { error: uploadError } = await supabase.storage
         .from("garments")
         .upload(fileName, file);
@@ -104,11 +112,11 @@ export default function Closet() {
 
       setUploadedImageUrl(publicUrl);
       setUploadingImage(false);
+      setProcessingProgress(40);
       
       // Close dialog and start processing
       setIsAddDialogOpen(false);
       setIsProcessing(true);
-      toast.loading("AI is identifying products...", { id: 'processing' });
       
       // Auto-identify products after upload
       await identifyProducts(publicUrl);
@@ -117,6 +125,7 @@ export default function Closet() {
     } catch (error: any) {
       toast.error("Failed to upload image");
       setIsProcessing(false);
+      setProcessingProgress(0);
       return null;
     } finally {
       setUploadingImage(false);
@@ -125,6 +134,7 @@ export default function Closet() {
 
   const identifyProducts = async (imageUrl: string) => {
     setIdentifyingProducts(true);
+    setProcessingProgress(50);
     try {
       const { data: identifyData, error: identifyError } = await supabase.functions.invoke(
         'identify-garment',
@@ -134,6 +144,7 @@ export default function Closet() {
       if (identifyError) throw identifyError;
 
       const results = identifyData?.results || [];
+      setProcessingProgress(70);
       
       // Fetch detailed product info for each result
       const productPromises = results.map(async (result: any) => {
@@ -168,16 +179,17 @@ export default function Closet() {
 
       const products = await Promise.all(productPromises);
       setProductSuggestions(products);
+      setProcessingProgress(100);
       
-      toast.dismiss('processing');
-      toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified! Select one to save.`);
+      toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified!`);
       setIsAddDialogOpen(true);
       setIsProcessing(false);
+      setProcessingProgress(0);
     } catch (error: any) {
       console.error('Error identifying products:', error);
-      toast.dismiss('processing');
       toast.error("Failed to identify products");
       setIsProcessing(false);
+      setProcessingProgress(0);
     } finally {
       setIdentifyingProducts(false);
     }
@@ -679,9 +691,17 @@ export default function Closet() {
       )}
       
       {isProcessing && (
-        <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 flex items-center gap-3 z-50">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          <span className="text-sm font-medium">Processing your garment...</span>
+        <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 w-80 z-50">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="text-sm font-medium">Processing garment...</span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+            <div 
+              className="bg-primary h-full transition-all duration-300"
+              style={{ width: `${processingProgress}%` }}
+            ></div>
+          </div>
         </div>
       )}
     </div>
