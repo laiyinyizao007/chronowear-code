@@ -49,6 +49,8 @@ ${garments && garments.length > 0
   ? 'Based on the available garments, suggest different outfit combinations. If the closet is missing key items for this weather, mention what should be added. Try to create diverse looks (casual, smart casual, sporty, etc.) from the available items.'
   : 'Suggest different outfit combinations that would be ideal for this weather (user can add them to their closet later). Create diverse looks suitable for different occasions.'}
 
+IMPORTANT: For each item, you MUST provide a real brand and specific model/product name that can be searched online.
+
 Return your response in JSON format with this structure:
 {
   "outfits": [
@@ -59,6 +61,8 @@ Return your response in JSON format with this structure:
         {
           "type": "top/bottom/shoes/outerwear/accessory",
           "name": "Item name",
+          "brand": "Real brand name (e.g., Uniqlo, Zara, H&M, Nike)",
+          "model": "Specific product name or style name",
           "description": "Why this item works",
           "fromCloset": true/false
         }
@@ -68,7 +72,12 @@ Return your response in JSON format with this structure:
   ]
 }
 
-Generate 3-5 complete outfit combinations, each with 4-6 items. Make each outfit distinct in style and vibe. Be specific about colors, materials, and styles.`;
+Generate 3-5 complete outfit combinations, each with 4-6 items. Make each outfit distinct in style and vibe. 
+CRITICAL: Use real, searchable brand names and product names for every item. For example:
+- "Uniqlo Supima Cotton T-Shirt"
+- "Levi's 501 Original Jeans"
+- "Nike Air Force 1 Sneakers"
+- "Zara Oversized Blazer"`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
