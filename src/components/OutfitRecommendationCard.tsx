@@ -35,18 +35,28 @@ export default function OutfitRecommendationCard({
       setLoadingImages(true);
       const updatedItems = await Promise.all(
         items.map(async (item) => {
-          if (item.brand && item.model) {
-            try {
-              const { data, error } = await supabase.functions.invoke('search-product-info', {
-                body: { brand: item.brand, model: item.model }
-              });
-              
-              if (!error && data?.imageUrl) {
-                return { ...item, imageUrl: data.imageUrl };
-              }
-            } catch (error) {
-              console.error(`Failed to fetch image for ${item.brand} ${item.model}:`, error);
+          // Skip if already has image or missing brand/model
+          if (item.imageUrl || !item.brand || !item.model) {
+            return item;
+          }
+
+          try {
+            console.log(`Fetching image for: ${item.brand} ${item.model}`);
+            const { data, error } = await supabase.functions.invoke('search-product-info', {
+              body: { brand: item.brand, model: item.model }
+            });
+            
+            if (error) {
+              console.error(`Error fetching product info for ${item.brand} ${item.model}:`, error);
+              return item;
             }
+
+            if (data?.imageUrl) {
+              console.log(`Got image URL for ${item.brand} ${item.model}:`, data.imageUrl);
+              return { ...item, imageUrl: data.imageUrl };
+            }
+          } catch (error) {
+            console.error(`Failed to fetch image for ${item.brand} ${item.model}:`, error);
           }
           return item;
         })
@@ -55,7 +65,9 @@ export default function OutfitRecommendationCard({
       setLoadingImages(false);
     };
 
-    fetchProductImages();
+    if (items.length > 0) {
+      fetchProductImages();
+    }
   }, [items]);
 
   return (
@@ -84,15 +96,22 @@ export default function OutfitRecommendationCard({
                   ) : item.imageUrl ? (
                     <img 
                       src={item.imageUrl} 
-                      alt={item.name}
+                      alt={`${item.brand} ${item.model}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).parentElement!.innerHTML = `
-                          <svg class="w-5 h-5 text-primary" stroke-width="1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                          </svg>
-                        `;
+                        const target = e.target as HTMLImageElement;
+                        const parent = target.parentElement;
+                        if (parent) {
+                          target.style.display = 'none';
+                          parent.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center">
+                              <svg class="w-5 h-5 text-primary" stroke-width="1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                              </svg>
+                            </div>
+                          `;
+                        }
                       }}
                     />
                   ) : (

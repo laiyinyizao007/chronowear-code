@@ -10,7 +10,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.search-product-info]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-virtual-tryon]
 verify_jwt = true
