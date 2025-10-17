@@ -90,7 +90,7 @@ export default function Home() {
       // Fetch user's garments
       const { data: garments } = await supabase
         .from('garments')
-        .select('type, color, material, brand');
+        .select('type, color, material, brand, image_url');
 
       // Generate AI recommendation
       setRecommendationLoading(true);
@@ -130,11 +130,25 @@ export default function Home() {
     }
   };
 
-  const enrichItemsWithImages = async (items: any[]) => {
+  const enrichItemsWithImages = async (items: any[], garments: any[]) => {
     setDialogLoadingImages(true);
     const updated = await Promise.all(
       (items || []).map(async (item) => {
+        // First check if item is from closet and has matching garment
+        if (item.fromCloset && garments?.length > 0) {
+          const matchingGarment = garments.find(g => 
+            g.type?.toLowerCase() === item.type?.toLowerCase() &&
+            g.brand?.toLowerCase() === item.brand?.toLowerCase()
+          );
+          if (matchingGarment?.image_url) {
+            return { ...item, imageUrl: matchingGarment.image_url };
+          }
+        }
+        
+        // If already has image or missing info, return as is
         if (item.imageUrl || !item.brand || !item.model) return item;
+        
+        // Otherwise fetch from search API
         try {
           const { data, error } = await supabase.functions.invoke('search-product-info', {
             body: { brand: item.brand, model: item.model }
@@ -148,6 +162,49 @@ export default function Home() {
     );
     setDialogLoadingImages(false);
     return updated;
+  };
+
+  const loadMoreOutfits = async () => {
+    if (!weather) return;
+    
+    try {
+      setRecommendationLoading(true);
+      
+      // Fetch user's garments
+      const { data: garments } = await supabase
+        .from('garments')
+        .select('type, color, material, brand, image_url');
+
+      // Generate new AI recommendation
+      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+        'generate-outfit-recommendation',
+        {
+          body: {
+            temperature: weather.current.temperature,
+            weatherDescription: weather.current.weatherDescription,
+            uvIndex: weather.current.uvIndex,
+            garments: garments || []
+          }
+        }
+      );
+
+      if (recError) throw recError;
+      setOutfits(recommendationData.outfits || []);
+      
+      toast({
+        title: "New Outfits Generated",
+        description: "Fresh outfit recommendations based on current weather!",
+      });
+    } catch (error: any) {
+      console.error('Error generating new outfits:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate new outfits",
+        variant: "destructive",
+      });
+    } finally {
+      setRecommendationLoading(false);
+    }
   };
 
   const handleAddToCloset = async (item: any, index: number) => {
@@ -287,7 +344,10 @@ export default function Home() {
                       onClick={async () => {
                         setSelectedOutfit(outfit);
                         setShowOutfitDialog(true);
-                        const updatedItems = await enrichItemsWithImages(outfit.items || []);
+                        const { data: garments } = await supabase
+                          .from('garments')
+                          .select('type, color, material, brand, image_url');
+                        const updatedItems = await enrichItemsWithImages(outfit.items || [], garments || []);
                         setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
                       }}
                     />
@@ -299,7 +359,7 @@ export default function Home() {
                     title=""
                     description=""
                     isMoreCard
-                    onClick={() => navigate("/stylist")}
+                    onClick={loadMoreOutfits}
                   />
                 </CarouselItem>
               </CarouselContent>
