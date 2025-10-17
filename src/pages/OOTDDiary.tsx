@@ -57,6 +57,7 @@ export default function OOTDDiary() {
   const [identifiedProducts, setIdentifiedProducts] = useState<IdentifiedProduct[]>([]);
   const [selectedProductIndices, setSelectedProductIndices] = useState<Set<number>>(new Set());
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<OOTDRecord | null>(null);
 
   useEffect(() => {
     loadRecords();
@@ -446,7 +447,11 @@ export default function OOTDDiary() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {records.map((record) => (
-            <Card key={record.id} className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow">
+            <Card 
+              key={record.id} 
+              className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
+              onClick={() => setSelectedRecord(record)}
+            >
               <div className="aspect-[3/4] relative bg-muted">
                 <img
                   src={record.photo_url}
@@ -457,7 +462,10 @@ export default function OOTDDiary() {
                   variant="ghost"
                   size="icon"
                   className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-                  onClick={() => setDeleteRecordId(record.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteRecordId(record.id);
+                  }}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -522,6 +530,84 @@ export default function OOTDDiary() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={!!selectedRecord} onOpenChange={(open) => !open && setSelectedRecord(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>OOTD Details</DialogTitle>
+            </DialogHeader>
+            {selectedRecord && (
+              <div className="space-y-4">
+                <img 
+                  src={selectedRecord.photo_url} 
+                  alt={`OOTD from ${selectedRecord.date}`}
+                  className="w-full max-h-[50vh] object-contain rounded-lg"
+                />
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">{format(new Date(selectedRecord.date), "MMMM d, yyyy")}</h3>
+                  {selectedRecord.location && (
+                    <p className="text-sm text-muted-foreground">📍 {selectedRecord.location}</p>
+                  )}
+                  {selectedRecord.weather && (
+                    <p className="text-sm text-muted-foreground">🌤️ {selectedRecord.weather}</p>
+                  )}
+                  {selectedRecord.notes && (
+                    <p className="text-sm text-muted-foreground">{selectedRecord.notes}</p>
+                  )}
+                </div>
+                {(() => {
+                  try {
+                    const products = typeof selectedRecord.products === 'string' 
+                      ? JSON.parse(selectedRecord.products) 
+                      : selectedRecord.products;
+                    if (Array.isArray(products) && products.length > 0) {
+                      return (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Identified Items ({products.length})</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {products.map((product: IdentifiedProduct, index: number) => (
+                              <Card key={index} className="p-4">
+                                <div className="flex gap-4">
+                                  {product.imageUrl && (
+                                    <img 
+                                      src={product.imageUrl} 
+                                      alt={product.model}
+                                      className="w-24 h-24 object-cover rounded"
+                                    />
+                                  )}
+                                  <div className="flex-1 space-y-1">
+                                    <h5 className="font-semibold">{product.brand}</h5>
+                                    <p className="text-sm text-muted-foreground">{product.model}</p>
+                                    <p className="text-sm text-muted-foreground">{product.type}</p>
+                                    {product.color && (
+                                      <p className="text-xs text-muted-foreground">Color: {product.color}</p>
+                                    )}
+                                    {product.material && (
+                                      <p className="text-xs text-muted-foreground">Material: {product.material}</p>
+                                    )}
+                                    {product.price && (
+                                      <p className="text-sm font-medium text-primary">{product.price}</p>
+                                    )}
+                                    {product.availability && (
+                                      <p className="text-xs text-muted-foreground">{product.availability}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                  } catch (e) {
+                    return null;
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
         </>
       )}
     </div>
