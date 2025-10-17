@@ -26,7 +26,9 @@ export type Database = {
           season: string | null
           type: string
           updated_at: string | null
+          usage_count: number | null
           user_id: string
+          washing_frequency: string | null
         }
         Insert: {
           brand?: string | null
@@ -39,7 +41,9 @@ export type Database = {
           season?: string | null
           type: string
           updated_at?: string | null
+          usage_count?: number | null
           user_id: string
+          washing_frequency?: string | null
         }
         Update: {
           brand?: string | null
@@ -52,7 +56,9 @@ export type Database = {
           season?: string | null
           type?: string
           updated_at?: string | null
+          usage_count?: number | null
           user_id?: string
+          washing_frequency?: string | null
         }
         Relationships: []
       }
