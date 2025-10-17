@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import OutfitCard from "@/components/OutfitCard";
+import OutfitRecommendationCard from "@/components/OutfitRecommendationCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -199,37 +200,41 @@ export default function Home() {
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
         ) : recommendation ? (
-          <Card 
-            className="shadow-medium hover:shadow-large transition-all cursor-pointer p-6"
-            onClick={() => {
-              setSelectedOutfit(recommendation);
-              setShowOutfitDialog(true);
-            }}
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-accent" />
-                  Today's Recommended Outfit
-                </h3>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          <div className="relative -mx-4 px-4">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: false,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-4">
+                <CarouselItem className="pl-4 basis-auto">
+                  <OutfitRecommendationCard
+                    items={recommendation.items || []}
+                    summary={recommendation.summary || ""}
+                    onClick={() => {
+                      setSelectedOutfit(recommendation);
+                      setShowOutfitDialog(true);
+                    }}
+                  />
+                </CarouselItem>
+                <CarouselItem className="pl-4 basis-auto">
+                  <OutfitCard
+                    imageUrl=""
+                    title=""
+                    description=""
+                    isMoreCard
+                    onClick={() => navigate("/stylist")}
+                  />
+                </CarouselItem>
+              </CarouselContent>
+              <div className="flex gap-2 justify-center mt-6">
+                <CarouselPrevious className="static translate-y-0" />
+                <CarouselNext className="static translate-y-0" />
               </div>
-              <p className="text-muted-foreground">{recommendation.summary}</p>
-              <div className="flex flex-wrap gap-2">
-                {recommendation.items?.slice(0, 4).map((item: any, index: number) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    <Shirt className="w-3 h-3 mr-1" />
-                    {item.name}
-                  </Badge>
-                ))}
-                {recommendation.items?.length > 4 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{recommendation.items.length - 4} more
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </Card>
+            </Carousel>
+          </div>
         ) : null}
       </div>
 
