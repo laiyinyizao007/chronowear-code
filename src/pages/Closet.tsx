@@ -691,7 +691,7 @@ export default function Closet() {
       )}
       
       {isProcessing && (
-        <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg p-4 w-80 z-50">
+        <div className="fixed bottom-24 right-4 bg-background border rounded-lg shadow-lg p-4 w-80 z-[60]">
           <div className="flex items-center gap-3 mb-2">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             <span className="text-sm font-medium">Processing garment...</span>
