@@ -30,7 +30,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [recommendation, setRecommendation] = useState<any>(null);
+  const [outfits, setOutfits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
@@ -105,7 +105,7 @@ export default function Home() {
       );
 
       if (recError) throw recError;
-      setRecommendation(recommendationData);
+      setOutfits(recommendationData.outfits || []);
 
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -199,7 +199,7 @@ export default function Home() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
-        ) : recommendation ? (
+        ) : outfits.length > 0 ? (
           <div className="relative -mx-4 px-4">
             <Carousel
               opts={{
@@ -209,16 +209,19 @@ export default function Home() {
               className="w-full"
             >
               <CarouselContent className="-ml-4">
-                <CarouselItem className="pl-4 basis-auto">
-                  <OutfitRecommendationCard
-                    items={recommendation.items || []}
-                    summary={recommendation.summary || ""}
-                    onClick={() => {
-                      setSelectedOutfit(recommendation);
-                      setShowOutfitDialog(true);
-                    }}
-                  />
-                </CarouselItem>
+                {outfits.map((outfit, index) => (
+                  <CarouselItem key={index} className="pl-4 basis-auto">
+                    <OutfitRecommendationCard
+                      title={outfit.title}
+                      items={outfit.items || []}
+                      summary={outfit.summary || ""}
+                      onClick={() => {
+                        setSelectedOutfit(outfit);
+                        setShowOutfitDialog(true);
+                      }}
+                    />
+                  </CarouselItem>
+                ))}
                 <CarouselItem className="pl-4 basis-auto">
                   <OutfitCard
                     imageUrl=""

@@ -38,7 +38,7 @@ When recommending outfits, consider:
 
 Provide practical, stylish recommendations that keep the user comfortable and protected.`;
 
-    const userPrompt = `Please recommend an outfit for today's weather conditions:
+    const userPrompt = `Please recommend 3-5 different complete outfit combinations for today's weather conditions:
 - Temperature: ${temperature}°F
 - Weather: ${weatherDescription}
 - UV Index: ${uvIndex} (${uvIndex < 3 ? 'Low' : uvIndex < 6 ? 'Moderate' : uvIndex < 8 ? 'High' : 'Very High'})
@@ -46,24 +46,29 @@ Provide practical, stylish recommendations that keep the user comfortable and pr
 ${garmentInventory}
 
 ${garments && garments.length > 0 
-  ? 'Based on the available garments, suggest a complete outfit combination. If the closet is missing key items for this weather, mention what should be added.'
-  : 'Suggest what types of garments would be ideal for this weather (user can add them to their closet later).'}
+  ? 'Based on the available garments, suggest different outfit combinations. If the closet is missing key items for this weather, mention what should be added. Try to create diverse looks (casual, smart casual, sporty, etc.) from the available items.'
+  : 'Suggest different outfit combinations that would be ideal for this weather (user can add them to their closet later). Create diverse looks suitable for different occasions.'}
 
 Return your response in JSON format with this structure:
 {
-  "summary": "Brief explanation (2-3 sentences) why this outfit works for the weather",
-  "items": [
+  "outfits": [
     {
-      "type": "top/bottom/shoes/outerwear/accessory",
-      "name": "Item name",
-      "description": "Why this item works",
-      "fromCloset": true/false
+      "title": "Style name (e.g., Casual Chic, Smart Office, Weekend Sporty)",
+      "summary": "Brief 1-2 sentence explanation why this outfit works for the weather",
+      "items": [
+        {
+          "type": "top/bottom/shoes/outerwear/accessory",
+          "name": "Item name",
+          "description": "Why this item works",
+          "fromCloset": true/false
+        }
+      ],
+      "tips": ["1-2 styling or weather protection tips"]
     }
-  ],
-  "tips": ["Additional styling or weather protection tips"]
+  ]
 }
 
-Include 4-6 items total for a complete outfit. Be specific about colors, materials, and styles.`;
+Generate 3-5 complete outfit combinations, each with 4-6 items. Make each outfit distinct in style and vibe. Be specific about colors, materials, and styles.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

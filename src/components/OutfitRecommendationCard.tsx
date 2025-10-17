@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shirt, ChevronRight } from "lucide-react";
+import { Shirt, ChevronRight, Sparkles } from "lucide-react";
 
 interface OutfitItem {
   type: string;
@@ -10,12 +10,14 @@ interface OutfitItem {
 }
 
 interface OutfitRecommendationCardProps {
+  title: string;
   items: OutfitItem[];
   summary: string;
   onClick: () => void;
 }
 
 export default function OutfitRecommendationCard({
+  title,
   items,
   summary,
   onClick,
@@ -26,6 +28,12 @@ export default function OutfitRecommendationCard({
       onClick={onClick}
     >
       <div className="p-4 space-y-4">
+        {/* Outfit Title */}
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <Sparkles className="w-5 h-5 text-accent" />
+          <h3 className="font-semibold text-lg">{title}</h3>
+        </div>
+
         {/* Outfit Items - Vertical Layout */}
         <div className="space-y-3">
           {items.map((item, index) => (
