@@ -64,7 +64,7 @@ export default function OOTDDiary() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [removingBackground, setRemovingBackground] = useState(false);
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('month');
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
@@ -745,7 +745,7 @@ export default function OOTDDiary() {
 
           {/* 3-Day View */}
           {viewMode === 'day' && (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-4">
               {(() => {
                 const days = [
                   subDays(currentDate, 1),
@@ -759,56 +759,71 @@ export default function OOTDDiary() {
                   const isToday = isSameDay(day, new Date());
                   
                   return (
-                    <div key={day.toISOString()} className="space-y-3">
-                      <div className="text-center">
-                        <div className="text-sm font-medium text-muted-foreground">{format(day, 'EEEE')}</div>
-                        <div className={`text-2xl font-serif font-light ${isToday ? 'text-primary' : ''}`}>
-                          {format(day, 'MMM d, yyyy')}
-                        </div>
-                      </div>
-                      <Card 
-                        className={`aspect-[3/4] overflow-hidden cursor-pointer transition-all hover:shadow-large ${
-                          isToday ? 'ring-2 ring-primary' : ''
-                        }`}
-                        onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
-                      >
-                        <CardContent className="p-0 h-full relative">
-                          {hasRecord ? (
-                            <>
-                              <img
-                                src={dayRecords[0].photo_url}
-                                alt={`OOTD ${format(day, 'MMM d')}`}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-                              <div className="absolute bottom-4 left-4 right-4">
-                                {dayRecords[0].location && (
-                                  <p className="text-xs text-foreground/90 mb-1">📍 {dayRecords[0].location}</p>
-                                )}
-                                {dayRecords[0].weather && (
-                                  <p className="text-xs text-foreground/90">🌤️ {dayRecords[0].weather}</p>
-                                )}
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteRecordId(dayRecords[0].id);
-                                }}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="flex items-center justify-center h-full bg-muted/30">
-                              <span className="text-6xl font-light text-muted-foreground/30">+</span>
+                    <Card 
+                      key={day.toISOString()}
+                      className={`overflow-hidden cursor-pointer transition-all hover:shadow-large ${
+                        isToday ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
+                    >
+                      <CardContent className="p-0">
+                        <div className="flex h-32">
+                          {/* Date Section */}
+                          <div className="w-32 flex flex-col items-center justify-center bg-muted border-r">
+                            <div className="text-sm font-medium text-muted-foreground">{format(day, 'EEE')}</div>
+                            <div className={`text-3xl font-serif font-light ${isToday ? 'text-primary' : ''}`}>
+                              {format(day, 'd')}
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </div>
+                            <div className="text-xs text-muted-foreground">{format(day, 'MMM yyyy')}</div>
+                          </div>
+                          
+                          {/* Content Section */}
+                          <div className="flex-1 relative">
+                            {hasRecord ? (
+                              <>
+                                <div className="flex h-full">
+                                  <div className="w-32 h-full">
+                                    <img
+                                      src={dayRecords[0].photo_url}
+                                      alt={`OOTD ${format(day, 'MMM d')}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="flex-1 p-4 flex flex-col justify-between">
+                                    <div>
+                                      {dayRecords[0].location && (
+                                        <p className="text-sm mb-1">📍 {dayRecords[0].location}</p>
+                                      )}
+                                      {dayRecords[0].weather && (
+                                        <p className="text-sm text-muted-foreground">🌤️ {dayRecords[0].weather}</p>
+                                      )}
+                                      {dayRecords[0].notes && (
+                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{dayRecords[0].notes}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteRecordId(dayRecords[0].id);
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="flex items-center justify-center h-full">
+                                <span className="text-4xl font-light text-muted-foreground/30">+</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 });
               })()}
@@ -840,29 +855,44 @@ export default function OOTDDiary() {
         </AlertDialog>
 
         <Dialog open={!!selectedRecord} onOpenChange={(open) => !open && setSelectedRecord(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>OOTD Details</DialogTitle>
+              <DialogTitle className="flex items-center gap-2 text-3xl font-serif font-light">
+                <Camera className="w-7 h-7 text-accent" strokeWidth={1.5} />
+                OOTD Details
+              </DialogTitle>
             </DialogHeader>
             {selectedRecord && (
-              <div className="space-y-4">
-                <img 
-                  src={selectedRecord.photo_url} 
-                  alt={`OOTD from ${selectedRecord.date}`}
-                  className="w-full max-h-[50vh] object-contain rounded-lg"
-                />
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">{format(new Date(selectedRecord.date), "MMMM d, yyyy")}</h3>
-                  {selectedRecord.location && (
-                    <p className="text-sm text-muted-foreground">📍 {selectedRecord.location}</p>
-                  )}
-                  {selectedRecord.weather && (
-                    <p className="text-sm text-muted-foreground">🌤️ {selectedRecord.weather}</p>
-                  )}
-                  {selectedRecord.notes && (
-                    <p className="text-sm text-muted-foreground">{selectedRecord.notes}</p>
-                  )}
+              <div className="space-y-8 mt-6">
+                {/* Summary Info */}
+                <div className="bg-secondary/30 rounded-sm p-6">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-serif font-light">{format(new Date(selectedRecord.date), "MMMM d, yyyy")}</h3>
+                    {selectedRecord.location && (
+                      <p className="text-base text-muted-foreground">📍 {selectedRecord.location}</p>
+                    )}
+                    {selectedRecord.weather && (
+                      <p className="text-base text-muted-foreground">🌤️ {selectedRecord.weather}</p>
+                    )}
+                    {selectedRecord.notes && (
+                      <p className="text-base leading-relaxed text-foreground/80 font-sans mt-4">{selectedRecord.notes}</p>
+                    )}
+                  </div>
                 </div>
+
+                {/* Full Body Photo */}
+                <div className="space-y-4">
+                  <h3 className="font-serif font-light text-2xl tracking-wide">Full Outfit</h3>
+                  <div className="max-w-md mx-auto">
+                    <img 
+                      src={selectedRecord.photo_url} 
+                      alt={`OOTD from ${selectedRecord.date}`}
+                      className="w-full object-contain rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Outfit Items */}
                 {(() => {
                   try {
                     const products = typeof selectedRecord.products === 'string' 
@@ -870,37 +900,57 @@ export default function OOTDDiary() {
                       : selectedRecord.products;
                     if (Array.isArray(products) && products.length > 0) {
                       return (
-                        <div className="space-y-3">
-                          <h4 className="font-semibold">Identified Items ({products.length})</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                          <h3 className="font-serif font-light text-2xl tracking-wide">Outfit Items</h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {products.map((product: IdentifiedProduct, index: number) => (
-                              <Card key={index} className="p-4">
-                                <div className="flex gap-4">
-                                  {product.imageUrl && (
-                                    <img 
-                                      src={product.imageUrl} 
-                                      alt={product.model}
-                                      className="w-24 h-24 object-cover rounded"
-                                    />
-                                  )}
-                                  <div className="flex-1 space-y-1">
-                                    <h5 className="font-semibold">{product.brand}</h5>
-                                    <p className="text-sm text-muted-foreground">{product.model}</p>
-                                    <p className="text-sm text-muted-foreground">{product.type}</p>
-                                    {product.color && (
-                                      <p className="text-xs text-muted-foreground">Color: {product.color}</p>
-                                    )}
-                                    {product.material && (
-                                      <p className="text-xs text-muted-foreground">Material: {product.material}</p>
-                                    )}
-                                    {product.price && (
-                                      <p className="text-sm font-medium text-primary">{product.price}</p>
-                                    )}
-                                    {product.availability && (
-                                      <p className="text-xs text-muted-foreground">{product.availability}</p>
+                              <Card key={index} className="shadow-card hover:shadow-large transition-all duration-500 overflow-hidden group border-border/50">
+                                <CardContent className="p-0">
+                                  {/* Image Container */}
+                                  <div className="relative w-full aspect-square bg-secondary/20 overflow-hidden">
+                                    {product.imageUrl ? (
+                                      <img
+                                        src={product.imageUrl}
+                                        alt={`${product.brand || ""} ${product.model}`}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-secondary/30">
+                                        <Camera className="w-16 h-16 text-muted-foreground" strokeWidth={1} />
+                                      </div>
                                     )}
                                   </div>
-                                </div>
+
+                                  {/* Product Info */}
+                                  <div className="p-4 space-y-3">
+                                    <h4 className="font-serif font-light text-base leading-tight text-foreground truncate">
+                                      {product.model || product.type}
+                                    </h4>
+
+                                    <div className="flex items-center justify-between gap-2">
+                                      {product.brand && (
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans font-light">
+                                          {product.brand}
+                                        </p>
+                                      )}
+                                      <span className="text-[9px] uppercase tracking-wider font-sans font-normal bg-muted px-1.5 py-0 rounded">
+                                        {product.type}
+                                      </span>
+                                    </div>
+
+                                    {(product.color || product.material) && (
+                                      <div className="space-y-1 text-xs text-muted-foreground">
+                                        {product.color && <p>Color: {product.color}</p>}
+                                        {product.material && <p>Material: {product.material}</p>}
+                                      </div>
+                                    )}
+
+                                    {product.price && (
+                                      <p className="text-sm font-medium text-primary pt-2">{product.price}</p>
+                                    )}
+                                  </div>
+                                </CardContent>
                               </Card>
                             ))}
                           </div>

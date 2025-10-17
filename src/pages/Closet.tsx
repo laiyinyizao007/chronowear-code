@@ -940,73 +940,20 @@ export default function Closet() {
                 />
                 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Type - Editable */}
+                  {/* Type - Read Only */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Type</Label>
-                    <Select 
-                      value={selectedGarment.type} 
-                      onValueChange={async (value) => {
-                        setSelectedGarment({ ...selectedGarment, type: value });
-                        const { error } = await supabase
-                          .from("garments")
-                          .update({ type: value })
-                          .eq("id", selectedGarment.id);
-                        if (error) toast.error("Failed to update type");
-                        else {
-                          toast.success("Type updated");
-                          loadGarments();
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="top">Top</SelectItem>
-                        <SelectItem value="bottom">Bottom</SelectItem>
-                        <SelectItem value="dress">Dress</SelectItem>
-                        <SelectItem value="outerwear">Outerwear</SelectItem>
-                        <SelectItem value="shoes">Shoes</SelectItem>
-                        <SelectItem value="accessory">Accessory</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1 px-3 py-2 bg-muted rounded-md">
+                      <p className="text-sm font-semibold capitalize">{selectedGarment.type}</p>
+                    </div>
                   </div>
 
-                  {/* Color - Editable */}
+                  {/* Color - Read Only */}
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Color</Label>
-                    <Select 
-                      value={selectedGarment.color || ""} 
-                      onValueChange={async (value) => {
-                        setSelectedGarment({ ...selectedGarment, color: value });
-                        const { error } = await supabase
-                          .from("garments")
-                          .update({ color: value })
-                          .eq("id", selectedGarment.id);
-                        if (error) toast.error("Failed to update color");
-                        else {
-                          toast.success("Color updated");
-                          loadGarments();
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="black">Black</SelectItem>
-                        <SelectItem value="white">White</SelectItem>
-                        <SelectItem value="gray">Gray</SelectItem>
-                        <SelectItem value="red">Red</SelectItem>
-                        <SelectItem value="blue">Blue</SelectItem>
-                        <SelectItem value="green">Green</SelectItem>
-                        <SelectItem value="yellow">Yellow</SelectItem>
-                        <SelectItem value="pink">Pink</SelectItem>
-                        <SelectItem value="brown">Brown</SelectItem>
-                        <SelectItem value="beige">Beige</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1 px-3 py-2 bg-muted rounded-md">
+                      <p className="text-sm font-semibold capitalize">{selectedGarment.color || "Not specified"}</p>
+                    </div>
                   </div>
 
                   {/* Brand - Editable */}
