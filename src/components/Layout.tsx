@@ -3,7 +3,7 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Sparkles, Calendar, LogOut } from "lucide-react";
+import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, LogOut } from "lucide-react";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -54,15 +54,26 @@ export default function Layout() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight">ChronoWear</h1>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleSignOut}
-            className="hover:bg-muted"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/settings")}
+              className="hover:bg-muted"
+            >
+              <SettingsIcon className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="hover:bg-muted"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 

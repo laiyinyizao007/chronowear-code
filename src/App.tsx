@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Closet from "./pages/Closet";
 import Stylist from "./pages/Stylist";
 import OOTDDiary from "./pages/OOTDDiary";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/closet" element={<Closet />} />
             <Route path="/stylist" element={<Stylist />} />
             <Route path="/diary" element={<OOTDDiary />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

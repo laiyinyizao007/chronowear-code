@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.search-product-info]
 verify_jwt = true
+
+[functions.generate-virtual-tryon]
+verify_jwt = true
