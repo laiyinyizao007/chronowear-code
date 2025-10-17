@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, X } from "lucide-react";
+import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
 import ProductCard from "@/components/ProductCard";
+import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +62,8 @@ export default function OOTDDiary() {
   const [selectedRecord, setSelectedRecord] = useState<OOTDRecord | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [removingBackground, setRemovingBackground] = useState(false);
 
   useEffect(() => {
     loadRecords();
@@ -163,13 +166,23 @@ export default function OOTDDiary() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const fileExt = file.name.split(".").pop();
+      // Remove background first
+      setRemovingBackground(true);
+      toast.info("Removing background...");
+      
+      const imageElement = await loadImage(file);
+      const processedBlob = await removeBackground(imageElement);
+      
+      setRemovingBackground(false);
+      toast.success("Background removed!");
+
+      const fileExt = "png"; // Always use PNG for transparent backgrounds
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       setProcessingProgress(15);
       const { error: uploadError } = await supabase.storage
         .from("ootd-photos")
-        .upload(fileName, file);
+        .upload(fileName, processedBlob);
 
       if (uploadError) throw uploadError;
 
@@ -399,7 +412,13 @@ export default function OOTDDiary() {
                         <div>
                           <h3 className="font-bold text-xl mb-2">Upload Your Outfit Photo</h3>
                           <p className="text-sm text-muted-foreground">
-                            {uploadingImage ? "Uploading..." : processingOutfit ? "AI is processing..." : "Click to select or drag & drop"}
+                            {removingBackground 
+                              ? "Removing background..." 
+                              : uploadingImage 
+                              ? "Uploading..." 
+                              : processingOutfit 
+                              ? "AI is processing..." 
+                              : "Click to select (auto background removal)"}
                           </p>
                         </div>
                       </div>
@@ -411,9 +430,9 @@ export default function OOTDDiary() {
                     accept="image/*"
                     className="hidden"
                     onChange={handleImageUpload}
-                    disabled={uploadingImage || processingOutfit}
+                    disabled={uploadingImage || processingOutfit || removingBackground}
                   />
-                  {(uploadingImage || processingOutfit) && (
+                  {(uploadingImage || processingOutfit || removingBackground) && (
                     <div className="flex items-center justify-center py-4">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
@@ -506,67 +525,115 @@ export default function OOTDDiary() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {records.map((record) => (
-            <Card 
-              key={record.id} 
-              className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
-              onClick={() => setSelectedRecord(record)}
-            >
-              <div className="aspect-[3/4] relative bg-muted">
-                <img
-                  src={record.photo_url}
-                  alt={`OOTD from ${record.date}`}
-                  className="w-full h-full object-cover"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteRecordId(record.id);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{format(new Date(record.date), "MMM d, yyyy")}</h3>
+          {/* Calendar Header */}
+          <Card className="shadow-soft mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-serif font-light">
+                  {format(currentMonth, "MMMM yyyy")}
+                </h2>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setCurrentMonth(new Date())}
+                  >
+                    <CalendarIcon className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-                {record.location && (
-                  <p className="text-sm text-muted-foreground">{record.location}</p>
-                )}
-                {record.weather && (
-                  <p className="text-sm text-muted-foreground">Weather: {record.weather}</p>
-                )}
-                {record.notes && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">{record.notes}</p>
-                )}
-                {(() => {
-                  try {
-                    const products = typeof record.products === 'string' 
-                      ? JSON.parse(record.products) 
-                      : record.products;
-                    if (Array.isArray(products) && products.length > 0) {
-                      return (
-                        <div className="pt-2 border-t">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">
-                            {products.length} item{products.length > 1 ? 's' : ''} identified
-                          </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-4">
+            {/* Day Headers */}
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+                {day}
+              </div>
+            ))}
+
+            {/* Calendar Days */}
+            {(() => {
+              const monthStart = startOfMonth(currentMonth);
+              const monthEnd = endOfMonth(currentMonth);
+              const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+              
+              // Add padding for days before month starts
+              const startDay = monthStart.getDay();
+              const paddingDays = Array(startDay).fill(null);
+              
+              return [...paddingDays, ...days].map((day, index) => {
+                if (!day) {
+                  return <div key={`empty-${index}`} className="aspect-square" />;
+                }
+                
+                const dayRecords = records.filter(r => isSameDay(new Date(r.date), day));
+                const hasRecord = dayRecords.length > 0;
+                const isToday = isSameDay(day, new Date());
+                
+                return (
+                  <Card 
+                    key={day.toISOString()}
+                    className={`aspect-square overflow-hidden cursor-pointer transition-all hover:shadow-large ${
+                      !isSameMonth(day, currentMonth) ? 'opacity-50' : ''
+                    } ${isToday ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
+                  >
+                    <CardContent className="p-0 h-full relative">
+                      {hasRecord ? (
+                        <>
+                          <img
+                            src={dayRecords[0].photo_url}
+                            alt={`OOTD ${format(day, 'd')}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <div className="text-2xl font-serif font-light text-foreground">
+                              {format(day, 'd')}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6 bg-background/80 hover:bg-background"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteRecordId(dayRecords[0].id);
+                            }}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <span className="text-2xl font-light text-muted-foreground">
+                            {format(day, 'd')}
+                          </span>
                         </div>
-                      );
-                    }
-                  } catch (e) {
-                    return null;
-                  }
-                  return null;
-                })()}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              });
+            })()}
+          </div>
         
         <AlertDialog open={!!deleteRecordId} onOpenChange={(open) => !open && setDeleteRecordId(null)}>
           <AlertDialogContent>
