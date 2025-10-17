@@ -91,13 +91,14 @@ Important: The imageUrl must be a real, working URL to an actual product image, 
       if (productInfo.imageUrl && productInfo.imageUrl.startsWith('http') && !productInfo.imageUrl.includes('placeholder')) {
         try {
           console.log('Downloading image from:', productInfo.imageUrl);
-          const imageResponse = await fetch(productInfo.imageUrl);
+          const imageResponse = await fetch(productInfo.imageUrl, { redirect: 'follow' as RequestRedirect });
           
           if (imageResponse.ok) {
             const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
             const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
             const arrayBuffer = await imageResponse.arrayBuffer();
-            const path = `${brand.replace(/\s+/g, '-')}/${model.replace(/\s+/g, '-')}-${Date.now()}.${ext}`;
+            const safe = (s: string) => s.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            const path = `${safe(brand)}/${safe(model)}-${Date.now()}.${ext}`;
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('product-images')
@@ -114,8 +115,10 @@ Important: The imageUrl must be a real, working URL to an actual product image, 
               productInfo.imageUrl = publicUrl;
               console.log('Image rehosted successfully:', publicUrl);
             } else {
-              console.error('Failed to upload image:', uploadError);
+              console.error('Failed to upload image:', uploadError ? JSON.stringify(uploadError) : 'unknown');
             }
+          } else {
+            console.error('Failed to download source image:', imageResponse.status);
           }
         } catch (imageError) {
           console.error('Error downloading/uploading image:', imageError);
