@@ -65,6 +65,7 @@ export type Database = {
           location: string | null
           notes: string | null
           photo_url: string
+          products: Json | null
           user_id: string
           weather: string | null
         }
@@ -76,6 +77,7 @@ export type Database = {
           location?: string | null
           notes?: string | null
           photo_url: string
+          products?: Json | null
           user_id: string
           weather?: string | null
         }
@@ -87,6 +89,7 @@ export type Database = {
           location?: string | null
           notes?: string | null
           photo_url?: string
+          products?: Json | null
           user_id?: string
           weather?: string | null
         }

@@ -2,14 +2,25 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, Loader2 } from "lucide-react";
+import { Plus, Camera, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import ProductCard from "@/components/ProductCard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface IdentifiedProduct {
   brand: string;
@@ -31,7 +42,7 @@ interface OOTDRecord {
   location: string;
   weather: string;
   notes: string;
-  products?: IdentifiedProduct[];
+  products?: any; // JSON field from database
 }
 
 export default function OOTDDiary() {
@@ -44,6 +55,8 @@ export default function OOTDDiary() {
   const [currentLocation, setCurrentLocation] = useState("");
   const [currentWeather, setCurrentWeather] = useState("");
   const [identifiedProducts, setIdentifiedProducts] = useState<IdentifiedProduct[]>([]);
+  const [selectedProductIndices, setSelectedProductIndices] = useState<Set<number>>(new Set());
+  const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
 
   useEffect(() => {
     loadRecords();
@@ -57,7 +70,7 @@ export default function OOTDDiary() {
         .order("date", { ascending: false });
 
       if (error) throw error;
-      setRecords(data || []);
+      setRecords((data || []) as OOTDRecord[]);
     } catch (error: any) {
       toast.error("Failed to load OOTD records");
     } finally {
@@ -186,6 +199,10 @@ export default function OOTDDiary() {
 
       setIdentifiedProducts(products);
       
+      // Pre-select all identified products
+      const allIndices = new Set(products.map((_, index) => index));
+      setSelectedProductIndices(allIndices);
+      
       if (products.length > 0) {
         toast.success(`Identified ${products.length} item${products.length > 1 ? 's' : ''}!`);
       }
@@ -212,6 +229,11 @@ export default function OOTDDiary() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Filter selected products
+      const selectedProducts = identifiedProducts.filter((_, index) => 
+        selectedProductIndices.has(index)
+      );
+
       const recordData = {
         user_id: user.id,
         photo_url: currentPhotoUrl,
@@ -219,9 +241,10 @@ export default function OOTDDiary() {
         location: formData.get("location") as string || currentLocation,
         weather: formData.get("weather") as string || currentWeather,
         notes: formData.get("notes") as string,
+        products: JSON.stringify(selectedProducts),
       };
 
-      const { error } = await supabase.from("ootd_records").insert(recordData);
+      const { error } = await supabase.from("ootd_records").insert([recordData]);
 
       if (error) throw error;
 
@@ -231,10 +254,39 @@ export default function OOTDDiary() {
       setCurrentLocation("");
       setCurrentWeather("");
       setIdentifiedProducts([]);
+      setSelectedProductIndices(new Set());
       loadRecords();
     } catch (error: any) {
       toast.error("Failed to save OOTD");
     }
+  };
+
+  const handleDeleteRecord = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("ootd_records")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("OOTD deleted successfully!");
+      loadRecords();
+    } catch (error: any) {
+      toast.error("Failed to delete OOTD");
+    }
+  };
+
+  const toggleProductSelection = (index: number) => {
+    setSelectedProductIndices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -293,11 +345,16 @@ export default function OOTDDiary() {
 
               {identifiedProducts.length > 0 && (
                 <div className="space-y-3">
-                  <Label>Identified Items</Label>
+                  <Label>Identified Items (Select to Save)</Label>
                   <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
                     {identifiedProducts.map((product, index) => (
                       <Card key={index} className="p-3">
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 items-start">
+                          <Checkbox 
+                            checked={selectedProductIndices.has(index)}
+                            onCheckedChange={() => toggleProductSelection(index)}
+                            className="mt-1"
+                          />
                           {product.imageUrl && (
                             <img 
                               src={product.imageUrl} 
@@ -337,7 +394,8 @@ export default function OOTDDiary() {
                     id="location" 
                     name="location" 
                     placeholder="Auto-detected" 
-                    defaultValue={currentLocation}
+                    value={currentLocation}
+                    onChange={(e) => setCurrentLocation(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -346,7 +404,8 @@ export default function OOTDDiary() {
                     id="weather" 
                     name="weather" 
                     placeholder="Auto-detected" 
-                    defaultValue={currentWeather}
+                    value={currentWeather}
+                    onChange={(e) => setCurrentWeather(e.target.value)}
                   />
                 </div>
               </div>
@@ -384,8 +443,9 @@ export default function OOTDDiary() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {records.map((record) => (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {records.map((record) => (
             <Card key={record.id} className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow">
               <div className="aspect-[3/4] relative bg-muted">
                 <img
@@ -393,6 +453,14 @@ export default function OOTDDiary() {
                   alt={`OOTD from ${record.date}`}
                   className="w-full h-full object-cover"
                 />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                  onClick={() => setDeleteRecordId(record.id)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
@@ -407,10 +475,54 @@ export default function OOTDDiary() {
                 {record.notes && (
                   <p className="text-sm text-muted-foreground line-clamp-2">{record.notes}</p>
                 )}
+                {(() => {
+                  try {
+                    const products = typeof record.products === 'string' 
+                      ? JSON.parse(record.products) 
+                      : record.products;
+                    if (Array.isArray(products) && products.length > 0) {
+                      return (
+                        <div className="pt-2 border-t">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">
+                            {products.length} item{products.length > 1 ? 's' : ''} identified
+                          </p>
+                        </div>
+                      );
+                    }
+                  } catch (e) {
+                    return null;
+                  }
+                  return null;
+                })()}
               </CardContent>
             </Card>
           ))}
         </div>
+        
+        <AlertDialog open={!!deleteRecordId} onOpenChange={(open) => !open && setDeleteRecordId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete OOTD?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this OOTD record.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteRecordId) {
+                    handleDeleteRecord(deleteRecordId);
+                    setDeleteRecordId(null);
+                  }
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        </>
       )}
     </div>
   );
