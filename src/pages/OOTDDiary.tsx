@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, Loader2, X } from "lucide-react";
+import { Plus, Camera, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -332,36 +332,61 @@ export default function OOTDDiary() {
           <h1 className="text-3xl font-bold">OOTD Diary</h1>
           <p className="text-muted-foreground">{records.length} outfits logged</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) {
+            // Reset form when closing
+            setCurrentPhotoUrl("");
+            setCurrentLocation("");
+            setCurrentWeather("");
+            setIdentifiedProducts([]);
+            setSelectedProductIndices(new Set());
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Log OOTD
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Log Today's Outfit</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddRecord} className="space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="space-y-2">
-                <Label htmlFor="photo">Upload Photo</Label>
-                <Input
-                  id="photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={uploadingImage || processingOutfit}
-                />
-                {processingOutfit && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Processing outfit and identifying items...
-                  </div>
-                )}
-              </div>
-
-              {currentPhotoUrl && (
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Log Today's Outfit</DialogTitle>
+              </DialogHeader>
+              
+              {!currentPhotoUrl ? (
+                <div className="space-y-4 py-8">
+                  <label htmlFor="ootd-upload" className="cursor-pointer">
+                    <Card className="p-12 hover:shadow-large transition-all duration-300 hover:border-primary">
+                      <div className="text-center space-y-4">
+                        <div className="w-20 h-20 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                          <Camera className="w-10 h-10 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-xl mb-2">Upload Your Outfit Photo</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {uploadingImage ? "Uploading..." : processingOutfit ? "AI is processing..." : "Click to select or drag & drop"}
+                          </p>
+                        </div>
+                      </div>
+                    </Card>
+                  </label>
+                  <input
+                    id="ootd-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage || processingOutfit}
+                  />
+                  {(uploadingImage || processingOutfit) && (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+              <form onSubmit={handleAddRecord} className="space-y-4 max-h-[70vh] overflow-y-auto">
                 <div className="space-y-2">
                   <img 
                     src={currentPhotoUrl} 
@@ -369,89 +394,89 @@ export default function OOTDDiary() {
                     className="w-full h-48 object-cover rounded-lg"
                   />
                 </div>
-              )}
 
-              {identifiedProducts.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Identified Items (Select to Save)</Label>
-                  <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
-                    {identifiedProducts.map((product, index) => (
-                      <Card key={index} className="p-3">
-                        <div className="flex gap-3 items-start">
-                          <Checkbox 
-                            checked={selectedProductIndices.has(index)}
-                            onCheckedChange={() => toggleProductSelection(index)}
-                            className="mt-1"
-                          />
-                          {product.imageUrl && (
-                            <img 
-                              src={product.imageUrl} 
-                              alt={product.model}
-                              className="w-20 h-20 object-cover rounded"
-                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; (e.currentTarget as HTMLImageElement).onerror = null; }}
+                {identifiedProducts.length > 0 && (
+                  <div className="space-y-3">
+                    <Label>Identified Items (Select to Save)</Label>
+                    <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
+                      {identifiedProducts.map((product, index) => (
+                        <Card key={index} className="p-3">
+                          <div className="flex gap-3 items-start">
+                            <Checkbox 
+                              checked={selectedProductIndices.has(index)}
+                              onCheckedChange={() => toggleProductSelection(index)}
+                              className="mt-1"
                             />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm truncate">{product.brand}</h4>
-                            <p className="text-xs text-muted-foreground truncate">{product.model}</p>
-                            <p className="text-xs text-muted-foreground">{product.type}</p>
-                            {product.price && (
-                              <p className="text-sm font-medium mt-1">{product.price}</p>
+                            {product.imageUrl && (
+                              <img 
+                                src={product.imageUrl} 
+                                alt={product.model}
+                                className="w-20 h-20 object-cover rounded"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; (e.currentTarget as HTMLImageElement).onerror = null; }}
+                              />
                             )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm truncate">{product.brand}</h4>
+                              <p className="text-xs text-muted-foreground truncate">{product.model}</p>
+                              <p className="text-xs text-muted-foreground">{product.type}</p>
+                              {product.price && (
+                                <p className="text-sm font-medium mt-1">{product.price}</p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    defaultValue={format(new Date(), "yyyy-MM-dd")}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input 
+                      id="location" 
+                      name="location" 
+                      placeholder="Auto-detected" 
+                      value={currentLocation}
+                      onChange={(e) => setCurrentLocation(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weather">Weather</Label>
+                    <Input 
+                      id="weather" 
+                      name="weather" 
+                      placeholder="Auto-detected" 
+                      value={currentWeather}
+                      onChange={(e) => setCurrentWeather(e.target.value)}
+                    />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="How did you feel in this outfit?"
+                    rows={3}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={!currentPhotoUrl}>
+                  Save OOTD
+                </Button>
+              </form>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  defaultValue={format(new Date(), "yyyy-MM-dd")}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input 
-                    id="location" 
-                    name="location" 
-                    placeholder="Auto-detected" 
-                    value={currentLocation}
-                    onChange={(e) => setCurrentLocation(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weather">Weather</Label>
-                  <Input 
-                    id="weather" 
-                    name="weather" 
-                    placeholder="Auto-detected" 
-                    value={currentWeather}
-                    onChange={(e) => setCurrentWeather(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  placeholder="How did you feel in this outfit?"
-                  rows={3}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={uploadingImage || processingOutfit || !currentPhotoUrl}>
-                {uploadingImage ? "Uploading..." : processingOutfit ? "Processing..." : "Save OOTD"}
-              </Button>
-            </form>
-          </DialogContent>
+            </DialogContent>
         </Dialog>
       </div>
 
