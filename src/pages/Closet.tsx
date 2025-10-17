@@ -691,16 +691,18 @@ export default function Closet() {
       )}
       
       {isProcessing && (
-        <div className="fixed bottom-24 right-4 bg-background border rounded-lg shadow-lg p-4 w-80 z-[60]">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-            <span className="text-sm font-medium">Processing garment...</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div 
-              className="bg-primary h-full transition-all duration-300"
-              style={{ width: `${processingProgress}%` }}
-            ></div>
+        <div className="fixed top-20 left-0 right-0 bg-background/95 backdrop-blur-sm border-b shadow-md p-4 z-[60] animate-fade-in">
+          <div className="container mx-auto px-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              <span className="text-sm font-medium">Processing garment...</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-primary h-full transition-all duration-300"
+                style={{ width: `${processingProgress}%` }}
+              ></div>
+            </div>
           </div>
         </div>
       )}
