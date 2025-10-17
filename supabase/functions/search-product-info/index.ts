@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,10 +14,14 @@ serve(async (req) => {
   try {
     const { brand, model } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
+
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     console.log('Searching product info for:', brand, model);
 
@@ -81,9 +86,42 @@ Important: The imageUrl must be a real, working URL to an actual product image, 
         productInfo = JSON.parse(content);
       }
       
-      // Validate image URL
+      // Try to download and rehost the image
+      if (productInfo.imageUrl && productInfo.imageUrl.startsWith('http') && !productInfo.imageUrl.includes('placeholder')) {
+        try {
+          console.log('Downloading image from:', productInfo.imageUrl);
+          const imageResponse = await fetch(productInfo.imageUrl);
+          
+          if (imageResponse.ok) {
+            const imageBlob = await imageResponse.blob();
+            const fileName = `${brand.replace(/\s+/g, '-')}-${model.replace(/\s+/g, '-')}-${Date.now()}.jpg`;
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('product-images')
+              .upload(fileName, imageBlob, {
+                contentType: 'image/jpeg',
+                upsert: false
+              });
+
+            if (!uploadError && uploadData) {
+              const { data: { publicUrl } } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(fileName);
+              
+              productInfo.imageUrl = publicUrl;
+              console.log('Image rehosted successfully:', publicUrl);
+            } else {
+              console.error('Failed to upload image:', uploadError);
+            }
+          }
+        } catch (imageError) {
+          console.error('Error downloading/uploading image:', imageError);
+        }
+      }
+      
+      // Fallback if no valid image
       if (!productInfo.imageUrl || productInfo.imageUrl.includes('placeholder') || !productInfo.imageUrl.startsWith('http')) {
-        console.log('Invalid or placeholder image URL, using fallback');
+        console.log('Using fallback image');
         productInfo.imageUrl = `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`;
       }
     } catch (parseError) {
