@@ -113,33 +113,51 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bust_cm: number | null
+          clothing_size: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           geo_location: string | null
+          height_cm: number | null
+          hip_cm: number | null
           id: string
           style_preference: string | null
           updated_at: string | null
+          waist_cm: number | null
+          weight_kg: number | null
         }
         Insert: {
           avatar_url?: string | null
+          bust_cm?: number | null
+          clothing_size?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           geo_location?: string | null
+          height_cm?: number | null
+          hip_cm?: number | null
           id: string
           style_preference?: string | null
           updated_at?: string | null
+          waist_cm?: number | null
+          weight_kg?: number | null
         }
         Update: {
           avatar_url?: string | null
+          bust_cm?: number | null
+          clothing_size?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           geo_location?: string | null
+          height_cm?: number | null
+          hip_cm?: number | null
           id?: string
           style_preference?: string | null
           updated_at?: string | null
+          waist_cm?: number | null
+          weight_kg?: number | null
         }
         Relationships: []
       }
