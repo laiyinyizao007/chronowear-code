@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       garments: {
         Row: {
+          acquired_date: string | null
           brand: string | null
           care_instructions: string | null
           color: string | null
@@ -24,6 +25,7 @@ export type Database = {
           image_url: string
           last_worn_date: string | null
           material: string | null
+          official_price: number | null
           season: string | null
           type: string
           updated_at: string | null
@@ -32,6 +34,7 @@ export type Database = {
           washing_frequency: string | null
         }
         Insert: {
+          acquired_date?: string | null
           brand?: string | null
           care_instructions?: string | null
           color?: string | null
@@ -40,6 +43,7 @@ export type Database = {
           image_url: string
           last_worn_date?: string | null
           material?: string | null
+          official_price?: number | null
           season?: string | null
           type: string
           updated_at?: string | null
@@ -48,6 +52,7 @@ export type Database = {
           washing_frequency?: string | null
         }
         Update: {
+          acquired_date?: string | null
           brand?: string | null
           care_instructions?: string | null
           color?: string | null
@@ -56,6 +61,7 @@ export type Database = {
           image_url?: string
           last_worn_date?: string | null
           material?: string | null
+          official_price?: number | null
           season?: string | null
           type?: string
           updated_at?: string | null

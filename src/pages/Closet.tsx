@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X } from "lucide-react";
 import {
   AlertDialog,
@@ -34,6 +35,8 @@ interface Garment {
   usage_count: number;
   washing_frequency: string | null;
   care_instructions: string | null;
+  official_price: number | null;
+  acquired_date: string | null;
 }
 
 interface ProductInfo {
@@ -779,98 +782,201 @@ export default function Closet() {
               <DialogTitle>Garment Details</DialogTitle>
             </DialogHeader>
             {selectedGarment && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <img 
                   src={selectedGarment.image_url} 
                   alt={selectedGarment.type}
                   className="w-full max-h-[60vh] object-contain rounded-lg"
                 />
+                
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Type - Editable */}
                   <div>
-                    <h4 className="text-sm font-medium text-muted-foreground">Type</h4>
-                    <p className="text-lg font-semibold">{selectedGarment.type}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">Type</Label>
+                    <Input
+                      value={selectedGarment.type}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, type: e.target.value })}
+                      onBlur={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ type: selectedGarment.type })
+                            .eq("id", selectedGarment.id);
+                          if (error) throw error;
+                          toast.success("Type updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update type");
+                        }
+                      }}
+                      className="mt-1"
+                    />
                   </div>
-                  {selectedGarment.brand && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Brand</h4>
-                      <p className="text-lg font-semibold">{selectedGarment.brand}</p>
-                    </div>
-                  )}
-                  {selectedGarment.color && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Color</h4>
-                      <p className="text-lg font-semibold">{selectedGarment.color}</p>
-                    </div>
-                  )}
-                  {selectedGarment.season && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Season</h4>
-                      <p className="text-lg font-semibold">{selectedGarment.season}</p>
-                    </div>
-                  )}
-                  {selectedGarment.material && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Material</h4>
-                      <p className="text-lg font-semibold">{selectedGarment.material}</p>
-                    </div>
-                  )}
-                  {selectedGarment.last_worn_date && (
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground">Last Worn</h4>
-                      <p className="text-lg font-semibold">
-                        {new Date(selectedGarment.last_worn_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
+
+                  {/* Color - Editable */}
                   <div>
-                    <h4 className="text-sm font-medium text-muted-foreground">Usage Count</h4>
-                    <p className="text-lg font-semibold">{selectedGarment.usage_count} times</p>
+                    <Label className="text-sm font-medium text-muted-foreground">Color</Label>
+                    <Input
+                      value={selectedGarment.color || ""}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, color: e.target.value })}
+                      onBlur={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ color: selectedGarment.color })
+                            .eq("id", selectedGarment.id);
+                          if (error) throw error;
+                          toast.success("Color updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update color");
+                        }
+                      }}
+                      className="mt-1"
+                    />
                   </div>
+
+                  {/* Brand - Editable */}
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Brand</Label>
+                    <Input
+                      value={selectedGarment.brand || ""}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, brand: e.target.value })}
+                      onBlur={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ brand: selectedGarment.brand })
+                            .eq("id", selectedGarment.id);
+                          if (error) throw error;
+                          toast.success("Brand updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update brand");
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Official Price - Editable */}
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Official Price</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={selectedGarment.official_price || ""}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
+                      onBlur={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ official_price: selectedGarment.official_price })
+                            .eq("id", selectedGarment.id);
+                          if (error) throw error;
+                          toast.success("Price updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update price");
+                        }
+                      }}
+                      className="mt-1"
+                      placeholder="Enter price"
+                    />
+                  </div>
+
+                  {/* Usage Count - Read Only */}
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Usage Count</Label>
+                    <div className="mt-1 px-3 py-2 bg-muted rounded-md">
+                      <p className="text-sm font-semibold">{selectedGarment.usage_count} times</p>
+                    </div>
+                  </div>
+
+                  {/* Acquired Date - Editable */}
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Acquired Date</Label>
+                    <Input
+                      type="date"
+                      value={selectedGarment.acquired_date || ""}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, acquired_date: e.target.value })}
+                      onBlur={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ acquired_date: selectedGarment.acquired_date })
+                            .eq("id", selectedGarment.id);
+                          if (error) throw error;
+                          toast.success("Acquired date updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update acquired date");
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Washing Frequency - Editable */}
                   <div className="col-span-2">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Washing Frequency</h4>
-                    <div className="flex gap-2 items-center">
-                      <Select
-                        value={selectedGarment.washing_frequency || ""}
-                        onValueChange={async (value) => {
-                          try {
-                            const { error } = await supabase
-                              .from("garments")
-                              .update({ washing_frequency: value })
-                              .eq("id", selectedGarment.id);
-                            
-                            if (error) throw error;
-                            
-                            setSelectedGarment({ ...selectedGarment, washing_frequency: value });
-                            toast.success("Washing frequency updated");
-                            loadGarments();
-                          } catch (error) {
-                            toast.error("Failed to update washing frequency");
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Set washing frequency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="After each wear">After each wear</SelectItem>
-                          <SelectItem value="After 2-3 wears">After 2-3 wears</SelectItem>
-                          <SelectItem value="After 3-5 wears">After 3-5 wears</SelectItem>
-                          <SelectItem value="Weekly">Weekly</SelectItem>
-                          <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
-                          <SelectItem value="Monthly">Monthly</SelectItem>
-                          <SelectItem value="As needed">As needed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Label className="text-sm font-medium text-muted-foreground mb-2">Washing Frequency</Label>
+                    <Select
+                      value={selectedGarment.washing_frequency || ""}
+                      onValueChange={async (value) => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ washing_frequency: value })
+                            .eq("id", selectedGarment.id);
+                          
+                          if (error) throw error;
+                          
+                          setSelectedGarment({ ...selectedGarment, washing_frequency: value });
+                          toast.success("Washing frequency updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update washing frequency");
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Set washing frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="After each wear">After each wear</SelectItem>
+                        <SelectItem value="After 2-3 wears">After 2-3 wears</SelectItem>
+                        <SelectItem value="After 3-5 wears">After 3-5 wears</SelectItem>
+                        <SelectItem value="Weekly">Weekly</SelectItem>
+                        <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="As needed">As needed</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {selectedGarment.care_instructions && (
-                    <div className="col-span-2 mt-4">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Care Instructions</h4>
-                      <p className="text-sm leading-relaxed bg-muted/50 p-3 rounded-md">
-                        {selectedGarment.care_instructions}
-                      </p>
-                    </div>
-                  )}
+
+                  {/* Care Instructions - Editable */}
+                  <div className="col-span-2">
+                    <Label className="text-sm font-medium text-muted-foreground mb-2">Care Instructions</Label>
+                    <Textarea
+                      value={selectedGarment.care_instructions || ""}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, care_instructions: e.target.value })}
+                      onBlur={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from("garments")
+                            .update({ care_instructions: selectedGarment.care_instructions })
+                            .eq("id", selectedGarment.id);
+                          if (error) throw error;
+                          toast.success("Care instructions updated");
+                          loadGarments();
+                        } catch (error) {
+                          toast.error("Failed to update care instructions");
+                        }
+                      }}
+                      className="mt-1 min-h-[100px]"
+                      placeholder="Enter care instructions..."
+                    />
+                  </div>
                 </div>
               </div>
             )}
