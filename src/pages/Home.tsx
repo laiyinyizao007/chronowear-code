@@ -35,6 +35,7 @@ export default function Home() {
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
   const [showOutfitDialog, setShowOutfitDialog] = useState(false);
+  const [dialogLoadingImages, setDialogLoadingImages] = useState(false);
   
   // Mock outfit recommendations (will be replaced with AI-generated ones)
   const outfitRecommendations = [
@@ -128,6 +129,26 @@ export default function Home() {
     }
   };
 
+  const enrichItemsWithImages = async (items: any[]) => {
+    setDialogLoadingImages(true);
+    const updated = await Promise.all(
+      (items || []).map(async (item) => {
+        if (item.imageUrl || !item.brand || !item.model) return item;
+        try {
+          const { data, error } = await supabase.functions.invoke('search-product-info', {
+            body: { brand: item.brand, model: item.model }
+          });
+          if (!error && data?.imageUrl) return { ...item, imageUrl: data.imageUrl };
+        } catch (e) {
+          console.error('Image fetch failed:', e);
+        }
+        return item;
+      })
+    );
+    setDialogLoadingImages(false);
+    return updated;
+  };
+
   const getUVLevel = (uvIndex: number): { level: string; color: string } => {
     if (uvIndex < 3) return { level: "Low", color: "text-green-600" };
     if (uvIndex < 6) return { level: "Moderate", color: "text-yellow-600" };
@@ -215,9 +236,11 @@ export default function Home() {
                       title={outfit.title}
                       items={outfit.items || []}
                       summary={outfit.summary || ""}
-                      onClick={() => {
+                      onClick={async () => {
                         setSelectedOutfit(outfit);
                         setShowOutfitDialog(true);
+                        const updatedItems = await enrichItemsWithImages(outfit.items || []);
+                        setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
                       }}
                     />
                   </CarouselItem>
@@ -296,21 +319,46 @@ export default function Home() {
                   {selectedOutfit.items?.map((item: any, index: number) => (
                     <Card key={index} className="shadow-soft hover:shadow-medium transition-all">
                       <CardContent className="p-4 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <Shirt className="w-5 h-5 text-primary" />
-                            <h4 className="font-semibold">{item.name}</h4>
+                        <div className="flex items-start gap-3">
+                          {/* Image */}
+                          <div className="w-16 h-16 bg-background rounded-sm flex items-center justify-center flex-shrink-0 border border-border/30 overflow-hidden">
+                            {dialogLoadingImages ? (
+                              <div className="w-full h-full bg-muted/50 animate-pulse" />
+                            ) : item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={`${item.brand || ''} ${item.model || item.name}`}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Shirt className="w-5 h-5 text-primary" />
+                            )}
                           </div>
-                          {item.fromCloset && (
-                            <Badge variant="outline" className="text-xs bg-primary/10">
-                              From Closet
-                            </Badge>
-                          )}
+
+                          {/* Texts */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold truncate max-w-[14rem]">{item.name}</h4>
+                              </div>
+                              {item.fromCloset && (
+                                <Badge variant="outline" className="text-xs bg-primary/10">From Closet</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="secondary" className="text-xs capitalize">{item.type}</Badge>
+                              {item.brand && (
+                                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{item.brand}</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs capitalize">
-                          {item.type}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
                       </CardContent>
                     </Card>
                   ))}
