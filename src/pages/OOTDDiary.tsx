@@ -743,9 +743,9 @@ export default function OOTDDiary() {
             </div>
           )}
 
-          {/* 3-Day View */}
+          {/* 3-Day View - Vertical cards */}
           {viewMode === 'day' && (
-            <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
               {(() => {
                 const days = [
                   subDays(currentDate, 1),
@@ -767,60 +767,53 @@ export default function OOTDDiary() {
                       onClick={() => hasRecord && setSelectedRecord(dayRecords[0])}
                     >
                       <CardContent className="p-0">
-                        <div className="flex h-32">
-                          {/* Date Section */}
-                          <div className="w-32 flex flex-col items-center justify-center bg-muted border-r">
-                            <div className="text-sm font-medium text-muted-foreground">{format(day, 'EEE')}</div>
-                            <div className={`text-3xl font-serif font-light ${isToday ? 'text-primary' : ''}`}>
-                              {format(day, 'd')}
+                        <div className="space-y-3 p-4">
+                          {/* Date Header */}
+                          <div className="text-center pb-2 border-b">
+                            <div className="text-xs font-medium text-muted-foreground">{format(day, 'EEE')}</div>
+                            <div className={`text-2xl font-serif font-light ${isToday ? 'text-primary' : ''}`}>
+                              {format(day, 'MMM d')}
                             </div>
-                            <div className="text-xs text-muted-foreground">{format(day, 'MMM yyyy')}</div>
                           </div>
                           
-                          {/* Content Section */}
-                          <div className="flex-1 relative">
-                            {hasRecord ? (
-                              <>
-                                <div className="flex h-full">
-                                  <div className="w-32 h-full">
-                                    <img
-                                      src={dayRecords[0].photo_url}
-                                      alt={`OOTD ${format(day, 'MMM d')}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1 p-4 flex flex-col justify-between">
-                                    <div>
-                                      {dayRecords[0].location && (
-                                        <p className="text-sm mb-1">📍 {dayRecords[0].location}</p>
-                                      )}
-                                      {dayRecords[0].weather && (
-                                        <p className="text-sm text-muted-foreground">🌤️ {dayRecords[0].weather}</p>
-                                      )}
-                                      {dayRecords[0].notes && (
-                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{dayRecords[0].notes}</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
+                          {/* Vertical Full Body Image */}
+                          {hasRecord ? (
+                            <>
+                              <div className="aspect-[3/4] relative">
+                                <img
+                                  src={dayRecords[0].photo_url}
+                                  alt={`OOTD ${format(day, 'MMM d')}`}
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                                  className="absolute top-2 right-2 h-7 w-7 bg-background/80 hover:bg-background"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setDeleteRecordId(dayRecords[0].id);
                                   }}
                                 >
-                                  <X className="w-4 h-4" />
+                                  <X className="w-3 h-3" />
                                 </Button>
-                              </>
-                            ) : (
-                              <div className="flex items-center justify-center h-full">
-                                <span className="text-4xl font-light text-muted-foreground/30">+</span>
                               </div>
-                            )}
-                          </div>
+                              <div className="space-y-1 text-center text-sm">
+                                {dayRecords[0].location && (
+                                  <p className="text-muted-foreground truncate">📍 {dayRecords[0].location}</p>
+                                )}
+                                {dayRecords[0].weather && (
+                                  <p className="text-muted-foreground">☀️ {dayRecords[0].weather}</p>
+                                )}
+                                {dayRecords[0].notes && (
+                                  <p className="text-muted-foreground text-xs line-clamp-2">{dayRecords[0].notes}</p>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="aspect-[3/4] flex items-center justify-center bg-muted/30 rounded-lg">
+                              <span className="text-4xl font-light text-muted-foreground/30">+</span>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

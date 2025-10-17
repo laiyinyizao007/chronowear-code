@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -409,21 +409,58 @@ export default function Home() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{outfits[0].summary}</p>
-                  <Button 
-                    className="w-full" 
-                    variant="outline"
-                    onClick={async () => {
-                      setSelectedOutfit(outfits[0]);
-                      setShowOutfitDialog(true);
-                      const { data: garments } = await supabase
-                        .from('garments')
-                        .select('id, type, color, material, brand, image_url');
-                      const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
-                      setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
-                    }}
-                  >
-                    View Details
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="flex-1" 
+                      variant="outline"
+                      onClick={async () => {
+                        setSelectedOutfit(outfits[0]);
+                        setShowOutfitDialog(true);
+                        const { data: garments } = await supabase
+                          .from('garments')
+                          .select('id, type, color, material, brand, image_url');
+                        const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                        setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                      }}
+                    >
+                      View Details
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (!user) throw new Error("Not authenticated");
+
+                          const { error } = await supabase
+                            .from('saved_outfits')
+                            .insert({
+                              user_id: user.id,
+                              title: outfits[0].title,
+                              items: JSON.stringify(outfits[0].items || []),
+                              hairstyle: outfits[0].hairstyle,
+                              summary: outfits[0].summary,
+                              image_url: outfitImageUrl
+                            });
+
+                          if (error) throw error;
+                          toast({
+                            title: "Success",
+                            description: "Outfit saved to your closet!",
+                          });
+                        } catch (error: any) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to save outfit",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Heart className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Right: Item List */}
