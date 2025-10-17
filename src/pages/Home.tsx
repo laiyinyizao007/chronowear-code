@@ -40,25 +40,11 @@ export default function Home() {
   const [addingToCloset, setAddingToCloset] = useState<{ [key: number]: boolean }>({});
   const [outfitImageUrl, setOutfitImageUrl] = useState<string>("");
   const [generatingImage, setGeneratingImage] = useState(false);
-  
-  // Mock outfit recommendations (will be replaced with AI-generated ones)
-  const outfitRecommendations = [
-    {
-      imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&h=700&fit=crop",
-      title: "Casual Chic",
-      description: "Perfect for a relaxed day out with friends"
-    },
-    {
-      imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500&h=700&fit=crop",
-      title: "Smart Casual",
-      description: "Ideal for work meetings or dinner dates"
-    },
-    {
-      imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&h=700&fit=crop",
-      title: "Street Style",
-      description: "Express yourself with bold urban fashion"
-    }
-  ];
+  const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
+  const [selectedTrendOutfit, setSelectedTrendOutfit] = useState<any>(null);
+  const [showTrendDialog, setShowTrendDialog] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadWeatherAndRecommendation();
@@ -67,6 +53,7 @@ export default function Home() {
   const loadWeatherAndRecommendation = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       
       // Get user's location
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -117,8 +104,12 @@ export default function Home() {
         generateOutfitImage(recommendationData.outfits[0]);
       }
 
+      // Load trend outfits
+      loadTrendOutfits(weatherData, garments || []);
+
     } catch (error: any) {
       console.error('Error loading data:', error);
+      setLoadError(true);
       if (error.code === 1) {
         toast({
           title: "Location Access Denied",
@@ -128,13 +119,63 @@ export default function Home() {
       } else {
         toast({
           title: "Error",
-          description: "Failed to load weather data. Please try again.",
+          description: "Failed to load data. Please try again.",
           variant: "destructive",
         });
       }
     } finally {
       setLoading(false);
       setRecommendationLoading(false);
+    }
+  };
+
+  const loadTrendOutfits = async (weatherData?: any, garments?: any[]) => {
+    try {
+      setTrendLoading(true);
+      const currentWeather = weatherData || weather;
+      if (!currentWeather) return;
+
+      const currentGarments = garments || (await supabase
+        .from('garments')
+        .select('id, type, color, material, brand, image_url')).data || [];
+
+      const { data: recommendationData, error } = await supabase.functions.invoke(
+        'generate-outfit-recommendation',
+        {
+          body: {
+            temperature: currentWeather.current.temperature,
+            weatherDescription: currentWeather.current.weatherDescription,
+            uvIndex: currentWeather.current.uvIndex,
+            garments: currentGarments
+          }
+        }
+      );
+
+      if (error) throw error;
+      
+      // Generate images for trend outfits
+      const outfitsWithImages = await Promise.all(
+        (recommendationData.outfits || []).slice(0, 5).map(async (outfit: any) => {
+          try {
+            const { data } = await supabase.functions.invoke('generate-outfit-image', {
+              body: {
+                items: outfit.items || [],
+                weather: currentWeather.current,
+                hairstyle: outfit.hairstyle
+              }
+            });
+            return { ...outfit, imageUrl: data?.imageUrl };
+          } catch {
+            return outfit;
+          }
+        })
+      );
+      
+      setTrendOutfits(outfitsWithImages);
+    } catch (error) {
+      console.error('Error loading trend outfits:', error);
+    } finally {
+      setTrendLoading(false);
     }
   };
 
@@ -335,35 +376,105 @@ export default function Home() {
     return { level: "Very High", color: "text-red-600" };
   };
 
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-4">
+        <div className="text-muted-foreground">Failed to load data</div>
+        <Button onClick={loadWeatherAndRecommendation}>Try Again</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Trend Section */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Fashion Trends</h2>
-        <Card className="shadow-medium">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center space-y-2">
-                <div className="aspect-square bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-accent" />
-                </div>
-                <p className="text-sm font-medium">Minimalism</p>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-primary" />
-                </div>
-                <p className="text-sm font-medium">Earth Tones</p>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="aspect-square bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-accent" />
-                </div>
-                <p className="text-sm font-medium">Oversized</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {trendLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          </div>
+        ) : trendOutfits.length > 0 ? (
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {trendOutfits.map((outfit, index) => (
+                <CarouselItem key={index} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                  <Card 
+                    className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
+                    onClick={async () => {
+                      setSelectedTrendOutfit(outfit);
+                      setShowTrendDialog(true);
+                      const { data: garments } = await supabase
+                        .from('garments')
+                        .select('id, type, color, material, brand, image_url');
+                      const updatedItems = await enrichItemsWithImages(outfit.items || [], garments || []);
+                      setSelectedTrendOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                    }}
+                  >
+                    <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+                      {outfit.imageUrl ? (
+                        <img 
+                          src={outfit.imageUrl} 
+                          alt={outfit.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Sparkles className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                        <p className="text-white font-medium text-sm">{outfit.title}</p>
+                      </div>
+                    </div>
+                    <CardContent className="p-3">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) throw new Error("Not authenticated");
+
+                            const { error } = await supabase
+                              .from('saved_outfits')
+                              .insert({
+                                user_id: user.id,
+                                title: outfit.title,
+                                items: outfit.items || [],
+                                hairstyle: outfit.hairstyle,
+                                summary: outfit.summary,
+                                image_url: outfit.imageUrl
+                              });
+
+                            if (error) throw error;
+                            toast({
+                              title: "Success",
+                              description: "Outfit saved!",
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to save outfit",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Heart className="w-4 h-4 mr-2" />
+                        Save
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        ) : null}
       </div>
 
       {/* Today's Pick - Single Outfit */}
@@ -530,7 +641,7 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Outfit Details Dialog */}
+      {/* Today's Pick Outfit Details Dialog */}
       <Dialog open={showOutfitDialog} onOpenChange={setShowOutfitDialog}>
         <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -723,6 +834,192 @@ export default function Home() {
                 >
                   <Camera className="w-4 h-4 mr-2" />
                   Save as Today's OOTD
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Trend Outfit Details Dialog */}
+      <Dialog open={showTrendDialog} onOpenChange={setShowTrendDialog}>
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-3xl font-serif font-light">
+              <Sparkles className="w-7 h-7 text-accent" strokeWidth={1.5} />
+              Trend Outfit Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedTrendOutfit && (
+            <div className="space-y-8 mt-6">
+              <div className="bg-secondary/30 rounded-sm p-6">
+                <p className="text-base leading-relaxed text-foreground/80 font-sans">{selectedTrendOutfit.summary}</p>
+              </div>
+
+              {selectedTrendOutfit.hairstyle && (
+                <div className="space-y-4 border-t border-border/30 pt-6">
+                  <h3 className="font-serif font-light text-2xl tracking-wide flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-accent" />
+                    Recommended Hairstyle
+                  </h3>
+                  <div className="bg-accent/10 rounded-lg p-4">
+                    <p className="font-medium mb-2">{selectedTrendOutfit.hairstyle.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedTrendOutfit.hairstyle.description}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-6">
+                <h3 className="font-serif font-light text-2xl tracking-wide">Outfit Items</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {selectedTrendOutfit.items?.map((item: any, index: number) => (
+                    <Card key={index} className="shadow-card hover:shadow-large transition-all duration-500 overflow-hidden group border-border/50">
+                      <CardContent className="p-0">
+                        <div className="relative w-full aspect-square bg-secondary/20 overflow-hidden">
+                          {dialogLoadingImages ? (
+                            <div className="w-full h-full bg-muted/50 animate-pulse" />
+                          ) : item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  target.style.display = 'none';
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-secondary/30">
+                                      <svg class="w-16 h-16 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-secondary/30">
+                              <Shirt className="w-16 h-16 text-muted-foreground" strokeWidth={1} />
+                            </div>
+                          )}
+                          
+                          {item.fromCloset && (
+                            <div className="absolute top-2 right-2">
+                              <Badge variant="outline" className="text-[8px] uppercase tracking-wider bg-background/90 backdrop-blur-sm border-primary/30 text-primary font-sans px-1.5 py-0.5">
+                                Closet
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-4 space-y-3">
+                          <h4 className="font-serif font-light text-base leading-tight text-foreground truncate">
+                            {item.name}
+                          </h4>
+
+                          <div className="flex items-center justify-between gap-2">
+                            {item.brand && (
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans font-light">
+                                {item.brand}
+                              </p>
+                            )}
+                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider font-sans font-normal bg-muted px-1.5 py-0">
+                              {item.type}
+                            </Badge>
+                          </div>
+
+                          {!item.fromCloset ? (
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => handleBuyProduct(item)}
+                              >
+                                <ShoppingCart className="w-3 h-3 mr-1" />
+                                Buy
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => handleAddToCloset(item, index)}
+                                disabled={addingToCloset[index]}
+                              >
+                                {addingToCloset[index] ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    Add to Closet
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-[9px] text-primary uppercase tracking-wider font-sans pt-2">
+                              From Your Closet
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {selectedTrendOutfit.tips && selectedTrendOutfit.tips.length > 0 && (
+                <div className="space-y-4 border-t border-border/30 pt-6">
+                  <h3 className="font-serif font-light text-2xl tracking-wide">Style Tips</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedTrendOutfit.tips.map((tip: string, index: number) => (
+                      <div key={index} className="flex items-start gap-3 text-sm text-muted-foreground bg-secondary/20 rounded-sm p-4">
+                        <span className="text-accent font-semibold text-base">•</span>
+                        <span className="font-sans leading-relaxed">{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-border/30 pt-6 flex gap-3">
+                <Button
+                  className="flex-1"
+                  onClick={async () => {
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) throw new Error("Not authenticated");
+
+                      const { error } = await supabase
+                        .from('saved_outfits')
+                        .insert({
+                          user_id: user.id,
+                          title: selectedTrendOutfit.title,
+                          items: selectedTrendOutfit.items || [],
+                          hairstyle: selectedTrendOutfit.hairstyle,
+                          summary: selectedTrendOutfit.summary,
+                          image_url: selectedTrendOutfit.imageUrl
+                        });
+
+                      if (error) throw error;
+                      toast({
+                        title: "Success",
+                        description: "Outfit saved to your closet!",
+                      });
+                      setShowTrendDialog(false);
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to save outfit",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <Heart className="w-4 h-4 mr-2" />
+                  Save to Closet
                 </Button>
               </div>
             </div>
