@@ -299,65 +299,99 @@ export default function Home() {
 
       {/* Outfit Details Dialog */}
       <Dialog open={showOutfitDialog} onOpenChange={setShowOutfitDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl">
-              <Sparkles className="w-6 h-6 text-accent" />
+            <DialogTitle className="flex items-center gap-2 text-3xl font-serif font-light">
+              <Sparkles className="w-7 h-7 text-accent" strokeWidth={1.5} />
               Today's Outfit Details
             </DialogTitle>
           </DialogHeader>
           
           {selectedOutfit && (
-            <div className="space-y-6 mt-4">
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="text-sm leading-relaxed">{selectedOutfit.summary}</p>
+            <div className="space-y-8 mt-6">
+              <div className="bg-secondary/30 rounded-sm p-6">
+                <p className="text-base leading-relaxed text-foreground/80 font-sans">{selectedOutfit.summary}</p>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Outfit Items</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <h3 className="font-serif font-light text-2xl tracking-wide">Outfit Items</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {selectedOutfit.items?.map((item: any, index: number) => (
-                    <Card key={index} className="shadow-soft hover:shadow-medium transition-all">
-                      <CardContent className="p-4 space-y-2">
-                        <div className="flex items-start gap-3">
-                          {/* Image */}
-                          <div className="w-16 h-16 bg-background rounded-sm flex items-center justify-center flex-shrink-0 border border-border/30 overflow-hidden">
-                            {dialogLoadingImages ? (
-                              <div className="w-full h-full bg-muted/50 animate-pulse" />
-                            ) : item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt={`${item.brand || ''} ${item.model || item.name}`}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
+                    <Card key={index} className="shadow-card hover:shadow-large transition-all duration-500 overflow-hidden group border-border/50">
+                      <CardContent className="p-0">
+                        {/* Image Container */}
+                        <div className="relative w-full aspect-square bg-secondary/20 overflow-hidden">
+                          {dialogLoadingImages ? (
+                            <div className="w-full h-full bg-muted/50 animate-pulse" />
+                          ) : item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
                                   target.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <Shirt className="w-5 h-5 text-primary" />
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-secondary/30">
+                                      <svg class="w-16 h-16 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-secondary/30">
+                              <Shirt className="w-16 h-16 text-muted-foreground" strokeWidth={1} />
+                            </div>
+                          )}
+                          
+                          {/* Badge Overlay */}
+                          <div className="absolute top-3 right-3 flex flex-col gap-2">
+                            {item.fromCloset && (
+                              <Badge variant="outline" className="text-[10px] uppercase tracking-wider bg-background/95 backdrop-blur-sm border-primary/30 text-primary font-sans">
+                                From Closet
+                              </Badge>
                             )}
                           </div>
+                        </div>
 
-                          {/* Texts */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold truncate max-w-[14rem]">{item.name}</h4>
-                              </div>
-                              {item.fromCloset && (
-                                <Badge variant="outline" className="text-xs bg-primary/10">From Closet</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary" className="text-xs capitalize">{item.type}</Badge>
-                              {item.brand && (
-                                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{item.brand}</Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                        {/* Product Info */}
+                        <div className="p-5 space-y-3">
+                          {/* Type */}
+                          <div>
+                            <Badge variant="secondary" className="text-[11px] uppercase tracking-wider font-sans font-normal bg-muted">
+                              {item.type}
+                            </Badge>
                           </div>
+
+                          {/* Name */}
+                          <h4 className="font-serif font-light text-xl leading-tight text-foreground">
+                            {item.name}
+                          </h4>
+
+                          {/* Brand */}
+                          {item.brand && (
+                            <p className="text-sm text-muted-foreground uppercase tracking-widest font-sans font-light">
+                              {item.brand}
+                            </p>
+                          )}
+
+                          {/* Style - if provided by AI */}
+                          {item.style && (
+                            <p className="text-xs text-muted-foreground font-sans italic leading-relaxed pt-1">
+                              {item.style}
+                            </p>
+                          )}
+
+                          {/* Description */}
+                          <p className="text-sm text-muted-foreground font-sans leading-relaxed border-t border-border/30 pt-3">
+                            {item.description}
+                          </p>
                         </div>
                       </CardContent>
                     </Card>
@@ -366,13 +400,13 @@ export default function Home() {
               </div>
 
               {selectedOutfit.tips && selectedOutfit.tips.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">Style Tips</h3>
-                  <div className="space-y-2">
+                <div className="space-y-4 border-t border-border/30 pt-6">
+                  <h3 className="font-serif font-light text-2xl tracking-wide">Style Tips</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {selectedOutfit.tips.map((tip: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span className="text-accent font-semibold">•</span>
-                        <span>{tip}</span>
+                      <div key={index} className="flex items-start gap-3 text-sm text-muted-foreground bg-secondary/20 rounded-sm p-4">
+                        <span className="text-accent font-semibold text-base">•</span>
+                        <span className="font-sans leading-relaxed">{tip}</span>
                       </div>
                     ))}
                   </div>
