@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import ProductCard from "@/components/ProductCard";
+import GarmentFilterSheet from "@/components/GarmentFilterSheet";
 
 interface Garment {
   id: string;
@@ -57,6 +58,39 @@ export default function Closet() {
   const [deleteGarmentId, setDeleteGarmentId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    types: [] as string[],
+    colors: [] as string[],
+    brands: [] as string[],
+    seasons: [] as string[],
+  });
+
+  // Extract unique filter options from garments
+  const filterOptions = useMemo(() => {
+    const types = [...new Set(garments.map(g => g.type).filter(Boolean))];
+    const colors = [...new Set(garments.map(g => g.color).filter(Boolean))];
+    const brands = [...new Set(garments.map(g => g.brand).filter(Boolean))];
+    const seasons = [...new Set(garments.map(g => g.season).filter(Boolean))];
+    
+    return {
+      types: types.sort(),
+      colors: colors.sort(),
+      brands: brands.sort(),
+      seasons: seasons.sort(),
+    };
+  }, [garments]);
+
+  // Apply filters to garments
+  const filteredGarments = useMemo(() => {
+    return garments.filter(garment => {
+      if (filters.types.length > 0 && !filters.types.includes(garment.type)) return false;
+      if (filters.colors.length > 0 && !filters.colors.includes(garment.color)) return false;
+      if (filters.brands.length > 0 && !filters.brands.includes(garment.brand)) return false;
+      if (filters.seasons.length > 0 && !filters.seasons.includes(garment.season)) return false;
+      return true;
+    });
+  }, [garments, filters]);
 
   useEffect(() => {
     loadGarments();
@@ -296,10 +330,16 @@ export default function Closet() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">My Closet</h1>
-          <p className="text-muted-foreground">{garments.length} items</p>
+          <p className="text-muted-foreground">
+            {filteredGarments.length} {filteredGarments.length === garments.length ? 'items' : `of ${garments.length} items`}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => setIsFilterOpen(true)}
+          >
             <Filter className="w-4 h-4" />
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -571,7 +611,7 @@ export default function Closet() {
       ) : (
         <>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {garments.map((garment) => (
+          {filteredGarments.map((garment) => (
             <Card 
               key={garment.id} 
               className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
@@ -706,6 +746,14 @@ export default function Closet() {
           </div>
         </div>
       )}
+
+      <GarmentFilterSheet
+        open={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+        filterOptions={filterOptions}
+        currentFilters={filters}
+        onApplyFilters={setFilters}
+      />
     </div>
   );
 }
