@@ -6,6 +6,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple price estimation based on brand and type
+const estimatePrice = (brand: string, type: string): number => {
+  const brandLower = brand?.toLowerCase() || '';
+  const typeLower = type?.toLowerCase() || '';
+  
+  // Premium brands
+  if (['gucci', 'prada', 'louis vuitton', 'chanel', 'dior', 'hermès'].some(b => brandLower.includes(b))) {
+    return typeLower.includes('coat') || typeLower.includes('jacket') ? 2500 : 800;
+  }
+  
+  // High-end brands
+  if (['canada goose', 'moncler', 'burberry', 'ralph lauren'].some(b => brandLower.includes(b))) {
+    return typeLower.includes('coat') || typeLower.includes('jacket') ? 1200 : 400;
+  }
+  
+  // Mid-range brands
+  if (['zara', 'h&m', 'uniqlo', 'gap', 'cos'].some(b => brandLower.includes(b))) {
+    return typeLower.includes('coat') || typeLower.includes('jacket') ? 150 : 50;
+  }
+  
+  // Default pricing by type
+  if (typeLower.includes('coat') || typeLower.includes('jacket')) return 200;
+  if (typeLower.includes('dress')) return 80;
+  if (typeLower.includes('shirt') || typeLower.includes('top')) return 40;
+  if (typeLower.includes('pants') || typeLower.includes('jeans')) return 60;
+  if (typeLower.includes('shoes')) return 100;
+  
+  return 50; // Default
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,87 +46,35 @@ serve(async (req) => {
 
     console.log('Searching product info for:', { brand, model, type, material, color });
 
-    // Get Lovable AI API key
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
-    // Use AI to estimate product information
-    const prompt = `You are a fashion expert. Given the following garment information:
-Brand: ${brand || 'Unknown'}
-Model: ${model || 'Generic'}
-Type: ${type || 'Clothing'}
-Material: ${material || 'Unknown'}
-Color: ${color || 'Unknown'}
-
-Provide realistic product information including:
-1. Estimated retail price (in USD as a number, just the amount without $ symbol)
-2. Style description
-3. Key features (array of 3-4 items)
-4. Availability status
-
-Be realistic with pricing based on the brand reputation and product type.
-
-Return ONLY valid JSON in this exact format:
-{
-  "official_price": 129.99,
-  "price": "$129.99",
-  "style": "Classic and versatile style",
-  "features": ["Premium quality", "Comfortable fit", "Durable construction"],
-  "availability": "Available online"
-}`;
-
-    console.log('Calling Lovable AI...');
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are a fashion pricing expert. Always return valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      console.error('AI API error:', aiResponse.status);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content || '{}';
-    console.log('AI response:', aiContent);
-
-    let productInfo;
-    try {
-      productInfo = JSON.parse(aiContent);
-    } catch (e) {
-      console.warn('Failed to parse AI response, using fallback');
-      productInfo = {
-        official_price: 129.99,
-        price: "$129.99",
-        style: "Classic and versatile style",
-        features: ["Premium quality", "Comfortable fit", "Durable construction"],
-        availability: "Available online"
-      };
-    }
+    // Estimate price based on brand and type
+    const estimatedPrice = estimatePrice(brand || 'Generic', type || 'Clothing');
+    
+    const productInfo: any = {
+      official_price: estimatedPrice,
+      price: `$${estimatedPrice.toFixed(2)}`,
+      style: "Classic and versatile style",
+      features: ["Quality construction", "Comfortable fit", "Durable materials"],
+      availability: "Available online",
+      material: material,
+      color: color
+    };
 
     // Get product image from Unsplash
     const unsplashAccessKey = Deno.env.get('UNSPLASH_ACCESS_KEY');
     let productImageUrl = '';
 
+    // Build search query using type and color for better results
+    const searchQuery = [type, color, brand, 'fashion', 'clothing']
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    
+    console.log('Searching Unsplash with query:', searchQuery);
+
     if (unsplashAccessKey) {
-      const searchQuery = `${brand} ${model} fashion`.trim();
-      console.log('Using Unsplash API with query:', searchQuery);
-      
       try {
         const unsplashResponse = await fetch(
-          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=1&orientation=portrait`,
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=3&orientation=portrait`,
           {
             headers: {
               'Authorization': `Client-ID ${unsplashAccessKey}`
@@ -110,6 +88,8 @@ Return ONLY valid JSON in this exact format:
             productImageUrl = data.results[0].urls.regular;
             console.log('Found image from Unsplash API:', productImageUrl);
           }
+        } else {
+          console.error('Unsplash API error:', unsplashResponse.status);
         }
       } catch (error) {
         console.error('Error calling Unsplash API:', error);
@@ -118,15 +98,13 @@ Return ONLY valid JSON in this exact format:
 
     // Fallback to Unsplash Source if API failed or no key
     if (!productImageUrl) {
-      const searchTerms = `${brand} ${model}`.trim().replace(/\s+/g, '-').toLowerCase();
-      productImageUrl = `https://source.unsplash.com/400x600/?fashion,${searchTerms}`;
+      const fallbackTerms = [type, color].filter(Boolean).join(',').replace(/\s+/g, '-').toLowerCase();
+      productImageUrl = `https://source.unsplash.com/400x600/?${fallbackTerms || 'fashion'}`;
       console.log('Using Unsplash Source fallback:', productImageUrl);
     }
 
-    // Add image URL and other provided info
+    // Add image URL
     productInfo.imageUrl = productImageUrl;
-    productInfo.material = material;
-    productInfo.color = color;
 
     console.log('Final product info:', productInfo);
 
