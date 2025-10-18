@@ -112,6 +112,17 @@ export default function OOTDDiary() {
   const [isLiked, setIsLiked] = useState(false);
   const [addedToOOTD, setAddedToOOTD] = useState(false);
 
+  // Debug: log background state
+  useEffect(() => {
+    if (viewMode === 'day') {
+      console.log('Day view background candidate', {
+        hasImage: !!outfitImageUrl,
+        length: outfitImageUrl?.length || 0,
+        preview: outfitImageUrl ? outfitImageUrl.slice(0, 32) + '...' : null,
+      });
+    }
+  }, [viewMode, outfitImageUrl]);
+
   useEffect(() => {
     loadRecords();
     if (viewMode === 'day') {
@@ -124,6 +135,13 @@ export default function OOTDDiary() {
       loadWeatherAndRecommendation();
     }
   }, [viewMode]);
+
+  // Reload recommendation when selected date changes in day view
+  useEffect(() => {
+    if (viewMode === 'day') {
+      loadWeatherAndRecommendation();
+    }
+  }, [currentDate]);
 
   const loadRecords = async () => {
     try {
@@ -444,7 +462,8 @@ export default function OOTDDiary() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const today = new Date().toISOString().split('T')[0];
+      const selectedDay = currentDate;
+      const dayStr = selectedDay.toISOString().split('T')[0];
 
       // Get current location first
       let currentLat = 35.6764225; // Default fallback
@@ -469,7 +488,7 @@ export default function OOTDDiary() {
           .from('todays_picks')
           .select('*')
           .eq('user_id', user.id)
-          .eq('date', today)
+          .eq('date', dayStr)
           .maybeSingle();
 
         if (existingPick) {
@@ -624,14 +643,14 @@ export default function OOTDDiary() {
               .from('todays_picks')
               .delete()
               .eq('user_id', user.id)
-              .eq('date', today);
+              .eq('date', dayStr);
           }
 
           const { data: savedPick } = await supabase
             .from('todays_picks')
             .insert({
               user_id: user.id,
-              date: today,
+              date: dayStr,
               title: outfit.title,
               summary: outfit.summary,
               hairstyle: outfit.hairstyle,
@@ -1033,15 +1052,16 @@ export default function OOTDDiary() {
             <>
               {/* Background image layer */}
               <div 
-                className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0"
+                className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0 pointer-events-none"
                 style={{ 
                   backgroundImage: `url(${outfitImageUrl})`,
                   filter: 'blur(8px)',
                   transform: 'scale(1.1)', // Prevent blur edges
+                  willChange: 'transform, filter'
                 }}
               />
               {/* Semi-transparent overlay for better readability */}
-              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-0" />
+              <div className="fixed inset-0 bg-background/30 backdrop-blur-sm z-0 pointer-events-none" />
             </>
           )}
 
