@@ -892,11 +892,20 @@ export default function Closet() {
                             if (error) throw error;
 
                             toast.success("Garment added to closet!");
+                            
+                            // Close dialog and reset states
                             setIsAddDialogOpen(false);
                             setProductSuggestions([]);
                             setSelectedProduct(null);
                             setUploadedImageUrl("");
-                            loadGarments();
+                            setShowManualForm(false);
+                            setIsProcessing(false);
+                            
+                            // Reload garments to show the new one
+                            await loadGarments();
+                            
+                            // Scroll to top to show the closet view
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                           } catch (error: any) {
                             toast.error("Failed to save garment");
                           }
