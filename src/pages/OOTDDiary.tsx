@@ -846,7 +846,7 @@ export default function OOTDDiary() {
                                   </Button>
                                 </>
                               ) : (
-                                <div className="flex items-center justify-center h-full bg-secondary">
+                                <div className="flex items-center justify-center h-full bg-secondary/50">
                                   <Plus className="w-6 h-6 text-muted-foreground/40" />
                                 </div>
                               )}
@@ -917,7 +917,7 @@ export default function OOTDDiary() {
                                   </Button>
                                 </>
                               ) : (
-                                <div className="flex items-center justify-center h-full bg-secondary">
+                                <div className="flex items-center justify-center h-full bg-secondary/50">
                                   <Plus className="w-6 h-6 text-muted-foreground/40" />
                                 </div>
                               )}
