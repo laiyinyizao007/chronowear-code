@@ -3,7 +3,8 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, Sun, CloudRain } from "lucide-react";
+import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, Camera, Upload } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface WeatherData {
   location: string;
@@ -74,7 +75,6 @@ export default function Layout() {
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/closet", icon: Shirt, label: "Closet" },
-    { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
   ];
 
@@ -149,14 +149,33 @@ export default function Layout() {
               </NavLink>
             ))}
             
-            {/* CTA Button - Minimal accent */}
-            <Button
-              onClick={() => navigate("/stylist")}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-medium hover:shadow-large transition-all duration-300 -mt-8 border-2 border-background"
-              aria-label="AI Stylist"
-            >
-              <Sparkles className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[1.5]" strokeWidth={1.5} />
-            </Button>
+            {/* CTA Button - Add Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-medium hover:shadow-large transition-all duration-300 -mt-8 border-2 border-background"
+                  aria-label="Add"
+                >
+                  <Plus className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" strokeWidth={1.5} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="mb-2 bg-background border-border/50 rounded-none shadow-medium">
+                <DropdownMenuItem 
+                  onClick={() => navigate("/closet?action=add")}
+                  className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
+                >
+                  <Upload className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
+                  <span className="text-sm font-light tracking-wide">Add Garment</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => navigate("/diary?action=add")}
+                  className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
+                >
+                  <Camera className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
+                  <span className="text-sm font-light tracking-wide">Log OOTD</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {navItems.slice(2).map((item) => (
               <NavLink
