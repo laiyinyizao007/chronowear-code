@@ -3,7 +3,7 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, Camera, Upload } from "lucide-react";
+import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, Camera, Upload, Sparkles } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface WeatherData {
@@ -173,6 +173,13 @@ export default function Layout() {
                 >
                   <Camera className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
                   <span className="text-sm font-light tracking-wide">Log OOTD</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => navigate("/stylist")}
+                  className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
+                >
+                  <Sparkles className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
+                  <span className="text-sm font-light tracking-wide">AI Stylist</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
