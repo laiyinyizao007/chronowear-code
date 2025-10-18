@@ -46,7 +46,7 @@ export const generateOutfitRecommendation = async (
 
 /**
  * Enrich outfit items with images from user's closet or product search
- * Prioritizes closet items if they match
+ * Prioritizes closet items if they match by brand and model
  */
 export const enrichItemsWithImages = async (
   items: OutfitItem[],
@@ -54,22 +54,13 @@ export const enrichItemsWithImages = async (
 ): Promise<OutfitItem[]> => {
   return Promise.all(
     items.map(async (item) => {
-      // Try to find matching garment in closet with smart matching
-      const matchingGarment = garments.find((g) => {
-        const typeMatch = g.type?.toLowerCase() === item.type?.toLowerCase();
-        const colorMatch = g.color?.toLowerCase() === item.color?.toLowerCase();
-        const brandMatch = item.brand && g.brand?.toLowerCase() === item.brand?.toLowerCase();
-        const modelMatch = item.model && g.model?.toLowerCase() === item.model?.toLowerCase();
-        
-        // Best match: brand + model + type
-        if (brandMatch && modelMatch && typeMatch) return true;
-        // Good match: type + color + (brand or model)
-        if (typeMatch && colorMatch && (brandMatch || modelMatch)) return true;
-        // Basic match: type + color
-        if (typeMatch && colorMatch) return true;
-        
-        return false;
-      });
+      // Only match by brand + model
+      const matchingGarment = item.brand && item.model 
+        ? garments.find((g) => 
+            g.brand?.toLowerCase() === item.brand?.toLowerCase() &&
+            g.model?.toLowerCase() === item.model?.toLowerCase()
+          )
+        : null;
 
       if (matchingGarment) {
         // Use complete information from closet
@@ -80,6 +71,7 @@ export const enrichItemsWithImages = async (
           model: matchingGarment.model || item.model,
           color: matchingGarment.color || item.color,
           material: matchingGarment.material || item.material,
+          type: matchingGarment.type || item.type,
           fromCloset: true,
         };
       }
