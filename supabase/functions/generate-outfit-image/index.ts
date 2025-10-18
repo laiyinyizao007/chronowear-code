@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Replicate from "https://esm.sh/replicate@0.25.2";
+import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,12 +17,12 @@ serve(async (req) => {
     console.log('Generating outfit image with user photo:', userPhotoUrl);
     console.log('Items:', items);
 
-    const REPLICATE_API_KEY = Deno.env.get('REPLICATE_API_KEY');
-    if (!REPLICATE_API_KEY) {
-      throw new Error('REPLICATE_API_KEY not configured');
+    const HUGGING_FACE_ACCESS_TOKEN = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+    if (!HUGGING_FACE_ACCESS_TOKEN) {
+      throw new Error('HUGGING_FACE_ACCESS_TOKEN not configured');
     }
 
-    const replicate = new Replicate({ auth: REPLICATE_API_KEY });
+    const hf = new HfInference(HUGGING_FACE_ACCESS_TOKEN);
 
     // Build outfit description from items
     const itemDescriptions = items
@@ -41,85 +41,22 @@ serve(async (req) => {
       ? `suitable for ${weather.weatherDescription} weather at ${weather.temperature}°C`
       : '';
 
-    // If user photo is provided, use IDM-VTON for virtual try-on
-    if (userPhotoUrl && items.length > 0) {
-      // Get the first garment image (top/outerwear preferred)
-      const garmentItem = items.find((item: any) => 
-        item.type === 'top' || item.type === 'outerwear'
-      ) || items[0];
-
-      if (!garmentItem?.imageUrl) {
-        throw new Error('No garment image found for virtual try-on');
-      }
-
-      const garmentDescription = `${garmentItem.brand || ''} ${garmentItem.model || ''} ${garmentItem.color || ''}`.trim();
-      
-      console.log('Using IDM-VTON with:', {
-        userPhoto: userPhotoUrl,
-        garmentImage: garmentItem.imageUrl,
-        description: garmentDescription
-      });
-
-      const output = await replicate.run(
-        "cuuupid/idm-vton:c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4",
-        {
-          input: {
-            human_img: userPhotoUrl,
-            garm_img: garmentItem.imageUrl,
-            garment_des: garmentDescription,
-            is_checked: true,
-            is_checked_crop: false,
-            denoise_steps: 30,
-            seed: 42
-          }
-        }
-      );
-
-      console.log('IDM-VTON output:', output);
-
-      // The output is typically a URL or array of URLs
-      const imageUrl = Array.isArray(output) ? output[0] : output;
-
-      if (!imageUrl) {
-        throw new Error('No image generated from IDM-VTON');
-      }
-
-      console.log('Virtual try-on completed successfully');
-
-      return new Response(
-        JSON.stringify({ imageUrl }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Fallback: Generate outfit collage without user photo
+    // Generate outfit image using Hugging Face
     const generatePrompt = `Full body portrait of a fashion model wearing: ${itemDescriptions}. ${hairstyle ? `Hairstyle: ${hairstyle.name || hairstyle}. ` : ''}${weatherContext}. Professional fashion photography, studio lighting, clean white background, isolated person, centered composition, high quality.`;
     
-    console.log('Fallback: generating without user photo');
+    console.log('Generate prompt:', generatePrompt);
 
-    const output = await replicate.run(
-      "black-forest-labs/flux-schnell",
-      {
-        input: {
-          prompt: generatePrompt,
-          go_fast: true,
-          megapixels: "1",
-          num_outputs: 1,
-          aspect_ratio: "9:16",
-          output_format: "webp",
-          output_quality: 80,
-          num_inference_steps: 4
-        }
-      }
-    );
+    const image = await hf.textToImage({
+      inputs: generatePrompt,
+      model: 'black-forest-labs/FLUX.1-schnell',
+    });
 
-    const imageUrl = Array.isArray(output) ? output[0] : output;
+    // Convert the blob to a base64 string
+    const arrayBuffer = await image.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const imageUrl = `data:image/png;base64,${base64}`;
 
-    if (!imageUrl) {
-      throw new Error('No image generated');
-    }
-
-    console.log('Fallback image generated successfully');
+    console.log('Image generated successfully');
 
     return new Response(
       JSON.stringify({ imageUrl }),
