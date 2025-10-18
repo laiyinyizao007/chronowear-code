@@ -685,9 +685,48 @@ export default function Home() {
             Today's Pick
           </h2>
           {outfits.length > 0 && (
-            <Button variant="ghost" size="icon" onClick={() => {
+            <Button variant="ghost" size="icon" onClick={async () => {
               setOutfitImageUrl(null); // 清除当前图片
-              loadMoreOutfits(); // 加载新outfit
+              setMoreOutfitsLoading(true);
+              setRecommendationLoading(true);
+              try {
+                // 重新生成outfit推荐
+                const { data: garments } = await supabase
+                  .from('garments')
+                  .select('id, type, color, material, brand, image_url');
+                
+                const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+                  'generate-outfit-recommendation',
+                  {
+                    body: {
+                      temperature: weather?.current.temperature,
+                      weatherDescription: weather?.current.weatherDescription,
+                      uvIndex: weather?.current.uvIndex,
+                      garments: garments || []
+                    }
+                  }
+                );
+
+                if (!recError && recommendationData?.outfits) {
+                  setOutfits(recommendationData.outfits);
+                  // 自动生成第一个outfit的图片
+                  if (recommendationData.outfits[0]) {
+                    generateOutfitImage(recommendationData.outfits[0]);
+                  }
+                } else {
+                  throw recError;
+                }
+              } catch (error) {
+                console.error('Error refreshing outfit:', error);
+                toast({
+                  title: "Failed to Refresh",
+                  description: "Could not generate new outfit. Please try again.",
+                  variant: "destructive",
+                });
+              } finally {
+                setMoreOutfitsLoading(false);
+                setRecommendationLoading(false);
+              }
             }} disabled={moreOutfitsLoading}>
               {moreOutfitsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </Button>
