@@ -750,11 +750,12 @@ export default function OOTDDiary() {
     }
   };
 
-  const getWeatherIcon = (code: number) => {
-    if (code === 0) return <Sun className="w-6 h-6 text-yellow-500" />;
-    if (code <= 3) return <Cloud className="w-6 h-6 text-gray-400" />;
-    if (code <= 67) return <CloudRain className="w-6 h-6 text-blue-500" />;
-    return <Droplets className="w-6 h-6 text-blue-400" />;
+  const getWeatherIcon = (code: number, className?: string) => {
+    const iconClass = className || "w-6 h-6";
+    if (code === 0) return <Sun className={cn(iconClass, "text-yellow-500")} />;
+    if (code <= 3) return <Cloud className={cn(iconClass, "text-gray-400")} />;
+    if (code <= 67) return <CloudRain className={cn(iconClass, "text-blue-500")} />;
+    return <Droplets className={cn(iconClass, "text-blue-400")} />;
   };
 
   const getUVColor = (uv: number) => {
@@ -855,7 +856,7 @@ export default function OOTDDiary() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className={cn("space-y-4 sm:space-y-6", viewMode === 'day' && "-mx-4 sm:-mx-6")}>
       {/* Hidden dialog for Log OOTD functionality - accessible via navigation */}
       <div className="hidden">
         <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
@@ -1108,27 +1109,29 @@ export default function OOTDDiary() {
 
           {/* Today's Pick Section - Only in Day View */}
           {viewMode === 'day' && (
-            <div className="space-y-4 mb-6">
+            <div className="mb-6">
               {/* Today's Pick */}
               {todayPickLoading || recommendationLoading ? (
-                <Card className="overflow-hidden shadow-elegant">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-6 w-32" />
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Skeleton className="aspect-[3/4] w-full rounded-lg" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
-                  </CardContent>
-                </Card>
+                <div className="px-4 sm:px-6">
+                  <Card className="overflow-hidden shadow-elegant">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Skeleton className="aspect-[3/4] w-full rounded-lg" />
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
               ) : outfits.length > 0 && (
                 <>
                   {/* Full screen background with floating elements */}
-                  <div className="relative w-full h-[calc(100vh-200px)] overflow-hidden">
-                    {/* Background Image */}
+                  <div className="relative w-full h-[calc(100vh-140px)] overflow-hidden">
+                    {/* Background Image - Full width */}
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
                         <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -1146,33 +1149,14 @@ export default function OOTDDiary() {
                     )}
 
                     {/* Floating Elements */}
-                    {/* Top Left - Weather & Calendar Navigation */}
-                    <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
-                      {/* Weather Info */}
-                      {weather && (
-                        <div className="flex items-center gap-3 bg-background/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg">
-                          <div className="flex items-center gap-2">
-                            {getWeatherIcon(weather.current.weatherCode)}
-                            <span className="text-2xl font-bold">{Math.round(weather.current.temperature)}°</span>
-                          </div>
-                          <div className="border-l border-border/50 pl-3">
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {weather.location}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {weather.current.weatherDescription}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
+                    {/* Top Bar - Date Navigation & Weather */}
+                    <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between gap-2 p-3 bg-gradient-to-b from-black/60 to-transparent">
                       {/* Date Navigation */}
-                      <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-2 shadow-lg">
+                      <div className="flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-1 py-1 shadow-lg">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 rounded-full"
                           onClick={() => setCurrentDate(subDays(currentDate, 1))}
                         >
                           <ChevronLeft className="w-4 h-4" />
@@ -1180,9 +1164,9 @@ export default function OOTDDiary() {
                         
                         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                           <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-2 min-w-[120px]">
-                              <CalendarIcon className="w-4 h-4" />
-                              <span className="text-sm">{format(currentDate, 'MMM d')}</span>
+                            <Button variant="ghost" size="sm" className="gap-2 px-3 rounded-full">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                              <span className="text-xs font-medium">{format(currentDate, 'MMM d, yyyy')}</span>
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="center">
@@ -1203,42 +1187,59 @@ export default function OOTDDiary() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 rounded-full"
                           onClick={() => setCurrentDate(addDays(currentDate, 1))}
                         >
                           <ChevronRight className="w-4 h-4" />
                         </Button>
                       </div>
-                    </div>
 
-                    {/* Top Right - Refresh Button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleRefreshOutfit}
-                      disabled={recommendationLoading}
-                      className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm hover:bg-background shadow-lg h-10 w-10"
-                    >
-                      {recommendationLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4" />
-                      )}
-                    </Button>
+                      {/* Weather & Refresh */}
+                      <div className="flex items-center gap-2">
+                        {weather && (
+                          <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-3 py-2 shadow-lg">
+                            <div className="flex items-center gap-1.5">
+                              {getWeatherIcon(weather.current.weatherCode, 'w-4 h-4')}
+                              <span className="text-lg font-bold">{Math.round(weather.current.temperature)}°</span>
+                            </div>
+                            <div className="border-l border-border/50 pl-2">
+                              <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <MapPin className="w-2.5 h-2.5" />
+                                {weather.location.split(',')[0]}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleRefreshOutfit}
+                          disabled={recommendationLoading}
+                          className="h-9 w-9 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-lg"
+                        >
+                          {recommendationLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
                     {/* Left Sidebar - Items */}
                     {outfits[0]?.items && outfits[0].items.length > 0 && (
-                      <div className="absolute left-4 top-24 bottom-24 w-20 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-lg z-10">
-                        <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">
+                      <div className="absolute left-3 top-20 bottom-32 w-16 bg-background/90 backdrop-blur-sm rounded-2xl p-2 shadow-lg z-10 overflow-hidden">
+                        <div className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
                           Items
                         </div>
-                        <div className="space-y-2 overflow-y-auto max-h-full">
+                        <div className="space-y-1.5 overflow-y-auto max-h-full scrollbar-hide">
                           {outfits[0].items.map((item: any, idx: number) => (
                             <div 
                               key={idx} 
                               className={cn(
-                                "relative aspect-square rounded overflow-hidden bg-background transition-opacity group cursor-pointer",
-                                !item.fromCloset && "opacity-20"
+                                "relative aspect-square rounded-lg overflow-hidden bg-background transition-all group cursor-pointer ring-1 ring-border/50",
+                                !item.fromCloset && "opacity-30"
                               )}
                               onClick={() => {
                                 setSelectedItem(item);
@@ -1253,13 +1254,13 @@ export default function OOTDDiary() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-secondary/50">
-                                  <span className="text-[9px] text-muted-foreground text-center p-1 leading-tight">
+                                  <span className="text-[8px] text-muted-foreground text-center p-0.5 leading-tight">
                                     {item.type}
                                   </span>
                                 </div>
                               )}
-                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
-                                <span className="text-[8px] text-white text-center leading-tight">
+                              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-0.5">
+                                <span className="text-[7px] text-white text-center leading-tight font-medium">
                                   {item.name}
                                 </span>
                               </div>
@@ -1269,30 +1270,30 @@ export default function OOTDDiary() {
                       </div>
                     )}
 
-                    {/* Center - Title */}
-                    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 z-10 bg-background/80 backdrop-blur-sm rounded-lg px-6 py-3 shadow-lg">
-                      <h3 className="font-bold text-xl uppercase tracking-wide text-center">{outfits[0]?.title}</h3>
+                    {/* Center - Title Overlay */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-background/95 backdrop-blur-md rounded-2xl px-6 py-3 shadow-2xl max-w-[80%]">
+                      <h3 className="font-bold text-base sm:text-lg uppercase tracking-wider text-center whitespace-nowrap">{outfits[0]?.title}</h3>
                     </div>
 
                     {/* Bottom - Summary & Actions */}
-                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
-                      <p className="text-white text-sm leading-relaxed mb-4">
+                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 pb-6">
+                      <p className="text-white text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3">
                         {outfits[0]?.summary}
                       </p>
                       
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={toggleLikeStatus}
-                          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm h-12 w-12"
+                          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm h-11 w-11 rounded-full shrink-0"
                         >
                           <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
                         </Button>
                         
                         <Button
                           variant="default"
-                          className="flex-1"
+                          className="flex-1 h-11 rounded-full font-semibold shadow-lg"
                           onClick={() => {
                             setSelectedDateForLog(currentDate);
                             setIsAddDialogOpen(true);
@@ -1301,37 +1302,20 @@ export default function OOTDDiary() {
                           disabled={addedToOOTD}
                         >
                           <CalendarDays className="w-4 h-4 mr-2" />
-                          {addedToOOTD ? 'Added to OOTD' : 'Log'}
+                          {addedToOOTD ? 'Added to OOTD' : 'Add to OOTD'}
                         </Button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Weather Section - Below full screen module */}
-                  {weather && (
-                    <div className="px-2 hidden">
-                      <div className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                          {getWeatherIcon(weather.current.weatherCode)}
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="font-semibold">
-                              {Math.round(weather.current.temperature)}{weather.temperatureUnit || '°'} / {Math.round(weather.daily.temperatureMin)}{weather.temperatureUnit || '°'}
-                            </span>
-                            <span className={`${getUVColor(weather.current.uvIndex)}`}>
-                              UV {weather.current.uvIndex.toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
-                          <span>{weather.location}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
+            </div>
+          )}
 
+          {/* Week View Content */}
+          {viewMode === 'week' && (
+            <div className="px-4 sm:px-6">
+              {/* Week view content will go here */}
             </div>
           )}
 
