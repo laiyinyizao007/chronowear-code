@@ -84,42 +84,10 @@ export default function Stylist() {
   };
 
   const processBackgroundRemoval = async (imageUrl: string) => {
-    try {
-      setProcessingBg(true);
-      toast.info("使用Hugging Face免费AI移除背景... 首次使用可能需要20-30秒加载模型");
-      
-      console.log('Calling Hugging Face Spaces for background removal...');
-      
-      // Call our edge function for background removal
-      const { data, error } = await supabase.functions.invoke('remove-background-hf', {
-        body: { imageUrl }
-      });
-
-      if (error) throw error;
-
-      if (data?.imageUrl) {
-        setRemovedBgImageUrl(data.imageUrl);
-        toast.success("背景移除成功！已保留人物主体");
-      } else {
-        throw new Error('No processed image returned');
-      }
-      
-    } catch (error) {
-      console.error("Background removal error:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Show more helpful error messages
-      if (errorMessage.includes('模型正在加载')) {
-        toast.error(errorMessage + '\n请稍等片刻后重试');
-      } else {
-        toast.error(`背景移除失败: ${errorMessage}. 使用原始照片。`);
-      }
-      
-      // Fallback: use original photo if background removal fails
-      setRemovedBgImageUrl(imageUrl);
-    } finally {
-      setProcessingBg(false);
-    }
+    // 暂时跳过背景移除，直接使用原图
+    console.log('Using original image without background removal');
+    setRemovedBgImageUrl(imageUrl);
+    setProcessingBg(false);
   };
 
   const handleGenerateTryOn = async () => {
@@ -255,7 +223,7 @@ export default function Stylist() {
           <div className="lg:hidden space-y-4">
             {/* Model Display */}
             <div className="relative">
-              <div className="aspect-[3/4] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
+              <div className="h-[70vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
                 {processingBg ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                     <div className="text-center space-y-3">
@@ -267,19 +235,21 @@ export default function Stylist() {
                   <img
                     src={tryOnResultUrl}
                     alt="Virtual try-on result"
-                    className="w-full h-full object-contain p-4"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : removedBgImageUrl ? (
                   <img
                     src={removedBgImageUrl}
                     alt="Your photo"
-                    className="w-full h-full object-contain p-4"
+                    className="w-full h-full object-cover object-center"
+                    style={{ objectPosition: '50% 50%' }}
                   />
                 ) : (
                   <img
                     src={fullBodyPhotoUrl}
                     alt="Your photo"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
+                    style={{ objectPosition: '50% 50%' }}
                   />
                 )}
                 
@@ -399,19 +369,21 @@ export default function Stylist() {
                   <img
                     src={tryOnResultUrl}
                     alt="Virtual try-on result"
-                    className="w-full h-full object-contain p-4"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : removedBgImageUrl ? (
                   <img
                     src={removedBgImageUrl}
                     alt="Your photo"
-                    className="w-full h-full object-contain p-4"
+                    className="w-full h-full object-cover object-center"
+                    style={{ objectPosition: '50% 50%' }}
                   />
                 ) : (
                   <img
                     src={fullBodyPhotoUrl}
                     alt="Your photo"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
+                    style={{ objectPosition: '50% 50%' }}
                   />
                 )}
                 
