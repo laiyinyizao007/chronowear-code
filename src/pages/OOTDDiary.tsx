@@ -686,7 +686,8 @@ export default function OOTDDiary() {
           items: outfit.items || [],
           weather: weather?.current,
           hairstyle: outfit.hairstyle,
-          userPhotoUrl: userPhotoUrl
+          userPhotoUrl: userPhotoUrl,
+          userId: user?.id
         }
       });
 

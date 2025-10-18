@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { items, weather, hairstyle, userPhotoUrl } = await req.json();
+    const { items, weather, hairstyle, userPhotoUrl, userId } = await req.json();
     
     console.log('Generating outfit image with user photo:', userPhotoUrl);
     console.log('Items:', items);
@@ -21,6 +22,10 @@ serve(async (req) => {
     if (!HUGGING_FACE_ACCESS_TOKEN) {
       throw new Error('HUGGING_FACE_ACCESS_TOKEN not configured');
     }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const hf = new HfInference(HUGGING_FACE_ACCESS_TOKEN);
 
@@ -51,15 +56,32 @@ serve(async (req) => {
       model: 'black-forest-labs/FLUX.1-schnell',
     });
 
-    // Convert the blob to a base64 string
+    // Convert image to ArrayBuffer
     const arrayBuffer = await image.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    const imageUrl = `data:image/png;base64,${base64}`;
+    
+    // Upload to Supabase Storage
+    const fileName = `${userId || 'guest'}/${Date.now()}-outfit.png`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('ootd-photos')
+      .upload(fileName, arrayBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      });
 
-    console.log('Image generated successfully');
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      throw uploadError;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('ootd-photos')
+      .getPublicUrl(fileName);
+
+    console.log('Image uploaded successfully to:', publicUrl);
 
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify({ imageUrl: publicUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
