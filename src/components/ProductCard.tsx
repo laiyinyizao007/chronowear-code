@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 
 interface ProductCardProps {
@@ -30,9 +29,14 @@ export default function ProductCard({
   onSelect,
 }: ProductCardProps) {
   return (
-    <Card className={`group overflow-hidden shadow-card hover:shadow-large transition-all duration-300 cursor-pointer border-0 ${
-      selected ? 'ring-2 ring-primary shadow-large' : ''
-    }`}>
+    <Card 
+      onClick={onSelect}
+      className={`group overflow-hidden transition-all duration-300 cursor-pointer h-full flex flex-col ${
+        selected 
+          ? 'ring-2 ring-primary shadow-large bg-primary/5' 
+          : 'shadow-card hover:shadow-large border'
+      }`}
+    >
       <div className="aspect-[3/4] relative bg-muted overflow-hidden">
         {imageUrl ? (
           <img
@@ -50,15 +54,17 @@ export default function ProductCard({
           </div>
         )}
         {selected && (
-          <div className="absolute top-3 right-3 bg-accent text-accent-foreground rounded-full p-1.5 shadow-medium">
-            <Check className="w-4 h-4" />
+          <div className="absolute inset-0 bg-primary/10 backdrop-blur-[2px] flex items-center justify-center">
+            <div className="bg-primary text-primary-foreground rounded-full p-3 shadow-large">
+              <Check className="w-8 h-8" strokeWidth={3} />
+            </div>
           </div>
         )}
       </div>
-      <CardContent className="p-5 space-y-3">
+      <CardContent className="p-5 space-y-3 flex-1 flex flex-col">
         <div>
           <h3 className="font-bold text-xl tracking-tight">{brand}</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">{model}</p>
+          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{model}</p>
         </div>
         
         <div className="flex items-baseline justify-between">
@@ -74,13 +80,13 @@ export default function ProductCard({
           )}
         </div>
 
-        <div className="space-y-2 pt-1">
-          <p className="text-sm leading-relaxed">{style}</p>
+        <div className="space-y-2 pt-1 flex-1">
+          <p className="text-sm leading-relaxed line-clamp-2">{style}</p>
           {material && (
-            <p className="text-xs text-muted-foreground">Material: {material}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">Material: {material}</p>
           )}
           {color && (
-            <p className="text-xs text-muted-foreground">Color: {color}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">Color: {color}</p>
           )}
         </div>
 
@@ -88,8 +94,8 @@ export default function ProductCard({
           <div className="space-y-1.5 pt-1">
             <p className="text-xs font-semibold uppercase tracking-wide">Features</p>
             <ul className="text-xs text-muted-foreground space-y-1">
-              {features.slice(0, 3).map((feature, idx) => (
-                <li key={idx} className="flex items-start">
+              {features.slice(0, 2).map((feature, idx) => (
+                <li key={idx} className="flex items-start line-clamp-1">
                   <span className="mr-1.5">•</span>
                   <span>{feature}</span>
                 </li>
@@ -97,15 +103,6 @@ export default function ProductCard({
             </ul>
           </div>
         )}
-
-        <Button 
-          onClick={onSelect}
-          variant={selected ? "default" : "outline"}
-          className="w-full mt-4 font-semibold"
-          size="lg"
-        >
-          {selected ? "Selected ✓" : "Add to Closet"}
-        </Button>
       </CardContent>
     </Card>
   );

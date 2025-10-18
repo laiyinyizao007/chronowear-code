@@ -900,11 +900,11 @@ export default function Closet() {
                   </div>
                 </form>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-6 pb-24">
                   <Carousel className="w-full max-w-full">
                     <CarouselContent className="-ml-4">
                       {productSuggestions.map((product, index) => (
-                        <CarouselItem key={index} className="pl-4 basis-[min(350px,80vw)]">
+                        <CarouselItem key={index} className="pl-4 basis-[min(350px,80vw)] h-[550px]">
                           <ProductCard
                             brand={product.brand}
                             model={product.model}
@@ -916,89 +916,18 @@ export default function Closet() {
                             color={product.color}
                             availability={product.availability}
                             selected={selectedProduct === index}
-                            onSelect={async () => {
-                              // Prevent duplicate saves
-                              if (isSaving) return;
-                              
-                              setIsSaving(true);
-                              startProcessing();
-                              setProgress(20);
-                              
-                              try {
-                                const { data: { user } } = await supabase.auth.getUser();
-                                if (!user) throw new Error("Not authenticated");
-
-                                const selectedProductData = productSuggestions[index];
-                                
-                                setProgress(40);
-                                
-                                // Get washing frequency and care instructions recommendation
-                                let washingFrequency = null;
-                                let careInstructions = null;
-                                if (selectedProductData.material) {
-                                  const recommendation = await getWashingRecommendation(selectedProductData.material, selectedProductData.type || "Top");
-                                  washingFrequency = recommendation.frequency;
-                                  careInstructions = recommendation.care_instructions;
-                                }
-
-                                setProgress(70);
-
-                                const { error } = await supabase.from("garments").insert({
-                                  user_id: user.id,
-                                  image_url: uploadedImageUrl,
-                                  type: selectedProductData.type || "Top",
-                                  color: selectedProductData.color || "",
-                                  season: "All-Season",
-                                  brand: selectedProductData.brand,
-                                  material: selectedProductData.material || "",
-                                  washing_frequency: washingFrequency,
-                                  care_instructions: careInstructions,
-                                  official_price: selectedProductData.official_price || null,
-                                  currency: currency,
-                                  usage_count: 0,
-                                });
-
-                                if (error) throw error;
-
-                                setProgress(90);
-                                
-                                // Close dialog and reset states
-                                setIsAddDialogOpen(false);
-                                setProductSuggestions([]);
-                                setSelectedProduct(null);
-                                setUploadedImageUrl("");
-                                setShowManualForm(false);
-                                setIsProcessing(false);
-                                
-                                // Reload garments to show the new one
-                                await loadGarments();
-                                
-                                setProgress(100);
-                                
-                                setTimeout(() => {
-                                  stopProcessing();
-                                }, 300);
-                                
-                                // Scroll to top to show the closet view
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              } catch (error: any) {
-                                toast.error("Failed to save garment");
-                                stopProcessing();
-                              } finally {
-                                setIsSaving(false);
-                              }
-                            }}
+                            onSelect={() => setSelectedProduct(index)}
                           />
                         </CarouselItem>
                       ))}
                       
                       {/* More Card */}
-                      <CarouselItem className="pl-4 basis-[min(350px,80vw)]">
+                      <CarouselItem className="pl-4 basis-[min(350px,80vw)] h-[550px]">
                         <Card 
-                          className="h-full cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary"
+                          className="h-full cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary flex"
                           onClick={loadMoreProducts}
                         >
-                          <CardContent className="flex flex-col items-center justify-center h-full min-h-[400px] p-6">
+                          <CardContent className="flex flex-col items-center justify-center h-full w-full p-6">
                             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
                               <Plus className="w-10 h-10 text-muted-foreground" />
                             </div>
@@ -1013,6 +942,98 @@ export default function Closet() {
                     <CarouselPrevious className="hidden md:flex" />
                     <CarouselNext className="hidden md:flex" />
                   </Carousel>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowManualForm(true)}
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Enter Details Manually
+                  </Button>
+                </div>
+              )}
+              
+              {/* Fixed Add to Closet Button */}
+              {productSuggestions.length > 0 && !showManualForm && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg z-50">
+                  <Button
+                    className="w-full h-14 text-lg font-semibold"
+                    disabled={selectedProduct === null || isSaving}
+                    onClick={async () => {
+                      if (selectedProduct === null) return;
+                      
+                      setIsSaving(true);
+                      startProcessing();
+                      setProgress(20);
+                      
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (!user) throw new Error("Not authenticated");
+
+                        const selectedProductData = productSuggestions[selectedProduct];
+                        
+                        setProgress(40);
+                        
+                        // Get washing frequency and care instructions recommendation
+                        let washingFrequency = null;
+                        let careInstructions = null;
+                        if (selectedProductData.material) {
+                          const recommendation = await getWashingRecommendation(selectedProductData.material, selectedProductData.type || "Top");
+                          washingFrequency = recommendation.frequency;
+                          careInstructions = recommendation.care_instructions;
+                        }
+
+                        setProgress(70);
+
+                        const { error } = await supabase.from("garments").insert({
+                          user_id: user.id,
+                          image_url: uploadedImageUrl,
+                          type: selectedProductData.type || "Top",
+                          color: selectedProductData.color || "",
+                          season: "All-Season",
+                          brand: selectedProductData.brand,
+                          material: selectedProductData.material || "",
+                          washing_frequency: washingFrequency,
+                          care_instructions: careInstructions,
+                          official_price: selectedProductData.official_price || null,
+                          currency: currency,
+                          usage_count: 0,
+                        });
+
+                        if (error) throw error;
+
+                        setProgress(90);
+                        
+                        // Close dialog and reset states
+                        setIsAddDialogOpen(false);
+                        setProductSuggestions([]);
+                        setSelectedProduct(null);
+                        setUploadedImageUrl("");
+                        setShowManualForm(false);
+                        setIsProcessing(false);
+                        
+                        // Reload garments to show the new one
+                        await loadGarments();
+                        
+                        setProgress(100);
+                        
+                        setTimeout(() => {
+                          stopProcessing();
+                        }, 300);
+                        
+                        // Scroll to top to show the closet view
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } catch (error: any) {
+                        toast.error("Failed to save garment");
+                        stopProcessing();
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                  >
+                    {isSaving ? "Adding..." : selectedProduct !== null ? "Add to Closet" : "Select a Product"}
+                  </Button>
                 </div>
               )}
               </SheetContent>
