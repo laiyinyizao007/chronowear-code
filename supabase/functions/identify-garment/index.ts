@@ -57,7 +57,18 @@ async function analyzeGarmentImage(imageUrl: string, apiKey: string, corsHeaders
     console.log('Converting image to base64...');
     const imageBlob = await imageResponse.blob();
     const imageBuffer = await imageBlob.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    
+    // Convert to base64 in chunks to avoid stack overflow
+    const uint8Array = new Uint8Array(imageBuffer);
+    const chunkSize = 8192;
+    let binaryString = '';
+    
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize);
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    const base64Image = btoa(binaryString);
     console.log('Image converted to base64, size:', base64Image.length, 'bytes');
     
     // Enhanced prompt for better garment identification
