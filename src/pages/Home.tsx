@@ -626,15 +626,29 @@ export default function Home() {
                     <Button 
                       className="flex-1" 
                       variant="outline"
-                      onClick={async () => {
-                        setSelectedOutfit(outfits[0]);
-                        setShowOutfitDialog(true);
-                        const { data: garments } = await supabase
-                          .from('garments')
-                          .select('id, type, color, material, brand, image_url');
-                        const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
-                        setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
-                      }}
+                       onClick={async () => {
+                         console.log("View Details clicked, testing search-product-info...");
+                         
+                         // Test search-product-info function
+                         try {
+                           const testResult = await supabase.functions.invoke('search-product-info', {
+                             body: { brand: "Zara", model: "Professional" }
+                           });
+                           console.log("Test search-product-info result:", testResult);
+                         } catch (error) {
+                           console.error("Test search-product-info error:", error);
+                         }
+                         
+                         setSelectedOutfit(outfits[0]);
+                         setShowOutfitDialog(true);
+                         const { data: garments } = await supabase
+                           .from('garments')
+                           .select('id, type, color, material, brand, image_url');
+                         console.log("Before enrichItemsWithImages, items:", outfits[0].items);
+                         const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                         console.log("After enrichItemsWithImages, items:", updatedItems);
+                         setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                       }}
                     >
                       View Details
                     </Button>
