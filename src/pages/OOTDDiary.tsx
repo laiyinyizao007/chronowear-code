@@ -1056,38 +1056,25 @@ export default function OOTDDiary() {
           {/* Today's Pick Section - Only in Day View */}
           {viewMode === 'day' && (
             <div className="space-y-6 mb-6">
-              {/* Weather Section */}
+              {/* Weather Section - Compact Format */}
               {weather && (
                 <Card className="overflow-hidden shadow-elegant">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="mt-1">
-                          {getWeatherIcon(weather.current.weatherCode)}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-bold">{Math.round(weather.current.temperature)}°</span>
-                            <span className="text-sm text-muted-foreground">
-                              {Math.round(weather.daily.temperatureMin)}° - {Math.round(weather.daily.temperatureMax)}°
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{weather.current.weatherDescription}</p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Droplets className="w-3 h-3" />
-                              <span>{weather.current.humidity}%</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Sun className={`w-3 h-3 ${getUVColor(weather.current.uvIndex)}`} />
-                              <span className={getUVColor(weather.current.uvIndex)}>UV {weather.current.uvIndex}</span>
-                            </div>
-                          </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {getWeatherIcon(weather.current.weatherCode)}
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-semibold">
+                            {Math.round(weather.current.temperature)}° / {Math.round(weather.daily.temperatureMin)}°
+                          </span>
+                          <span className={`${getUVColor(weather.current.uvIndex)}`}>
+                            UV {weather.current.uvIndex.toFixed(1)}
+                          </span>
                         </div>
                       </div>
-                      <div className="text-right text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3 inline mr-1" />
-                        {weather.location}
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="w-3 h-3" />
+                        <span>{weather.location}</span>
                       </div>
                     </div>
                   </CardContent>
