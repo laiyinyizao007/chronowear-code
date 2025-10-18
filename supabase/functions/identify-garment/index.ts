@@ -13,9 +13,9 @@ serve(async (req) => {
   try {
     const { imageUrl } = await req.json();
     const SERPAPI_KEY = Deno.env.get('SERPAPI_KEY');
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-    if (!SERPAPI_KEY || !LOVABLE_API_KEY) {
+    if (!SERPAPI_KEY || !GEMINI_API_KEY) {
       throw new Error('API keys not configured');
     }
 
@@ -45,24 +45,12 @@ serve(async (req) => {
     
     if (searchResults.length === 0) {
       console.log('No results from SerpAPI, falling back to direct AI analysis');
-      // Fallback to direct AI analysis
-      return await directAIAnalysis(imageUrl, LOVABLE_API_KEY, corsHeaders);
+      return await directAIAnalysis(imageUrl, GEMINI_API_KEY, corsHeaders);
     }
 
-    // Step 2: Use AI to analyze the Google search results and extract product info
-    console.log('Analyzing search results with AI...');
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: `Based on these Google reverse image search results, identify ALL visible clothing items and accessories in the outfit.
+    // Step 2: Use Gemini to analyze the Google search results
+    console.log('Analyzing search results with Gemini...');
+    const prompt = `Based on these Google reverse image search results, identify ALL visible clothing items and accessories in the outfit.
 
 Search Results:
 ${JSON.stringify(searchResults, null, 2)}
@@ -85,27 +73,38 @@ Return ONLY valid JSON in this exact format:
   ]
 }
 
-Include a separate entry for each distinct item. Be specific with brand and model names based on the search results.`
-          }
-        ],
-        temperature: 0.3,
+Include a separate entry for each distinct item. Be specific with brand and model names based on the search results.`;
+
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      console.error('Gemini API error:', aiResponse.status, errorText);
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    const content = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
-      throw new Error('No content in AI response');
+      throw new Error('No content in Gemini response');
     }
 
-    console.log('AI analysis result:', content);
+    console.log('Gemini analysis result:', content);
 
     let results;
     try {
@@ -135,37 +134,42 @@ Include a separate entry for each distinct item. Be specific with brand and mode
 
 // Fallback function for direct AI analysis when Google search fails
 async function directAIAnalysis(imageUrl: string, apiKey: string, corsHeaders: Record<string, string>) {
-  console.log('Using direct AI analysis as fallback');
+  console.log('Using direct Gemini vision analysis as fallback');
   
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  // Convert image URL to base64 if needed
+  const imageResponse = await fetch(imageUrl);
+  const imageBlob = await imageResponse.blob();
+  const imageBuffer = await imageBlob.arrayBuffer();
+  const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+  
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Analyze this outfit photo and identify ALL visible clothing items and accessories. For each item, identify the most likely brand and model. Return ONLY valid JSON: {"garments": [{"brand": "string", "model": "string", "type": "Top/Bottom/Shoes/Bag/Accessory/Outerwear", "color": "string", "material": "string"}]}'
-            },
-            {
-              type: 'image_url',
-              image_url: { url: imageUrl }
+      contents: [{
+        parts: [
+          {
+            text: 'Analyze this outfit photo and identify ALL visible clothing items and accessories. For each item, identify the most likely brand and model. Return ONLY valid JSON: {"garments": [{"brand": "string", "model": "string", "type": "Top/Bottom/Shoes/Bag/Accessory/Outerwear", "color": "string", "material": "string"}]}'
+          },
+          {
+            inline_data: {
+              mime_type: imageBlob.type,
+              data: base64Image
             }
-          ]
-        }
-      ],
-      temperature: 0.5,
+          }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.5,
+        maxOutputTokens: 2048,
+      }
     }),
   });
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
   
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   const results = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
