@@ -921,13 +921,16 @@ export default function Closet() {
                               if (isSaving) return;
                               
                               setIsSaving(true);
-                              toast.loading("Adding to closet...");
+                              startProcessing();
+                              setProgress(20);
                               
                               try {
                                 const { data: { user } } = await supabase.auth.getUser();
                                 if (!user) throw new Error("Not authenticated");
 
                                 const selectedProductData = productSuggestions[index];
+                                
+                                setProgress(40);
                                 
                                 // Get washing frequency and care instructions recommendation
                                 let washingFrequency = null;
@@ -937,6 +940,8 @@ export default function Closet() {
                                   washingFrequency = recommendation.frequency;
                                   careInstructions = recommendation.care_instructions;
                                 }
+
+                                setProgress(70);
 
                                 const { error } = await supabase.from("garments").insert({
                                   user_id: user.id,
@@ -955,8 +960,7 @@ export default function Closet() {
 
                                 if (error) throw error;
 
-                                toast.dismiss();
-                                toast.success("Garment added to closet!");
+                                setProgress(90);
                                 
                                 // Close dialog and reset states
                                 setIsAddDialogOpen(false);
@@ -969,11 +973,17 @@ export default function Closet() {
                                 // Reload garments to show the new one
                                 await loadGarments();
                                 
+                                setProgress(100);
+                                
+                                setTimeout(() => {
+                                  stopProcessing();
+                                }, 300);
+                                
                                 // Scroll to top to show the closet view
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               } catch (error: any) {
-                                toast.dismiss();
                                 toast.error("Failed to save garment");
+                                stopProcessing();
                               } finally {
                                 setIsSaving(false);
                               }
