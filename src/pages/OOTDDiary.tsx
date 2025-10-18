@@ -990,16 +990,18 @@ export default function OOTDDiary() {
               </Button>
             </div>
 
-            {/* Plan Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPlanDialog(true)}
-              className="gap-2"
-            >
-              <Sparkles className="w-4 h-4" />
-              AI Plan
-            </Button>
+            {/* Plan Button - Only show in week view */}
+            {viewMode === 'week' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPlanDialog(true)}
+                className="gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                AI Plan
+              </Button>
+            )}
 
             {/* Date Navigation */}
             <div className="flex items-center justify-center gap-2">
@@ -1049,14 +1051,7 @@ export default function OOTDDiary() {
             </div>
           </div>
 
-          {/* Month Display - Only show in day view */}
-          {viewMode === 'day' && (
-            <div className="text-center py-4">
-              <h2 className="text-4xl sm:text-6xl font-light tracking-wide text-muted-foreground/40">
-                {format(currentDate, 'MMMM').toUpperCase()}
-              </h2>
-            </div>
-          )}
+          {/* Month Display removed from day view */}
 
           {/* Today's Pick Section - Only in Day View */}
           {viewMode === 'day' && (
