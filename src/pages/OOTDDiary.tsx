@@ -767,18 +767,7 @@ export default function OOTDDiary() {
                 })}
               </div>
             ) : (
-              <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {/* Day Headers */}
-                {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day, idx) => (
-                  <div
-                    key={idx}
-                    className="text-center text-xs sm:text-sm font-black text-primary py-2 tracking-wider"
-                  >
-                    {day}
-                  </div>
-                ))}
-
-                {/* Week Days */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {(() => {
                   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
                   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -792,8 +781,8 @@ export default function OOTDDiary() {
                     return (
                       <div
                         key={day.toISOString()}
-                        className={`aspect-square border-2 border-dashed rounded-lg transition-all cursor-pointer border-primary/40 hover:border-primary hover:bg-primary/5 ${
-                          isToday ? "ring-2 ring-primary bg-primary/10" : ""
+                        className={`group relative bg-card rounded-lg overflow-hidden border transition-all cursor-pointer hover:shadow-lg ${
+                          isToday ? "ring-2 ring-primary" : "border-border hover:border-primary"
                         }`}
                         onClick={() => {
                           if (hasRecord) {
@@ -804,41 +793,57 @@ export default function OOTDDiary() {
                           }
                         }}
                       >
-                        <div className="relative w-full h-full p-1 sm:p-2">
+                        {/* Date label at top */}
+                        <div className="absolute top-0 left-0 right-0 z-10 bg-background/90 backdrop-blur-sm px-3 py-2 border-b border-border">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-lg font-bold">{format(day, "d")}</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-wide">{format(day, "EEE")}</span>
+                          </div>
+                        </div>
+
+                        {/* Image container with 3:4 aspect ratio */}
+                        <div className="aspect-[3/4] w-full">
                           {hasRecord ? (
                             <>
                               <img
                                 src={dayRecords[0].photo_url}
-                                alt={`OOTD ${format(day, "d")}`}
-                                className="w-full h-full object-cover rounded"
+                                alt={`OOTD ${format(day, "MMM d")}`}
+                                className="w-full h-full object-cover object-top"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded" />
-                              <div className="absolute bottom-1 left-1 right-1 text-white">
-                                <div className="text-xl sm:text-3xl font-bold leading-none">
-                                  {format(day, "d")}
-                                </div>
-                              </div>
+                              {/* Delete button */}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-0.5 right-0.5 h-5 w-5 bg-black/40 hover:bg-black/60 text-white"
+                                className="absolute top-12 right-2 h-8 w-8 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setDeleteRecordId(dayRecords[0].id);
                                 }}
                               >
-                                <X className="w-3 h-3" />
+                                <X className="w-4 h-4" />
                               </Button>
                             </>
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-full">
-                              <span className="text-2xl sm:text-4xl font-black text-primary">
-                                {format(day, "d")}
-                              </span>
-                              <div className="mt-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary/40" />
+                            <div className="flex flex-col items-center justify-center h-full bg-muted/30">
+                              <Plus className="w-8 h-8 text-muted-foreground/40 mb-2" />
+                              <span className="text-xs text-muted-foreground">Add OOTD</span>
                             </div>
                           )}
                         </div>
+
+                        {/* Weather/Location info overlay (optional, shown on hover if exists) */}
+                        {hasRecord && dayRecords[0].location && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-xs text-white/90 truncate">
+                              📍 {dayRecords[0].location}
+                            </p>
+                            {dayRecords[0].weather && (
+                              <p className="text-xs text-white/70 truncate">
+                                {dayRecords[0].weather}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   });
