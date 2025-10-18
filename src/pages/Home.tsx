@@ -811,386 +811,338 @@ export default function Home() {
         </Card>
       </div>
 
-      {/* Today's Pick Outfit Details Dialog */}
+      {/* Today's Pick Outfit Details Dialog - Mobile-First Design */}
       <Dialog open={showOutfitDialog} onOpenChange={setShowOutfitDialog}>
-        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-3xl font-serif font-light">
-              <Sparkles className="w-7 h-7 text-accent" strokeWidth={1.5} />
-              Today's Outfit Details
+        <DialogContent className="max-w-md h-[90vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="px-4 pt-4 pb-2 border-b">
+            <DialogTitle className="text-lg font-medium flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-accent" />
+              Outfit Details
             </DialogTitle>
           </DialogHeader>
           
-          {selectedOutfit && (
-            <div className="space-y-8 mt-6">
-              <div className="bg-secondary/30 rounded-sm p-6">
-                <p className="text-base leading-relaxed text-foreground/80 font-sans">{selectedOutfit.summary}</p>
-              </div>
-
-              {/* Hairstyle Recommendation */}
-              {selectedOutfit.hairstyle && (
-                <div className="space-y-4 border-t border-border/30 pt-6">
-                  <h3 className="font-serif font-light text-2xl tracking-wide flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-accent" />
-                    Recommended Hairstyle
-                  </h3>
-                  <div className="bg-accent/10 rounded-lg p-4">
-                    <p className="font-medium mb-2">{selectedOutfit.hairstyle.name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedOutfit.hairstyle.description}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-6">
-                <h3 className="font-serif font-light text-2xl tracking-wide">Outfit Items</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {selectedOutfit.items?.map((item: any, index: number) => (
-                    <Card key={index} className="shadow-card hover:shadow-large transition-all duration-500 overflow-hidden group border-border/50">
-                      <CardContent className="p-0">
-                        {/* Image Container */}
-                        <div className="relative w-full aspect-square bg-secondary/20 overflow-hidden">
-                          {dialogLoadingImages ? (
-                            <div className="w-full h-full bg-muted/50 animate-pulse" />
-                          ) : item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={`${item.brand || ''} ${item.model || item.name}`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              loading="lazy"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  target.style.display = 'none';
-                                  parent.innerHTML = `
-                                    <div class="w-full h-full flex items-center justify-center bg-secondary/30">
-                                      <svg class="w-16 h-16 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                      </svg>
-                                    </div>
-                                  `;
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-secondary/30">
-                              <Shirt className="w-16 h-16 text-muted-foreground" strokeWidth={1} />
-                            </div>
-                          )}
-                          
-                          {/* Badge Overlay */}
-                          {item.fromCloset && (
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="outline" className="text-[8px] uppercase tracking-wider bg-background/90 backdrop-blur-sm border-primary/30 text-primary font-sans px-1.5 py-0.5">
-                                Closet
-                              </Badge>
-                            </div>
-                          )}
+          {selectedOutfit && selectedOutfit.items && selectedOutfit.items.length > 0 && (
+            <div className="flex-1 flex overflow-hidden">
+              {/* Left: Item Thumbnails */}
+              <div className="w-20 bg-muted/30 overflow-y-auto py-2 flex-shrink-0">
+                <div className="space-y-2 px-2">
+                  {selectedOutfit.items.map((item: any, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        // Set the selected item as the main display
+                        setSelectedOutfit((prev: any) => ({
+                          ...prev,
+                          mainDisplayIndex: index
+                        }));
+                      }}
+                      className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                        (selectedOutfit.mainDisplayIndex ?? 0) === index
+                          ? 'border-primary shadow-md'
+                          : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Shirt className="w-6 h-6 text-muted-foreground" />
                         </div>
-
-                        {/* Product Info */}
-                        <div className="p-4 space-y-3">
-                          {/* Name */}
-                          <h4 className="font-serif font-light text-base leading-tight text-foreground truncate">
-                            {item.name}
-                          </h4>
-
-                          {/* Brand & Type */}
-                          <div className="flex items-center justify-between gap-2">
-                            {item.brand && (
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans font-light">
-                                {item.brand}
-                              </p>
-                            )}
-                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider font-sans font-normal bg-muted px-1.5 py-0">
-                              {item.type}
-                            </Badge>
-                          </div>
-
-                          {/* Actions for non-closet items */}
-                          {!item.fromCloset ? (
-                            <div className="flex gap-2 pt-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 h-8 text-xs"
-                                onClick={() => handleBuyProduct(item)}
-                              >
-                                <ShoppingCart className="w-3 h-3 mr-1" />
-                                Buy
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="flex-1 h-8 text-xs"
-                                onClick={() => handleAddToCloset(item, index)}
-                                disabled={addingToCloset[index]}
-                              >
-                                {addingToCloset[index] ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Plus className="w-3 h-3 mr-1" />
-                                    Add to Closet
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          ) : (
-                            <p className="text-[9px] text-primary uppercase tracking-wider font-sans pt-2">
-                              From Your Closet
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {selectedOutfit.tips && selectedOutfit.tips.length > 0 && (
-                <div className="space-y-4 border-t border-border/30 pt-6">
-                  <h3 className="font-serif font-light text-2xl tracking-wide">Style Tips</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedOutfit.tips.map((tip: string, index: number) => (
-                      <div key={index} className="flex items-start gap-3 text-sm text-muted-foreground bg-secondary/20 rounded-sm p-4">
-                        <span className="text-accent font-semibold text-base">•</span>
-                        <span className="font-sans leading-relaxed">{tip}</span>
+              {/* Right: Main Display & Details */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Main Image Display */}
+                <div className="flex-1 bg-secondary/20 overflow-hidden relative">
+                  {(() => {
+                    const mainItem = selectedOutfit.items[selectedOutfit.mainDisplayIndex ?? 0];
+                    return mainItem?.imageUrl ? (
+                      <img
+                        src={mainItem.imageUrl}
+                        alt={mainItem.name}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Shirt className="w-24 h-24 text-muted-foreground" strokeWidth={1} />
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
+                  
+                  {/* Item From Closet Badge */}
+                  {selectedOutfit.items[selectedOutfit.mainDisplayIndex ?? 0]?.fromCloset && (
+                    <div className="absolute top-4 right-4">
+                      <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
+                        From Closet
+                      </Badge>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Save as OOTD Button */}
-              <div className="border-t border-border/30 pt-6">
-                <Button
-                  onClick={async () => {
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) throw new Error("Not authenticated");
+                {/* Bottom: Item Info & Actions */}
+                <div className="bg-background border-t p-4 space-y-4">
+                  {(() => {
+                    const mainItem = selectedOutfit.items[selectedOutfit.mainDisplayIndex ?? 0];
+                    return (
+                      <>
+                        {/* Item Details */}
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-lg">{mainItem?.name || 'Item'}</h3>
+                              {mainItem?.brand && (
+                                <p className="text-sm text-muted-foreground">{mainItem.brand}</p>
+                              )}
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {mainItem?.type}
+                            </Badge>
+                          </div>
+                          
+                          {/* Color & Material */}
+                          {(mainItem?.color || mainItem?.material) && (
+                            <div className="flex gap-2 text-xs text-muted-foreground">
+                              {mainItem.color && <span>• {mainItem.color}</span>}
+                              {mainItem.material && <span>• {mainItem.material}</span>}
+                            </div>
+                          )}
+                        </div>
 
-                      // Save outfit as OOTD
-                      const { error } = await supabase
-                        .from("ootd_records")
-                        .insert({
-                          user_id: user.id,
-                          date: new Date().toISOString().split('T')[0],
-                          garment_ids: selectedOutfit.items
-                            ?.filter((item: any) => item.garmentId)
-                            .map((item: any) => item.garmentId) || [],
-                          photo_url: selectedOutfit.items?.[0]?.imageUrl || "",
-                          notes: selectedOutfit.summary,
-                          weather: weather ? `${weather.current.temperature}°F, ${weather.current.weatherDescription}` : "",
-                          location: weather?.location || "",
-                        });
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          {!mainItem?.fromCloset && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => handleBuyProduct(mainItem)}
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              Buy
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="flex-1"
+                            onClick={async () => {
+                              try {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) throw new Error("Not authenticated");
 
-                      if (error) throw error;
+                                // Save outfit as OOTD
+                                const { error } = await supabase
+                                  .from("ootd_records")
+                                  .insert({
+                                    user_id: user.id,
+                                    date: new Date().toISOString().split('T')[0],
+                                    garment_ids: selectedOutfit.items
+                                      ?.filter((item: any) => item.garmentId)
+                                      .map((item: any) => item.garmentId) || [],
+                                    photo_url: selectedOutfit.items?.[0]?.imageUrl || "",
+                                    notes: selectedOutfit.summary,
+                                    weather: weather ? `${weather.current.temperature}°F, ${weather.current.weatherDescription}` : "",
+                                    location: weather?.location || "",
+                                  });
 
-                      toast({
-                        title: "Success",
-                        description: "Outfit saved to your OOTD diary!",
-                      });
-                      setShowOutfitDialog(false);
-                    } catch (error: any) {
-                      console.error('Error saving OOTD:', error);
-                      toast({
-                        title: "Error",
-                        description: "Failed to save outfit",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  className="w-full"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Save as Today's OOTD
-                </Button>
+                                if (error) throw error;
+
+                                toast({
+                                  title: "Success",
+                                  description: "Outfit saved to your OOTD diary!",
+                                });
+                                setShowOutfitDialog(false);
+                              } catch (error: any) {
+                                console.error('Error saving OOTD:', error);
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to save outfit",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Camera className="w-4 h-4 mr-1" />
+                            Add to OOTD
+                          </Button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Trend Outfit Details Dialog */}
+      {/* Trend Outfit Details Dialog - Mobile-First Design */}
       <Dialog open={showTrendDialog} onOpenChange={setShowTrendDialog}>
-        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-3xl font-serif font-light">
-              <Sparkles className="w-7 h-7 text-accent" strokeWidth={1.5} />
-              Trend Outfit Details
+        <DialogContent className="max-w-md h-[90vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="px-4 pt-4 pb-2 border-b">
+            <DialogTitle className="text-lg font-medium flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-accent" />
+              Trend Outfit
             </DialogTitle>
           </DialogHeader>
           
-          {selectedTrendOutfit && (
-            <div className="space-y-8 mt-6">
-              <div className="bg-secondary/30 rounded-sm p-6">
-                <p className="text-base leading-relaxed text-foreground/80 font-sans">{selectedTrendOutfit.summary}</p>
-              </div>
-
-              {selectedTrendOutfit.hairstyle && (
-                <div className="space-y-4 border-t border-border/30 pt-6">
-                  <h3 className="font-serif font-light text-2xl tracking-wide flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-accent" />
-                    Recommended Hairstyle
-                  </h3>
-                  <div className="bg-accent/10 rounded-lg p-4">
-                    <p className="font-medium mb-2">{selectedTrendOutfit.hairstyle.name}</p>
-                    <p className="text-sm text-muted-foreground">{selectedTrendOutfit.hairstyle.description}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-6">
-                <h3 className="font-serif font-light text-2xl tracking-wide">Outfit Items</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {selectedTrendOutfit.items?.map((item: any, index: number) => (
-                    <Card key={index} className="shadow-card hover:shadow-large transition-all duration-500 overflow-hidden group border-border/50">
-                      <CardContent className="p-0">
-                        <div className="relative w-full aspect-square bg-secondary/20 overflow-hidden">
-                          {dialogLoadingImages ? (
-                            <div className="w-full h-full bg-muted/50 animate-pulse" />
-                          ) : item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={`${item.brand || ''} ${item.model || item.name}`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              loading="lazy"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  target.style.display = 'none';
-                                  parent.innerHTML = `
-                                    <div class="w-full h-full flex items-center justify-center bg-secondary/30">
-                                      <svg class="w-16 h-16 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                      </svg>
-                                    </div>
-                                  `;
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-secondary/30">
-                              <Shirt className="w-16 h-16 text-muted-foreground" strokeWidth={1} />
-                            </div>
-                          )}
-                          
-                          {item.fromCloset && (
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="outline" className="text-[8px] uppercase tracking-wider bg-background/90 backdrop-blur-sm border-primary/30 text-primary font-sans px-1.5 py-0.5">
-                                Closet
-                              </Badge>
-                            </div>
-                          )}
+          {selectedTrendOutfit && selectedTrendOutfit.items && selectedTrendOutfit.items.length > 0 && (
+            <div className="flex-1 flex overflow-hidden">
+              {/* Left: Item Thumbnails */}
+              <div className="w-20 bg-muted/30 overflow-y-auto py-2 flex-shrink-0">
+                <div className="space-y-2 px-2">
+                  {selectedTrendOutfit.items.map((item: any, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setSelectedTrendOutfit((prev: any) => ({
+                          ...prev,
+                          mainDisplayIndex: index
+                        }));
+                      }}
+                      className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                        (selectedTrendOutfit.mainDisplayIndex ?? 0) === index
+                          ? 'border-primary shadow-md'
+                          : 'border-transparent opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                          <Shirt className="w-6 h-6 text-muted-foreground" />
                         </div>
-
-                        <div className="p-4 space-y-3">
-                          <h4 className="font-serif font-light text-base leading-tight text-foreground truncate">
-                            {item.name}
-                          </h4>
-
-                          <div className="flex items-center justify-between gap-2">
-                            {item.brand && (
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans font-light">
-                                {item.brand}
-                              </p>
-                            )}
-                            <Badge variant="secondary" className="text-[9px] uppercase tracking-wider font-sans font-normal bg-muted px-1.5 py-0">
-                              {item.type}
-                            </Badge>
-                          </div>
-
-                          {!item.fromCloset ? (
-                            <div className="flex gap-2 pt-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 h-8 text-xs"
-                                onClick={() => handleBuyProduct(item)}
-                              >
-                                <ShoppingCart className="w-3 h-3 mr-1" />
-                                Buy
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="flex-1 h-8 text-xs"
-                                onClick={() => handleAddToCloset(item, index)}
-                                disabled={addingToCloset[index]}
-                              >
-                                {addingToCloset[index] ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Plus className="w-3 h-3 mr-1" />
-                                    Add to Closet
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          ) : (
-                            <p className="text-[9px] text-primary uppercase tracking-wider font-sans pt-2">
-                              From Your Closet
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {selectedTrendOutfit.tips && selectedTrendOutfit.tips.length > 0 && (
-                <div className="space-y-4 border-t border-border/30 pt-6">
-                  <h3 className="font-serif font-light text-2xl tracking-wide">Style Tips</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedTrendOutfit.tips.map((tip: string, index: number) => (
-                      <div key={index} className="flex items-start gap-3 text-sm text-muted-foreground bg-secondary/20 rounded-sm p-4">
-                        <span className="text-accent font-semibold text-base">•</span>
-                        <span className="font-sans leading-relaxed">{tip}</span>
+              {/* Right: Main Display & Details */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Main Image Display */}
+                <div className="flex-1 bg-secondary/20 overflow-hidden relative">
+                  {(() => {
+                    const mainItem = selectedTrendOutfit.items[selectedTrendOutfit.mainDisplayIndex ?? 0];
+                    return mainItem?.imageUrl ? (
+                      <img
+                        src={mainItem.imageUrl}
+                        alt={mainItem.name}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Shirt className="w-24 h-24 text-muted-foreground" strokeWidth={1} />
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
+                  
+                  {selectedTrendOutfit.items[selectedTrendOutfit.mainDisplayIndex ?? 0]?.fromCloset && (
+                    <div className="absolute top-4 right-4">
+                      <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
+                        From Closet
+                      </Badge>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <div className="border-t border-border/30 pt-6 flex gap-3">
-                <Button
-                  className="flex-1"
-                  onClick={async () => {
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (!user) throw new Error("Not authenticated");
+                {/* Bottom: Item Info & Actions */}
+                <div className="bg-background border-t p-4 space-y-4">
+                  {(() => {
+                    const mainItem = selectedTrendOutfit.items[selectedTrendOutfit.mainDisplayIndex ?? 0];
+                    return (
+                      <>
+                        {/* Item Details */}
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="font-medium text-lg">{mainItem?.name || 'Item'}</h3>
+                              {mainItem?.brand && (
+                                <p className="text-sm text-muted-foreground">{mainItem.brand}</p>
+                              )}
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {mainItem?.type}
+                            </Badge>
+                          </div>
+                          
+                          {(mainItem?.color || mainItem?.material) && (
+                            <div className="flex gap-2 text-xs text-muted-foreground">
+                              {mainItem.color && <span>• {mainItem.color}</span>}
+                              {mainItem.material && <span>• {mainItem.material}</span>}
+                            </div>
+                          )}
+                        </div>
 
-                      const { error } = await supabase
-                        .from('saved_outfits')
-                        .insert({
-                          user_id: user.id,
-                          title: selectedTrendOutfit.title,
-                          items: selectedTrendOutfit.items || [],
-                          hairstyle: selectedTrendOutfit.hairstyle,
-                          summary: selectedTrendOutfit.summary,
-                          image_url: selectedTrendOutfit.imageUrl
-                        });
+                        {/* Action Buttons */}
+                        <div className="flex gap-2">
+                          {!mainItem?.fromCloset && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => handleBuyProduct(mainItem)}
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              Buy
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="flex-1"
+                            onClick={async () => {
+                              try {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) throw new Error("Not authenticated");
 
-                      if (error) throw error;
-                      toast({
-                        title: "Success",
-                        description: "Outfit saved to your closet!",
-                      });
-                      setShowTrendDialog(false);
-                    } catch (error: any) {
-                      toast({
-                        title: "Error",
-                        description: "Failed to save outfit",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  <Heart className="w-4 h-4 mr-2" />
-                  Save to Closet
-                </Button>
+                                const { error } = await supabase
+                                  .from('saved_outfits')
+                                  .insert({
+                                    user_id: user.id,
+                                    title: selectedTrendOutfit.title,
+                                    items: selectedTrendOutfit.items || [],
+                                    hairstyle: selectedTrendOutfit.hairstyle,
+                                    summary: selectedTrendOutfit.summary,
+                                    image_url: selectedTrendOutfit.imageUrl,
+                                    liked: true
+                                  });
+
+                                if (error) throw error;
+                                toast({
+                                  title: "Success",
+                                  description: "Outfit saved to Stylebook!",
+                                });
+                                setShowTrendDialog(false);
+                              } catch (error: any) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to save outfit",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            <Heart className="w-4 h-4 mr-1" />
+                            Save
+                          </Button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           )}
