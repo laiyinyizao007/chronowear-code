@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw } from "lucide-react";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw, Book } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
@@ -46,10 +46,10 @@ export default function Stylist() {
   const [swapCategory, setSwapCategory] = useState<string>("");
 
   const categories = [
-    { id: "stylebook", label: "Stylebook", icon: BookHeart },
+    { id: "stylebook", label: "Stylebook", icon: Book },
     { id: "top", label: "Tops", icon: ShirtIcon },
     { id: "bottom", label: "Bottoms", icon: UtensilsCrossed },
-    { id: "shoes", label: "Shoes", icon: Glasses },
+    { id: "shoes", label: "Shoes", icon: UtensilsCrossed },
     { id: "accessories", label: "Accessories", icon: Watch },
     { id: "hairstyle", label: "Hairstyle", icon: Sparkle },
   ];
@@ -393,11 +393,12 @@ export default function Stylist() {
                   <button
                     key={category.id}
                     onClick={() => handleCategoryClick(category.id)}
-                    className={`flex items-center justify-center p-3 rounded-xl border-2 transition-all flex-shrink-0 relative ${
+                    className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 transition-all flex-shrink-0 relative ${
                       hasAIRecommendation ? "border-primary/50 bg-primary/5" : "border-border/50 hover:border-primary/50"
                     }`}
                   >
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs font-medium whitespace-nowrap">{category.label}</span>
                     {hasAIRecommendation && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
                     )}
