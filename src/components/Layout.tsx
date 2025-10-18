@@ -133,7 +133,38 @@ export default function Layout() {
       <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 z-50 safe-bottom">
         <div className="container mx-auto px-2 sm:px-6">
           <div className="flex justify-around items-center h-16 sm:h-20">
-            {navItems.map((item) => (
+            {navItems.slice(0, 2).map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-0.5 sm:gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? "text-foreground bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                    <span className="text-[10px] sm:text-xs font-medium tracking-wide">{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+            
+            {/* CTA Button */}
+            <Button
+              onClick={() => navigate("/stylist")}
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform -mt-6"
+              aria-label="AI Stylist"
+            >
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
+            </Button>
+            
+            {navItems.slice(2).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
