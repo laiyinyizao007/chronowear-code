@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, MessageSquare, Cloud, CloudRain, Droplets } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, Cloud, CloudRain, Droplets } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +11,6 @@ import OutfitRecommendationCard from "@/components/OutfitRecommendationCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import AIAssistant from "@/components/AIAssistant";
 
 interface WeatherData {
   location: string;
@@ -49,7 +48,6 @@ export default function Home() {
   const [loadError, setLoadError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [todaysPickId, setTodaysPickId] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [addedToOOTD, setAddedToOOTD] = useState(false);
@@ -728,25 +726,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* AI Search Bar - Minimal Farfetch style */}
-      <div className="w-full max-w-3xl mx-auto">
-        <div className="relative">
-          <Button
-            variant="ghost"
-            onClick={() => setShowAIAssistant(!showAIAssistant)}
-            className="w-full h-12 sm:h-14 px-5 sm:px-6 border border-border hover:border-primary/30 transition-all duration-200 bg-background rounded-none justify-start text-left font-light text-sm sm:text-base text-muted-foreground hover:text-foreground"
-          >
-            <MessageSquare className="w-4 h-4 mr-3 flex-shrink-0 stroke-[1.5]" strokeWidth={1.5} />
-            <span className="tracking-wide">Search styles, ask fashion questions...</span>
-          </Button>
-        </div>
-        {showAIAssistant && (
-          <div className="mt-4 animate-fade-in">
-            <AIAssistant />
-          </div>
-        )}
-      </div>
 
       {/* Trend Section */}
       <div className="space-y-3">
