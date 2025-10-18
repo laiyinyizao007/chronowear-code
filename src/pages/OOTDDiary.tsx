@@ -67,7 +67,7 @@ export default function OOTDDiary() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [removingBackground, setRemovingBackground] = useState(false);
-  const [viewMode, setViewMode] = useState<'day' | '3day' | 'week'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateForLog, setSelectedDateForLog] = useState<Date | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -556,23 +556,15 @@ export default function OOTDDiary() {
                 variant={viewMode === 'day' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('day')}
-                className="flex-1 sm:flex-none text-xs sm:px-4"
+                className="flex-1 sm:flex-none text-xs sm:px-6"
               >
                 Day
-              </Button>
-              <Button
-                variant={viewMode === '3day' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('3day')}
-                className="flex-1 sm:flex-none text-xs sm:px-4"
-              >
-                3 Days
               </Button>
               <Button
                 variant={viewMode === 'week' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('week')}
-                className="flex-1 sm:flex-none text-xs sm:px-4"
+                className="flex-1 sm:flex-none text-xs sm:px-6"
               >
                 Week
               </Button>
@@ -586,7 +578,6 @@ export default function OOTDDiary() {
                 className="h-10 w-10"
                 onClick={() => {
                   if (viewMode === 'day') setCurrentDate(subDays(currentDate, 1));
-                  else if (viewMode === '3day') setCurrentDate(subDays(currentDate, 3));
                   else setCurrentDate(subWeeks(currentDate, 1));
                 }}
               >
@@ -619,7 +610,6 @@ export default function OOTDDiary() {
                 className="h-10 w-10"
                 onClick={() => {
                   if (viewMode === 'day') setCurrentDate(addDays(currentDate, 1));
-                  else if (viewMode === '3day') setCurrentDate(addDays(currentDate, 3));
                   else setCurrentDate(addWeeks(currentDate, 1));
                 }}
               >
@@ -697,145 +687,148 @@ export default function OOTDDiary() {
                   );
                 })()}
               </div>
-            ) : viewMode === '3day' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4">
-                {[0, 1, 2].map((offset) => {
-                  const day = addDays(currentDate, offset);
-                  const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
-                  const hasRecord = dayRecords.length > 0;
-
-                  return (
-                    <Card
-                      key={offset}
-                      className="overflow-hidden cursor-pointer transition-all hover:shadow-medium"
-                      onClick={() => {
-                        if (hasRecord) {
-                          setSelectedRecord(dayRecords[0]);
-                        } else {
-                          setSelectedDateForLog(day);
-                          setIsAddDialogOpen(true);
-                        }
-                      }}
-                    >
-                      <div className="relative aspect-[3/4]">
-                        {hasRecord ? (
-                          <>
-                            <img
-                              src={dayRecords[0].photo_url}
-                              alt={`OOTD ${format(day, "d")}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                            <div className="absolute bottom-3 left-3 text-white">
-                              <div className="text-3xl font-light">
-                                {format(day, "d")}
-                              </div>
-                              <div className="text-xs opacity-90">{format(day, "EEE")}</div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="absolute top-2 right-2 h-8 w-8 bg-background/10 hover:bg-background/20 text-white backdrop-blur-sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteRecordId(dayRecords[0].id);
-                              }}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center h-full bg-secondary">
-                            <span className="text-4xl font-light text-muted-foreground">
-                              {format(day, "d")}
-                            </span>
-                            <span className="text-xs text-muted-foreground mt-1">{format(day, "EEE")}</span>
-                            <Plus className="w-6 h-6 text-muted-foreground/40 mt-4" />
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 p-4">
-                {(() => {
-                  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-                  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-                  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+              <div className="space-y-3 p-4">
+                {/* First row - 4 items */}
+                <div className="grid grid-cols-4 gap-2">
+                  {(() => {
+                    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+                    const firstRowDays = [0, 1, 2, 3].map(i => addDays(weekStart, i));
 
-                  return days.map((day) => {
-                    const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
-                    const hasRecord = dayRecords.length > 0;
-                    const isToday = isSameDay(day, new Date());
+                    return firstRowDays.map((day) => {
+                      const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
+                      const hasRecord = dayRecords.length > 0;
+                      const isToday = isSameDay(day, new Date());
 
-                    return (
-                      <Card
-                        key={day.toISOString()}
-                        className={cn(
-                          "group overflow-hidden cursor-pointer transition-all hover:shadow-medium",
-                          isToday && "ring-2 ring-primary"
-                        )}
-                        onClick={() => {
-                          if (hasRecord) {
-                            setSelectedRecord(dayRecords[0]);
-                          } else {
-                            setSelectedDateForLog(day);
-                            setIsAddDialogOpen(true);
-                          }
-                        }}
-                      >
-                        <div className="relative">
-                          {/* Date Header */}
-                          <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm px-2 py-1.5 border-b">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-base font-medium">{format(day, "d")}</span>
-                              <span className="text-xs text-muted-foreground">{format(day, "EEE")}</span>
-                            </div>
-                          </div>
-
-                          {/* Image */}
-                          <div className="aspect-[3/4]">
-                            {hasRecord ? (
-                              <>
-                                <img
-                                  src={dayRecords[0].photo_url}
-                                  alt={`OOTD ${format(day, "MMM d")}`}
-                                  className="w-full h-full object-cover"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute top-10 right-2 h-8 w-8 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteRecordId(dayRecords[0].id);
-                                  }}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </>
-                            ) : (
-                              <div className="flex items-center justify-center h-full bg-secondary">
-                                <Plus className="w-6 h-6 text-muted-foreground/40" />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Hover Info */}
-                          {hasRecord && dayRecords[0].location && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <p className="text-xs text-white/90 truncate">
-                                {dayRecords[0].location}
-                              </p>
-                            </div>
+                      return (
+                        <Card
+                          key={day.toISOString()}
+                          className={cn(
+                            "group overflow-hidden cursor-pointer transition-all hover:shadow-medium",
+                            isToday && "ring-2 ring-primary"
                           )}
-                        </div>
-                      </Card>
-                    );
-                  });
-                })()}
+                          onClick={() => {
+                            if (hasRecord) {
+                              setSelectedRecord(dayRecords[0]);
+                            } else {
+                              setSelectedDateForLog(day);
+                              setIsAddDialogOpen(true);
+                            }
+                          }}
+                        >
+                          <div className="relative">
+                            {/* Date Label */}
+                            <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm px-2 py-1 border-b">
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-xs font-medium">{format(day, "d")}</span>
+                                <span className="text-[10px] text-muted-foreground">{format(day, "EEE")}</span>
+                              </div>
+                            </div>
+
+                            {/* Horizontal strip image */}
+                            <div className="aspect-[16/9]">
+                              {hasRecord ? (
+                                <>
+                                  <img
+                                    src={dayRecords[0].photo_url}
+                                    alt={`OOTD ${format(day, "MMM d")}`}
+                                    className="w-full h-full object-cover object-center"
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-8 right-1 h-6 w-6 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteRecordId(dayRecords[0].id);
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <div className="flex items-center justify-center h-full bg-secondary">
+                                  <Plus className="w-4 h-4 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Second row - 3 items centered */}
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="col-start-1 col-span-1" />
+                  {(() => {
+                    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+                    const secondRowDays = [4, 5, 6].map(i => addDays(weekStart, i));
+
+                    return secondRowDays.map((day) => {
+                      const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
+                      const hasRecord = dayRecords.length > 0;
+                      const isToday = isSameDay(day, new Date());
+
+                      return (
+                        <Card
+                          key={day.toISOString()}
+                          className={cn(
+                            "group overflow-hidden cursor-pointer transition-all hover:shadow-medium",
+                            isToday && "ring-2 ring-primary"
+                          )}
+                          onClick={() => {
+                            if (hasRecord) {
+                              setSelectedRecord(dayRecords[0]);
+                            } else {
+                              setSelectedDateForLog(day);
+                              setIsAddDialogOpen(true);
+                            }
+                          }}
+                        >
+                          <div className="relative">
+                            {/* Date Label */}
+                            <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm px-2 py-1 border-b">
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-xs font-medium">{format(day, "d")}</span>
+                                <span className="text-[10px] text-muted-foreground">{format(day, "EEE")}</span>
+                              </div>
+                            </div>
+
+                            {/* Horizontal strip image */}
+                            <div className="aspect-[16/9]">
+                              {hasRecord ? (
+                                <>
+                                  <img
+                                    src={dayRecords[0].photo_url}
+                                    alt={`OOTD ${format(day, "MMM d")}`}
+                                    className="w-full h-full object-cover object-center"
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-8 right-1 h-6 w-6 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteRecordId(dayRecords[0].id);
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <div className="flex items-center justify-center h-full bg-secondary">
+                                  <Plus className="w-4 h-4 text-muted-foreground/40" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
             )}
           </div>
