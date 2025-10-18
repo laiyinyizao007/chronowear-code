@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { removeBackgroundTF, loadImageFromUrl } from "@/lib/tfBackgroundRemoval";
 
 interface Garment {
   id: string;
@@ -86,19 +87,25 @@ export default function Stylist() {
     try {
       setProcessingBg(true);
       
-      console.log('Calling backend to remove background...');
-      const { data, error } = await supabase.functions.invoke('remove-background', {
-        body: { imageUrl }
-      });
-
-      if (error) throw error;
+      console.log('Loading image for background removal...');
       
-      if (data?.imageUrl) {
-        setRemovedBgImageUrl(data.imageUrl);
+      // Load image
+      const img = await loadImageFromUrl(imageUrl);
+      
+      console.log('Removing background using TensorFlow.js SelfieSegmentation...');
+      
+      // Remove background using TF.js
+      const resultBlob = await removeBackgroundTF(img);
+      
+      // Convert blob to data URL for immediate display
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setRemovedBgImageUrl(dataUrl);
         toast.success("Background removed successfully!");
-      } else {
-        throw new Error("No result from background removal");
-      }
+      };
+      reader.readAsDataURL(resultBlob);
+      
     } catch (error) {
       console.error("Error removing background:", error);
       toast.error("Failed to remove background. Using original photo.");
