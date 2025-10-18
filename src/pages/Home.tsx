@@ -528,9 +528,9 @@ export default function Home() {
           <span className="font-medium">
             {Math.round(weather.daily.temperatureMax)}° / {Math.round(weather.daily.temperatureMin)}°
           </span>
-          <div className="flex items-center gap-1.5">
-            <Sun className="w-4 h-4" />
-            <span className={getUVColor(weather.current.uvIndex)}>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground">UV</span>
+            <span className={`text-sm font-medium ${getUVColor(weather.current.uvIndex)}`}>
               {weather.current.uvIndex.toFixed(1)}
             </span>
           </div>
