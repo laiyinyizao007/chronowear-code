@@ -409,6 +409,13 @@ export default function Home() {
 
   // Handle refresh outfit - force regenerate today's pick
   const handleRefreshOutfit = async () => {
+    // Clear current data immediately
+    setOutfits([]);
+    setOutfitImageUrl("");
+    setTodaysPickId(null);
+    setIsLiked(false);
+    setAddedToOOTD(false);
+    
     setRecommendationLoading(true);
     await loadWeatherAndRecommendation(true);
   };
