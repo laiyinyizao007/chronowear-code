@@ -990,22 +990,22 @@ export default function Closet() {
         </AlertDialog>
 
         <Dialog open={!!selectedGarment} onOpenChange={(open) => !open && setSelectedGarment(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-md sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Garment Details</DialogTitle>
             </DialogHeader>
             {selectedGarment && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <img 
                   src={selectedGarment.image_url} 
                   alt={selectedGarment.type}
-                  className="w-full max-h-[60vh] object-contain rounded-lg"
+                  className="w-full max-h-[40vh] sm:max-h-[50vh] object-contain rounded-lg"
                 />
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Type - Read Only */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Type</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">Type</Label>
                     <div className="mt-1 px-3 py-2 bg-muted rounded-md">
                       <p className="text-sm font-semibold capitalize">{selectedGarment.type}</p>
                     </div>
@@ -1013,20 +1013,20 @@ export default function Closet() {
 
                   {/* Color - Read Only */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Color</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">Color</Label>
                     <div className="mt-1 px-3 py-2 bg-muted rounded-md">
                       <p className="text-sm font-semibold capitalize">{selectedGarment.color || "Not specified"}</p>
                     </div>
                   </div>
 
                   {/* Brand - Editable */}
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Brand</Label>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs font-medium text-muted-foreground">Brand</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between mt-1">
-                          {selectedGarment.brand || "Select or enter brand"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <Button variant="outline" className="w-full justify-between mt-1 h-9">
+                          <span className="text-sm">{selectedGarment.brand || "Select or enter brand"}</span>
+                          <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
@@ -1087,11 +1087,11 @@ export default function Closet() {
                   </div>
 
                   {/* Official Price - Editable */}
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Official Price</Label>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs font-medium text-muted-foreground">Official Price</Label>
                     <div className="flex gap-2 mt-1">
                       <Select value={currency} onValueChange={setCurrency}>
-                        <SelectTrigger className="w-[100px]">
+                        <SelectTrigger className="w-20 h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1105,7 +1105,7 @@ export default function Closet() {
                       <Input
                         type="number"
                         step="0.01"
-                        className="flex-1"
+                        className="flex-1 h-9 text-sm"
                         value={selectedGarment.official_price || ""}
                         onChange={(e) => setSelectedGarment({ ...selectedGarment, official_price: e.target.value ? parseFloat(e.target.value) : null })}
                         onBlur={async () => {
@@ -1128,7 +1128,7 @@ export default function Closet() {
 
                   {/* Usage Count - Read Only */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Usage Count</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">Usage Count</Label>
                     <div className="mt-1 px-3 py-2 bg-muted rounded-md">
                       <p className="text-sm font-semibold">{selectedGarment.usage_count} times</p>
                     </div>
@@ -1136,9 +1136,10 @@ export default function Closet() {
 
                   {/* Acquired Date - Editable */}
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Acquired Date</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">Acquired Date</Label>
                     <Input
                       type="date"
+                      className="mt-1 h-9 text-sm"
                       value={selectedGarment.acquired_date || ""}
                       onChange={(e) => setSelectedGarment({ ...selectedGarment, acquired_date: e.target.value })}
                       onBlur={async () => {
@@ -1154,13 +1155,12 @@ export default function Closet() {
                           toast.error("Failed to update acquired date");
                         }
                       }}
-                      className="mt-1"
                     />
                   </div>
 
                   {/* Washing Frequency - Editable */}
-                  <div className="col-span-2">
-                    <Label className="text-sm font-medium text-muted-foreground mb-2">Washing Frequency</Label>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs font-medium text-muted-foreground mb-1.5">Washing Frequency</Label>
                     <Select
                       value={selectedGarment.washing_frequency || ""}
                       onValueChange={async (value) => {
@@ -1180,7 +1180,7 @@ export default function Closet() {
                         }
                       }}
                     >
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 h-9">
                         <SelectValue placeholder="Set washing frequency" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1196,8 +1196,8 @@ export default function Closet() {
                   </div>
 
                   {/* Care Instructions - Editable */}
-                  <div className="col-span-2">
-                    <Label className="text-sm font-medium text-muted-foreground mb-2">Care Instructions</Label>
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs font-medium text-muted-foreground mb-1.5">Care Instructions</Label>
                     <Textarea
                       value={selectedGarment.care_instructions || ""}
                       onChange={(e) => setSelectedGarment({ ...selectedGarment, care_instructions: e.target.value })}
@@ -1214,29 +1214,31 @@ export default function Closet() {
                           toast.error("Failed to update care instructions");
                         }
                       }}
-                      className="mt-1 min-h-[100px]"
+                      className="mt-1 min-h-[80px] text-sm"
                       placeholder="Enter care instructions..."
                     />
                   </div>
                   
                   {/* Barcode and Photo Scanning */}
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <div className="flex gap-2">
                       <Button 
                         variant="outline" 
-                        className="flex-1"
+                        size="sm"
+                        className="flex-1 h-9"
                         onClick={() => setIsScanningBarcode(true)}
                       >
-                        <Scan className="mr-2 h-4 w-4" />
-                        Scan Barcode
+                        <Scan className="mr-1.5 h-3.5 w-3.5" />
+                        <span className="text-xs">Scan Barcode</span>
                       </Button>
                       <Button 
                         variant="outline" 
-                        className="flex-1"
+                        size="sm"
+                        className="flex-1 h-9"
                         onClick={() => setIsScanningLabel(true)}
                       >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Photo Label
+                        <Camera className="mr-1.5 h-3.5 w-3.5" />
+                        <span className="text-xs">Photo Label</span>
                       </Button>
                     </div>
                   </div>
