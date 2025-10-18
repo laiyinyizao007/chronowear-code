@@ -82,30 +82,51 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url');
 
-      // Generate AI recommendation
+      // Generate AI recommendation with fallback
       setRecommendationLoading(true);
-      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
-        'generate-outfit-recommendation',
-        {
-          body: {
-            temperature: weatherData.current.temperature,
-            weatherDescription: weatherData.current.weatherDescription,
-            uvIndex: weatherData.current.uvIndex,
-            garments: garments || []
+      try {
+        const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+          'generate-outfit-recommendation',
+          {
+            body: {
+              temperature: weatherData.current.temperature,
+              weatherDescription: weatherData.current.weatherDescription,
+              uvIndex: weatherData.current.uvIndex,
+              garments: garments || []
+            }
           }
+        );
+
+        if (recError) throw recError;
+        setOutfits(recommendationData.outfits || []);
+
+        // Generate outfit image for the first outfit
+        if (recommendationData.outfits?.[0]) {
+          generateOutfitImage(recommendationData.outfits[0]);
         }
-      );
 
-      if (recError) throw recError;
-      setOutfits(recommendationData.outfits || []);
-
-      // Generate outfit image for the first outfit
-      if (recommendationData.outfits?.[0]) {
-        generateOutfitImage(recommendationData.outfits[0]);
+        // Load trend outfits
+        loadTrendOutfits(weatherData, garments || []);
+      } catch (aiError) {
+        console.error('AI service unavailable:', aiError);
+        // Use mock data when AI is unavailable
+        setOutfits([
+          {
+            title: "Casual Comfort",
+            summary: "Perfect for today's weather",
+            hairstyle: "Natural",
+            items: [
+              { type: "Top", name: "T-Shirt", brand: "Uniqlo", model: "Basic Tee", fromCloset: false },
+              { type: "Bottom", name: "Jeans", brand: "Levi's", model: "501", fromCloset: false }
+            ]
+          }
+        ]);
+        setTrendOutfits([]);
+        toast({
+          title: "AI Service Unavailable",
+          description: "Showing basic recommendations. AI features are temporarily disabled.",
+        });
       }
-
-      // Load trend outfits
-      loadTrendOutfits(weatherData, garments || []);
 
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -173,7 +194,8 @@ export default function Home() {
       
       setTrendOutfits(outfitsWithImages);
     } catch (error) {
-      console.error('Error loading trend outfits:', error);
+      console.error('AI service unavailable for trends:', error);
+      setTrendOutfits([]);
     } finally {
       setTrendLoading(false);
     }
@@ -195,7 +217,8 @@ export default function Home() {
         setOutfitImageUrl(data.imageUrl);
       }
     } catch (error) {
-      console.error('Error generating outfit image:', error);
+      console.error('AI image generation unavailable:', error);
+      // Silently fail - image generation is optional
     } finally {
       setGeneratingImage(false);
     }
@@ -290,9 +313,8 @@ export default function Home() {
     } catch (error: any) {
       console.error('Error generating new outfits:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate new outfits",
-        variant: "destructive",
+        title: "AI Service Unavailable",
+        description: "AI recommendations are temporarily disabled. Please try again later.",
       });
     } finally {
       setMoreOutfitsLoading(false);
