@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,6 +63,8 @@ interface ProductInfo {
 }
 
 export default function Closet() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [garments, setGarments] = useState<Garment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -165,6 +168,19 @@ export default function Closet() {
   useEffect(() => {
     loadGarments();
   }, []);
+
+  // Auto-trigger garment identification when imageUrl is in URL
+  useEffect(() => {
+    const imageUrl = searchParams.get('imageUrl');
+    if (imageUrl && !isProcessing && !identifyingProducts) {
+      setUploadedImageUrl(imageUrl);
+      setIsProcessing(true);
+      identifyProducts(imageUrl).finally(() => {
+        // Clean up URL params after processing
+        setSearchParams({});
+      });
+    }
+  }, [searchParams]);
 
   const loadGarments = async () => {
     try {

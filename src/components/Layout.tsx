@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -8,11 +8,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AIAssistant from "./AIAssistant";
 import { useWeather } from "@/hooks/useWeather";
+import { toast } from "sonner";
 
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const { weather, fetchWeather } = useWeather();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -64,6 +66,44 @@ export default function Layout() {
     navigate("/auth");
   };
 
+  const handleAddGarmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const loadingToast = toast.loading("Uploading image...");
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("garments")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("garments")
+        .getPublicUrl(fileName);
+
+      toast.dismiss(loadingToast);
+      navigate(`/closet?action=add&imageUrl=${encodeURIComponent(publicUrl)}`);
+    } catch (error: any) {
+      toast.dismiss(loadingToast);
+      toast.error("Failed to upload image");
+    }
+
+    // Reset input
+    event.target.value = '';
+  };
+
   if (!user) return null;
 
   const navItems = [
@@ -73,6 +113,15 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Hidden file input for Add Garment */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      
       {/* Top Header - Farfetch minimal black/white */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="mx-auto px-6 sm:px-10 h-14 sm:h-16 flex items-center justify-between max-w-[1600px]">
@@ -178,7 +227,7 @@ export default function Layout() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="mb-2 bg-background border-border/50 rounded-none shadow-medium">
                 <DropdownMenuItem 
-                  onClick={() => navigate("/closet?action=add")}
+                  onClick={handleAddGarmentClick}
                   className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
                 >
                   <Upload className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
