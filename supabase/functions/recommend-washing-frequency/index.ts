@@ -16,9 +16,9 @@ serve(async (req) => {
     
     console.log('Recommending washing frequency for:', { material, type });
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not configured');
     }
 
     const systemPrompt = `You are a garment care expert. Your role is to provide accurate washing frequency recommendations and detailed care instructions based on garment materials and types.
@@ -61,44 +61,41 @@ Return your response in JSON format:
   "care_instructions": "Detailed care instructions covering washing, drying, ironing, and any special considerations (3-5 sentences)"
 }`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const prompt = `${systemPrompt}
+
+${userPrompt}`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 800,
-        response_format: { type: "json_object" }
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 800,
+          responseMimeType: "application/json"
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI Gateway error:', response.status, errorText);
-      
-      // Handle rate limit and payment errors
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
-      }
-      if (response.status === 402) {
-        throw new Error('Payment required. Please add credits to your Lovable workspace.');
-      }
-      
-      throw new Error('AI Gateway error');
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error('Gemini API error');
     }
 
     const data = await response.json();
-    let recommendation = data.choices[0].message.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!recommendation) {
-      throw new Error('No content in AI response');
+    if (!content) {
+      throw new Error('No content in Gemini response');
     }
+
+    let recommendation = content;
 
     // Extract JSON from markdown code blocks if present
     const jsonMatch = recommendation.match(/```json\s*([\s\S]*?)\s*```/) || 
