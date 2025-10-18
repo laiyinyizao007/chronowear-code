@@ -720,25 +720,24 @@ export default function Home() {
                         )}
                       </Button>
                     </div>
-                    <div className="relative aspect-[3/4] bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 rounded-lg overflow-hidden">
+                    <div className="relative h-[420px] rounded-lg overflow-hidden bg-background">
                     {generatingImage ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                      <div className="absolute inset-0 flex items-center justify-center">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
                       </div>
                     ) : outfitImageUrl ? (
                       <img 
                         src={outfitImageUrl} 
                         alt="Today's outfit"
-                        className="w-full h-full object-cover object-center"
+                        className="absolute inset-0 w-full h-full object-cover object-center"
                         style={{ objectFit: 'cover', objectPosition: 'center' }}
                       />
                     ) : (
-                      /* Fallback: 显示第一个物品的图片或占位符 */
                       outfits[0].items?.[0]?.imageUrl ? (
                         <img 
                           src={outfits[0].items[0].imageUrl} 
                           alt="Outfit preview"
-                          className="w-full h-full object-cover object-center opacity-40"
+                          className="absolute inset-0 w-full h-full object-cover object-center opacity-60"
                         />
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-3">
@@ -747,8 +746,11 @@ export default function Home() {
                         </div>
                       )
                     )}
+                    {/* Bottom summary overlay */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/90 to-transparent p-3">
+                      <p className="text-xs text-foreground/80 line-clamp-2">{outfits[0].summary}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{outfits[0].summary}</p>
+                    </div>
                   </div>
                 </div>
 
