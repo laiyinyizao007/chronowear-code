@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTodaysPick } from "@/hooks/useTodaysPick";
 
 interface IdentifiedProduct {
   brand: string;
@@ -101,29 +102,86 @@ export default function OOTDDiary() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [itemDetailOpen, setItemDetailOpen] = useState(false);
   
-  // Today's Pick states
+  // Weather state (needed for Today's Pick)
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [outfits, setOutfits] = useState<any[]>([]);
-  const [todayPickLoading, setTodayPickLoading] = useState(false);
-  const [recommendationLoading, setRecommendationLoading] = useState(false);
-  const [outfitImageUrl, setOutfitImageUrl] = useState<string>("");
-  const [generatingImage, setGeneratingImage] = useState(false);
-  const [todaysPickId, setTodaysPickId] = useState<string | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
-  const [addedToOOTD, setAddedToOOTD] = useState(false);
+  
+  // Today's Pick using hook
+  const {
+    todaysPick,
+    outfit,
+    imageUrl,
+    loading: todayPickLoading,
+    generatingImage,
+    loadTodaysPick,
+    toggleLike,
+    markAddedToOOTD
+  } = useTodaysPick();
+  
+  // Derived states for compatibility
+  const outfits = outfit ? [outfit] : [];
+  const outfitImageUrl = imageUrl;
+  const todaysPickId = todaysPick?.id || null;
+  const isLiked = todaysPick?.is_liked || false;
+  const addedToOOTD = todaysPick?.added_to_ootd || false;
+  const recommendationLoading = todayPickLoading;
 
   useEffect(() => {
     loadRecords();
     if (viewMode === 'day') {
-      loadWeatherAndRecommendation();
+      loadWeatherAndTodaysPick();
     }
   }, []);
 
   useEffect(() => {
     if (viewMode === 'day') {
-      loadWeatherAndRecommendation();
+      loadWeatherAndTodaysPick();
     }
   }, [viewMode]);
+  
+  const loadWeatherAndTodaysPick = async () => {
+    try {
+      // Get weather first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      let currentLat = 35.6764225;
+      let currentLng = 139.650027;
+      
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 300000,
+          });
+        });
+        currentLat = position.coords.latitude;
+        currentLng = position.coords.longitude;
+      } catch (geoError) {
+        console.warn('Geolocation failed, using default coords:', geoError);
+      }
+      
+      const { data: weatherData } = await supabase.functions.invoke('get-weather', {
+        body: { lat: currentLat, lng: currentLng },
+      });
+      
+      if (weatherData) {
+        const weatherWithCoords = { ...weatherData, latitude: currentLat, longitude: currentLng };
+        setWeather(weatherWithCoords);
+        
+        // Load today's pick with weather data
+        await loadTodaysPick(weatherWithCoords);
+      }
+    } catch (error) {
+      console.error('Error loading weather and today\'s pick:', error);
+    }
+  };
+  
+  const handleRefreshOutfit = async () => {
+    if (weather) {
+      await loadTodaysPick(weather, true);
+    }
+  };
 
   const loadRecords = async () => {
     try {
@@ -423,336 +481,7 @@ export default function OOTDDiary() {
     });
   };
 
-  // Calculate distance between two GPS coordinates using Haversine formula
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // Distance in km
-  };
-
-  // Today's Pick Functions
-  const loadWeatherAndRecommendation = async (forceRefresh: boolean = false) => {
-    try {
-      setTodayPickLoading(true);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const today = new Date().toISOString().split('T')[0];
-
-      // Get current location first
-      let currentLat = 35.6764225; // Default fallback
-      let currentLng = 139.650027;
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 300000,
-          });
-        });
-        currentLat = position.coords.latitude;
-        currentLng = position.coords.longitude;
-      } catch (geoError) {
-        console.warn('Geolocation failed, using default coords:', geoError);
-      }
-
-      // Check database for existing Today's Pick
-      if (!forceRefresh) {
-        const { data: existingPick } = await supabase
-          .from('todays_picks')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('date', today)
-          .maybeSingle();
-
-        if (existingPick) {
-          let pickedWeather: any = (existingPick as any).weather || null;
-
-          // Calculate distance between saved and current location
-          const hasSavedCoords = pickedWeather?.latitude && pickedWeather?.longitude;
-          let locationChanged = false;
-          
-          if (hasSavedCoords) {
-            const distance = calculateDistance(
-              pickedWeather.latitude,
-              pickedWeather.longitude,
-              currentLat,
-              currentLng
-            );
-            // If moved more than 10km, consider location changed
-            locationChanged = distance > 10;
-            console.log(`Location check: ${distance.toFixed(2)}km from saved location`);
-          }
-
-          // Refresh if: no coords saved, location changed, missing temperatureUnit, or unknown location
-          const needsRefresh = !hasSavedCoords || 
-                              locationChanged ||
-                              !pickedWeather?.temperatureUnit || 
-                              !pickedWeather?.location || 
-                              /unknown/i.test(pickedWeather.location);
-
-          if (needsRefresh) {
-            console.log('Refreshing weather data:', { 
-              reason: !hasSavedCoords ? 'no coords' : locationChanged ? 'location changed' : 'missing data' 
-            });
-            
-            const { data: freshWeather } = await supabase.functions.invoke('get-weather', {
-              body: { lat: currentLat, lng: currentLng },
-            });
-
-            if (freshWeather) {
-              pickedWeather = { ...freshWeather, latitude: currentLat, longitude: currentLng };
-              await supabase
-                .from('todays_picks')
-                .update({ weather: pickedWeather })
-                .eq('id', existingPick.id);
-              console.log('Weather refreshed for location change');
-            }
-          } else {
-            console.log('Using cached weather data - location unchanged');
-          }
-
-          setWeather(pickedWeather as WeatherData);
-          setOutfits([
-            {
-              title: existingPick.title,
-              summary: existingPick.summary,
-              hairstyle: existingPick.hairstyle,
-              items: existingPick.items,
-            },
-          ]);
-          const itemsArr = (existingPick.items as any[]) || [];
-          const fallbackHero = itemsArr.find((it: any) => it?.imageUrl)?.imageUrl || "";
-          setOutfitImageUrl(existingPick.image_url || fallbackHero);
-          setTodaysPickId(existingPick.id);
-          setIsLiked(existingPick.is_liked);
-          setAddedToOOTD(existingPick.added_to_ootd);
-
-          setTodayPickLoading(false);
-          return;
-        }
-      }
-      
-      // No existing pick or force refresh - fetch fresh weather
-      const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
-        'get-weather',
-        {
-          body: { lat: currentLat, lng: currentLng }
-        }
-      );
-
-      if (weatherError) throw weatherError;
-      
-      // Add coordinates to weather data
-      const weatherWithCoords = { ...weatherData, latitude: currentLat, longitude: currentLng };
-      setWeather(weatherWithCoords);
-
-      // Fetch user's garments
-      const { data: garments } = await supabase
-        .from('garments')
-        .select('id, type, color, material, brand, image_url');
-
-      // Generate AI recommendation
-      setRecommendationLoading(true);
-      try {
-        const { data: recommendationData, error: recError } = await supabase.functions.invoke(
-          'generate-outfit-recommendation',
-          {
-            body: {
-              temperature: weatherData.current.temperature,
-              weatherDescription: weatherData.current.weatherDescription,
-              uvIndex: weatherData.current.uvIndex,
-              garments: garments || []
-            }
-          }
-        );
-
-        if (recError) throw recError;
-        
-        const outfitsData = recommendationData.outfits || [];
-        
-        // Fetch images for items not from closet
-        if (outfitsData[0]?.items) {
-          const itemsWithImages = await Promise.all(
-            outfitsData[0].items.map(async (item: any) => {
-              // If item is from closet, it already has imageUrl from garment
-              if (item.fromCloset && item.garmentId) {
-                const garment = garments?.find(g => g.id === item.garmentId);
-                return {
-                  ...item,
-                  imageUrl: garment?.image_url
-                };
-              }
-              
-              // For non-closet items, search for product image
-              if (!item.fromCloset && item.brand && item.model) {
-                try {
-                  const { data: productData } = await supabase.functions.invoke('search-product-info', {
-                    body: { brand: item.brand, model: item.model }
-                  });
-                  
-                  return {
-                    ...item,
-                    imageUrl: productData?.imageUrl
-                  };
-                } catch (error) {
-                  console.error('Failed to fetch product image:', error);
-                  return item;
-                }
-              }
-              
-              return item;
-            })
-          );
-          
-          outfitsData[0].items = itemsWithImages;
-        }
-        
-        setOutfits(outfitsData);
-
-        // Save to database
-        if (outfitsData[0]) {
-          const outfit = outfitsData[0];
-          
-          if (forceRefresh) {
-            await supabase
-              .from('todays_picks')
-              .delete()
-              .eq('user_id', user.id)
-              .eq('date', today);
-          }
-
-          const { data: savedPick } = await supabase
-            .from('todays_picks')
-            .insert({
-              user_id: user.id,
-              date: today,
-              title: outfit.title,
-              summary: outfit.summary,
-              hairstyle: outfit.hairstyle,
-              items: outfit.items,
-              weather: weatherWithCoords
-            })
-            .select()
-            .single();
-
-          if (savedPick) {
-            setTodaysPickId(savedPick.id);
-            setIsLiked(false);
-            setAddedToOOTD(false);
-          }
-
-          await generateOutfitImage(outfit, savedPick?.id);
-        }
-      } catch (aiError) {
-        console.error('AI service unavailable:', aiError);
-      }
-
-    } catch (error: any) {
-      console.error('Error loading Today\'s Pick:', error);
-    } finally {
-      setTodayPickLoading(false);
-      setRecommendationLoading(false);
-    }
-  };
-
-  const generateOutfitImage = async (outfit: any, pickId?: string) => {
-    try {
-      setGeneratingImage(true);
-      
-      // Get user's full body photo
-      const { data: { user } } = await supabase.auth.getUser();
-      let userPhotoUrl = '';
-      
-      if (user) {
-        const { data: settingsData } = await supabase
-          .from("user_settings")
-          .select("full_body_photo_url")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        
-        if (settingsData?.full_body_photo_url) {
-          userPhotoUrl = settingsData.full_body_photo_url;
-        }
-      }
-      
-      const { data, error } = await supabase.functions.invoke('generate-outfit-image', {
-        body: {
-          items: outfit.items || [],
-          weather: weather?.current,
-          hairstyle: outfit.hairstyle,
-          userPhotoUrl: userPhotoUrl,
-          userId: user?.id
-        }
-      });
-
-      if (error) throw error;
-      
-      if (data?.imageUrl) {
-        setOutfitImageUrl(data.imageUrl);
-
-        const targetId = pickId || todaysPickId;
-        if (targetId) {
-          await supabase
-            .from('todays_picks')
-            .update({ image_url: data.imageUrl })
-            .eq('id', targetId);
-        }
-      }
-    } catch (error) {
-      console.error('AI image generation unavailable:', error);
-    } finally {
-      setGeneratingImage(false);
-    }
-  };
-
-  const handleRefreshOutfit = async () => {
-    setOutfits([]);
-    setOutfitImageUrl("");
-    setTodaysPickId(null);
-    setIsLiked(false);
-    setAddedToOOTD(false);
-    
-    setRecommendationLoading(true);
-    await loadWeatherAndRecommendation(true);
-  };
-
-  const toggleLikeStatus = async () => {
-    if (!todaysPickId) return;
-
-    const newLikedStatus = !isLiked;
-    setIsLiked(newLikedStatus);
-
-    const { error } = await supabase
-      .from('todays_picks')
-      .update({ is_liked: newLikedStatus })
-      .eq('id', todaysPickId);
-
-    if (error) {
-      setIsLiked(!newLikedStatus);
-      toast.error("Failed to update favorite status");
-    }
-  };
-
-  const markAddedToOOTD = async () => {
-    if (!todaysPickId) return;
-
-    const { error } = await supabase
-      .from('todays_picks')
-      .update({ added_to_ootd: true })
-      .eq('id', todaysPickId);
-
-    if (!error) {
-      setAddedToOOTD(true);
-    }
-  };
+  // Removed Today's Pick functions - now using useTodaysPick hook
 
   const getWeatherIcon = (code: number) => {
     if (code === 0) return <Sun className="w-6 h-6 text-yellow-500" />;
@@ -1268,7 +997,7 @@ export default function OOTDDiary() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={toggleLikeStatus}
+                                onClick={toggleLike}
                                 className="absolute top-2 right-2 bg-background/80 hover:bg-background"
                               >
                                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -1802,7 +1531,7 @@ export default function OOTDDiary() {
                   variant="ghost"
                   size="icon"
                   className="absolute top-2 right-2 h-8 w-8 sm:h-10 sm:w-10 bg-background/80 hover:bg-background backdrop-blur-sm"
-                  onClick={toggleLikeStatus}
+                  onClick={toggleLike}
                 >
                   <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 </Button>
