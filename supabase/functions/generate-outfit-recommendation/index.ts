@@ -16,10 +16,6 @@ serve(async (req) => {
     
     console.log('Generating outfit recommendation for:', { temperature, weatherDescription, uvIndex });
 
-    const HUGGING_FACE_ACCESS_TOKEN = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
-    if (!HUGGING_FACE_ACCESS_TOKEN) {
-      throw new Error('HUGGING_FACE_ACCESS_TOKEN is not configured');
-    }
 
     // Build garment inventory with IDs for matching
     const garmentInventory = garments && garments.length > 0
@@ -105,19 +101,25 @@ CRITICAL:
 3. Include the "garmentId" field ONLY when "fromCloset" is true
 4. Suggest a hairstyle that complements the outfit's style and is weather-appropriate (e.g., updos for windy weather, protective styles for rain)`;
 
-    const response = await fetch("https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-70B-Instruct", {
+    // Use Lovable AI instead of Hugging Face
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${HUGGING_FACE_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        inputs: `${systemPrompt}\n\nUser: ${userPrompt}\n\nAssistant:`,
-        parameters: {
-          max_new_tokens: 4000,
-          temperature: 0.7,
-          return_full_text: false,
-        },
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        max_completion_tokens: 4000,
       }),
     });
 
@@ -128,7 +130,7 @@ CRITICAL:
     }
 
     const data = await response.json();
-    let recommendation = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text;
+    let recommendation = data.choices?.[0]?.message?.content;
 
     if (!recommendation) {
       throw new Error('No content in AI response');
