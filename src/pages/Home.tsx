@@ -781,7 +781,7 @@ export default function Home() {
             <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-accent" />
           </div>
         ) : trendOutfits.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {trendOutfits.slice(0, 8).map((outfit, index) => (
               <Card 
                 key={index}
