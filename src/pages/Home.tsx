@@ -725,7 +725,7 @@ export default function Home() {
                   {/* Left: Item List (1/3 width) */}
                   <div className="w-1/3 space-y-1.5">
                     <h4 className="font-medium text-[10px] text-muted-foreground mb-2">Items</h4>
-                    <div className="space-y-1.5 max-h-[420px] overflow-y-auto">
+                    <div className="space-y-1.5">
                       {outfits[0].items?.map((item: any, index: number) => (
                         <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50">
                           {item.imageUrl ? (
@@ -764,10 +764,10 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Right: Outfit Image (2/3 width) */}
-                  <div className="w-2/3 space-y-2">
+                  {/* Right: Outfit Image (2/3 width) - Auto height to match items */}
+                  <div className="w-2/3 space-y-2 flex flex-col">
                     <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
-                    <div className="relative h-[420px] rounded-lg overflow-hidden bg-background">
+                    <div className="relative flex-1 rounded-lg overflow-hidden bg-background">
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -900,10 +900,10 @@ export default function Home() {
               {/* Desktop Layout */}
               <div className="hidden md:block">
                 <div className="flex gap-4">
-                  {/* Left: Item List (1/3 width) */}
-                  <div className="w-1/3 space-y-3">
+                  {/* Left: Item List (1/3 width) - Remove scrolling, show all */}
+                  <div className="w-1/3 space-y-3 flex flex-col">
                     <h4 className="font-medium text-sm text-muted-foreground">Items</h4>
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 gap-2 flex-1">
                       {outfits[0].items?.map((item: any, index: number) => (
                         <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors">
                           {item.imageUrl ? (
@@ -935,21 +935,21 @@ export default function Home() {
                             <p className="text-white text-xs font-medium truncate">{item.name || item.type}</p>
                             <p className="text-white/80 text-[10px] truncate">{item.color}</p>
                           </div>
-                          <Badge 
-                            variant={item.fromCloset ? "default" : "secondary"} 
-                            className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5"
-                          >
-                            {item.fromCloset ? "IN" : "BUY"}
-                          </Badge>
+                          <Heart 
+                            className={`absolute top-1 right-1 w-4 h-4 ${
+                              item.fromCloset ? 'fill-red-500 text-red-500' : 'text-white/80'
+                            }`}
+                            style={{ opacity: item.fromCloset ? 1 : 0.4 }}
+                          />
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Right: Outfit Image (2/3 width) */}
-                  <div className="w-2/3 space-y-3">
-                    <h3 className="text-lg font-semibold">{outfits[0].title}</h3>
-                    <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                  {/* Right: Outfit Image (2/3 width) - Auto height to match items */}
+                  <div className="w-2/3 flex flex-col">
+                    <h3 className="text-lg font-semibold mb-3">{outfits[0].title}</h3>
+                    <div className="relative flex-1 bg-muted rounded-lg overflow-hidden">
                       {generatingImage ? (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Loader2 className="w-8 h-8 animate-spin text-accent" />
@@ -966,7 +966,7 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{outfits[0].summary}</p>
+                    <p className="text-sm text-muted-foreground mt-3">{outfits[0].summary}</p>
                     <div className="flex gap-2">
                       <Button 
                         className="flex-1" 
