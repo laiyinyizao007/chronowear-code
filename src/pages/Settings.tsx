@@ -16,6 +16,7 @@ export default function Settings() {
   const [geoLocation, setGeoLocation] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -118,8 +119,9 @@ export default function Settings() {
     }
   };
 
-  const handleUpdateProfile = async () => {
+  const handleSaveAll = async () => {
     try {
+      setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -133,10 +135,12 @@ export default function Settings() {
 
       if (error) throw error;
 
-      toast.success("Profile updated successfully!");
+      toast.success("Settings saved successfully!");
     } catch (error: any) {
-      console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      console.error("Error saving settings:", error);
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -201,10 +205,6 @@ export default function Settings() {
               onChange={(e) => setGeoLocation(e.target.value)}
             />
           </div>
-
-          <Button onClick={handleUpdateProfile} className="w-full">
-            Save Preferences
-          </Button>
         </CardContent>
       </Card>
 
@@ -278,6 +278,23 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex gap-4">
+        <Button 
+          onClick={handleSaveAll} 
+          disabled={saving}
+          className="flex-1"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save All Settings"
+          )}
+        </Button>
+      </div>
 
       <Card className="shadow-medium">
         <CardHeader>
