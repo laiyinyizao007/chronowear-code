@@ -344,19 +344,58 @@ export default function Home() {
       console.log('✅ Gemini API response received:', trendsData);
 
       if (trendsData?.trends) {
-        // Save trends to database
-        const trendsToSave = trendsData.trends.map((trend: any) => ({
-          user_id: user.id,
-          date: today,
-          title: trend.title,
-          description: trend.summary,
-          summary: trend.summary,
-          hairstyle: trend.hairstyle,
-          items: trend.items,
-          image_url: getRandomFashionImage(),
-          weather: currentWeather
-        }));
+        // Generate images for each trend and save to database
+        const trendsToSave = [];
+        const formattedTrends = [];
+        
+        for (const trend of trendsData.trends) {
+          // Generate AI image for this trend
+          let imageUrl = getRandomFashionImage(); // fallback
+          
+          try {
+            console.log('Generating AI image for trend:', trend.title);
+            const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-outfit-image', {
+              body: {
+                items: trend.items || [],
+                weather: currentWeather?.current,
+                hairstyle: trend.hairstyle
+              }
+            });
+            
+            if (!imageError && imageData?.imageUrl) {
+              imageUrl = imageData.imageUrl;
+              console.log('✅ AI image generated for trend:', trend.title);
+            } else {
+              console.warn('⚠️ Failed to generate AI image, using fallback');
+            }
+          } catch (imgError) {
+            console.error('Error generating trend image:', imgError);
+          }
+          
+          // Prepare trend for database
+          trendsToSave.push({
+            user_id: user.id,
+            date: today,
+            title: trend.title,
+            description: trend.summary,
+            summary: trend.summary,
+            hairstyle: trend.hairstyle,
+            items: trend.items,
+            image_url: imageUrl,
+            weather: currentWeather
+          });
+          
+          // Prepare trend for display
+          formattedTrends.push({
+            title: trend.title,
+            summary: trend.summary,
+            hairstyle: trend.hairstyle,
+            imageUrl: imageUrl,
+            items: trend.items
+          });
+        }
 
+        // Save all trends to database
         const { error: saveError } = await supabase
           .from('trends')
           .insert(trendsToSave);
@@ -364,17 +403,8 @@ export default function Home() {
         if (saveError) {
           console.error('Failed to save trends:', saveError);
         } else {
-          console.log('✅ Saved', trendsToSave.length, 'trends to database');
+          console.log('✅ Saved', trendsToSave.length, 'trends to database with AI images');
         }
-
-        // Transform AI response to match expected format
-        const formattedTrends = trendsData.trends.map((trend: any) => ({
-          title: trend.title,
-          summary: trend.summary,
-          hairstyle: trend.hairstyle,
-          imageUrl: getRandomFashionImage(),
-          items: trend.items
-        }));
         
         console.log('✅ Fashion trends formatted:', formattedTrends.length, 'trends');
         setTrendOutfits(formattedTrends);
