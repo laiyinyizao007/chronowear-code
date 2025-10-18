@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getWashingRecommendation, identifyGarmentsFromImage } from "@/services/garmentService";
 import { searchProductInfo } from "@/services/outfitService";
+import { useProgress } from "@/contexts/ProgressContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,6 +82,7 @@ interface ProductInfo {
 export default function Closet() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { setProgress, startProcessing, stopProcessing } = useProgress();
   const [garments, setGarments] = useState<Garment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -324,6 +326,8 @@ export default function Closet() {
     setIdentifyingProducts(true);
     if (!getMoreResults) {
       setProcessingProgress(50);
+      startProcessing();
+      setProgress(50);
     }
     
     try {
@@ -335,6 +339,10 @@ export default function Closet() {
         if (!getMoreResults) {
           setProcessingProgress(100);
           setIsProcessing(false);
+          setProgress(100);
+          setTimeout(() => {
+            stopProcessing();
+          }, 300);
         }
         setIdentifyingProducts(false);
         return;
@@ -342,6 +350,7 @@ export default function Closet() {
 
       if (!getMoreResults) {
         setProcessingProgress(70);
+        setProgress(70);
       }
       
       // Fetch detailed product info for each identified garment
@@ -398,10 +407,14 @@ export default function Closet() {
         }
         
         setProcessingProgress(100);
+        setProgress(100);
         toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified!`);
         setIsAddDialogOpen(true);
         setIsProcessing(false);
         setProcessingProgress(0);
+        setTimeout(() => {
+          stopProcessing();
+        }, 300);
       }
     } catch (error: any) {
       console.error('Error identifying products:', error);
@@ -409,6 +422,7 @@ export default function Closet() {
       if (!getMoreResults) {
         setIsProcessing(false);
         setProcessingProgress(0);
+        stopProcessing();
       }
     } finally {
       setIdentifyingProducts(false);
@@ -420,8 +434,10 @@ export default function Closet() {
 
   const loadMoreProducts = async () => {
     if (!uploadedImageUrl || isLoadingMore) return;
+    startProcessing();
     setIsLoadingMore(true);
     await identifyProducts(uploadedImageUrl, true);
+    stopProcessing();
   };
 
   const handleSaveSelectedProduct = async () => {

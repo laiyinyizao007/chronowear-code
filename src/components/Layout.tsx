@@ -3,17 +3,20 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, Camera, Upload, Sparkles, MessageSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AIAssistant from "./AIAssistant";
 import { useWeather } from "@/hooks/useWeather";
+import { useProgress } from "@/contexts/ProgressContext";
 import { toast } from "sonner";
 
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const { weather, fetchWeather } = useWeather();
+  const { progress, isProcessing } = useProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -215,33 +218,66 @@ export default function Layout() {
               </NavLink>
             ))}
             
-            {/* CTA Button - Add Menu in the middle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-medium hover:shadow-large transition-all duration-300 -mt-8 border-2 border-background"
-                  aria-label="Add"
-                >
-                  <Plus className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" strokeWidth={1.5} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="mb-2 bg-background border-border/50 rounded-none shadow-medium">
-                <DropdownMenuItem 
-                  onClick={handleAddGarmentClick}
-                  className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
-                >
-                  <Upload className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
-                  <span className="text-sm font-light tracking-wide">Add Garment</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => navigate("/diary?action=add")}
-                  className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
-                >
-                  <Camera className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
-                  <span className="text-sm font-light tracking-wide">Log OOTD</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* CTA Button - Add Menu or Progress in the middle */}
+            {isProcessing ? (
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center -mt-8 border-2 border-background shadow-medium">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 relative">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle
+                      cx="50%"
+                      cy="50%"
+                      r="45%"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      fill="none"
+                      className="text-muted"
+                    />
+                    <circle
+                      cx="50%"
+                      cy="50%"
+                      r="45%"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      fill="none"
+                      className="text-primary transition-all duration-300"
+                      strokeDasharray={`${2 * Math.PI * 45}`}
+                      strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[10px] font-medium text-primary">{Math.round(progress)}%</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-medium hover:shadow-large transition-all duration-300 -mt-8 border-2 border-background"
+                    aria-label="Add"
+                  >
+                    <Plus className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" strokeWidth={1.5} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="mb-2 bg-background border-border/50 rounded-none shadow-medium">
+                  <DropdownMenuItem 
+                    onClick={handleAddGarmentClick}
+                    className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
+                  >
+                    <Upload className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
+                    <span className="text-sm font-light tracking-wide">Add Garment</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/diary?action=add")}
+                    className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
+                  >
+                    <Camera className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
+                    <span className="text-sm font-light tracking-wide">Log OOTD</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             
             {/* Last nav item: Stylist */}
             {navItems.slice(1).map((item) => (
