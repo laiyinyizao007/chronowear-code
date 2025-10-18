@@ -76,7 +76,6 @@ export default function Layout() {
 
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
-    { to: "/closet", icon: Shirt, label: "Closet" },
     { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
     { to: "/settings", icon: SettingsIcon, label: "Settings" },
@@ -151,8 +150,8 @@ export default function Layout() {
       <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
         <div className="mx-auto px-4 sm:px-6 max-w-[1600px]">
           <div className="flex justify-around items-center h-16 sm:h-18">
-            {/* First two nav items: Home, Closet */}
-            {navItems.slice(0, 2).map((item) => (
+            {/* First nav item: Home */}
+            {navItems.slice(0, 1).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -206,7 +205,7 @@ export default function Layout() {
             </DropdownMenu>
             
             {/* Last three nav items: Stylist, OOTD, Settings */}
-            {navItems.slice(2).map((item) => (
+            {navItems.slice(1).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -233,7 +232,7 @@ export default function Layout() {
             
             {/* Stylist and OOTD for desktop (hidden on mobile because Settings takes the spot) */}
             <div className="hidden lg:flex">
-              {navItems.slice(2, 4).map((item) => (
+              {navItems.slice(1, 3).map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}

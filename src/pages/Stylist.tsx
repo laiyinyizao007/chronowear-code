@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw, Book } from "lucide-react";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw, Book, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
@@ -28,6 +29,7 @@ interface AIRecommendedItem {
 }
 
 export default function Stylist() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("virtual-tryon");
   const [fullBodyPhotoUrl, setFullBodyPhotoUrl] = useState<string>("");
   const [removedBgImageUrl, setRemovedBgImageUrl] = useState<string>("");
@@ -309,9 +311,20 @@ export default function Stylist() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">AI Stylist</h1>
-        <p className="text-muted-foreground">Virtual try-on & your style collection</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">AI Stylist</h1>
+          <p className="text-muted-foreground">Virtual try-on & your style collection</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate("/closet")}
+          className="gap-2"
+        >
+          <ShirtIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">My Closet</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
