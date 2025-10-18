@@ -435,10 +435,15 @@ export default function OOTDDiary() {
         if (existingPick) {
           let pickedWeather: any = (existingPick as any).weather || null;
 
-          // If saved weather has unknown/missing location, refresh it now and update DB
-          if (!pickedWeather?.location || /unknown/i.test(pickedWeather.location)) {
+          // Force refresh if no temperatureUnit (old data) or unknown location
+          const needsRefresh = !pickedWeather?.temperatureUnit || 
+                              !pickedWeather?.location || 
+                              /unknown/i.test(pickedWeather.location);
+
+          if (needsRefresh) {
+            console.log('Refreshing weather data - old format or missing location');
             try {
-              let latitude = 35.6764225; // Default fallback
+              let latitude = 35.6764225;
               let longitude = 139.650027;
               try {
                 const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -462,9 +467,10 @@ export default function OOTDDiary() {
                   .from('todays_picks')
                   .update({ weather: freshWeather })
                   .eq('id', existingPick.id);
+                console.log('Weather data refreshed with correct units:', freshWeather);
               }
             } catch (wErr) {
-              console.warn('Failed to refresh weather for existing pick', wErr);
+              console.warn('Failed to refresh weather', wErr);
             }
           }
 
@@ -482,7 +488,6 @@ export default function OOTDDiary() {
           setIsLiked(existingPick.is_liked);
           setAddedToOOTD(existingPick.added_to_ootd);
 
-          // Load Fashion Trends
           const { data: garments } = await supabase
             .from('garments')
             .select('id, type, color, material, brand, image_url');
