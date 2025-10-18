@@ -78,7 +78,6 @@ export default function Layout() {
     { to: "/", icon: Home, label: "Home" },
     { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
-    { to: "/settings", icon: SettingsIcon, label: "Settings" },
   ];
 
   return (
@@ -127,12 +126,12 @@ export default function Layout() {
               </DialogContent>
             </Dialog>
             
-            {/* Settings - Desktop only now since it's in mobile nav */}
+            {/* Settings */}
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/settings")}
-              className="hidden lg:flex hover:bg-muted/30 h-8 w-8"
+              className="hover:bg-muted/30 h-8 w-8"
               aria-label="Settings"
             >
               <SettingsIcon className="w-3.5 h-3.5" />
@@ -204,18 +203,18 @@ export default function Layout() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Last three nav items: Stylist, OOTD, Settings */}
+            {/* Last two nav items: Stylist, OOTD */}
             {navItems.slice(1).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-2 sm:px-3 py-2 transition-all duration-300 relative lg:hidden ${
+                  `flex flex-col items-center gap-1 px-2 sm:px-3 py-2 transition-all duration-300 relative ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
-                  } ${item.to === "/settings" ? "flex" : ""}`
+                  }`
                 }
               >
                 {({ isActive }) => (
@@ -229,34 +228,6 @@ export default function Layout() {
                 )}
               </NavLink>
             ))}
-            
-            {/* Stylist and OOTD for desktop (hidden on mobile because Settings takes the spot) */}
-            <div className="hidden lg:flex">
-              {navItems.slice(1, 3).map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/"}
-                  className={({ isActive }) =>
-                    `flex flex-col items-center gap-1 px-2 sm:px-3 py-2 transition-all duration-300 relative ${
-                      isActive
-                        ? "text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary animate-fade-in" />
-                      )}
-                      <item.icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
-                      <span className={`text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase transition-all duration-300 ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
-                    </>
-                  )}
-                </NavLink>
-              ))}
-            </div>
           </div>
         </div>
       </nav>
