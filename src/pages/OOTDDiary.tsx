@@ -1127,7 +1127,7 @@ export default function OOTDDiary() {
               ) : outfits.length > 0 && (
                 <>
                   {/* Today's Pick - Fullscreen with overlay */}
-                  <div className="relative overflow-hidden rounded-lg aspect-[3/4] max-w-lg mx-auto">
+                  <div className="relative overflow-hidden h-full w-full">
                     {/* Background Image */}
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
