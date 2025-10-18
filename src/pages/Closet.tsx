@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X, Scan, ChevronsUpDown, Check, Shirt, Heart, Trash2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getWashingRecommendation } from "@/services/garmentService";
+import { getWashingRecommendation, identifyGarmentsFromImage } from "@/services/garmentService";
+import { searchProductInfo } from "@/services/outfitService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +27,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import ProductCard from "@/components/ProductCard";
 import GarmentFilterSheet from "@/components/GarmentFilterSheet";
-import { searchProductInfo } from "@/services/outfitService";
 
 interface Garment {
   id: string;
@@ -256,34 +256,37 @@ export default function Closet() {
     setIdentifyingProducts(true);
     setProcessingProgress(50);
     try {
-      const { data: identifyData, error: identifyError } = await supabase.functions.invoke(
-        'identify-garment',
-        { body: { imageUrl } }
-      );
+      // Use unified garment service
+      const garments = await identifyGarmentsFromImage(imageUrl);
+      
+      if (!garments || garments.length === 0) {
+        toast.info("No garments identified in the image");
+        setProcessingProgress(100);
+        setIdentifyingProducts(false);
+        setIsProcessing(false);
+        return;
+      }
 
-      if (identifyError) throw identifyError;
-
-      const results = identifyData?.results || [];
       setProcessingProgress(70);
       
-      // Fetch detailed product info for each result
-      const productPromises = results.map(async (result: any) => {
-        const productData = await searchProductInfo(result.brand, result.model);
+      // Fetch detailed product info for each identified garment
+      const productPromises = garments.map(async (garment: any) => {
+        const productData = await searchProductInfo(garment.brand, garment.model);
         
         return {
-          brand: result.brand,
-          model: result.model,
-          price: result.price,
-          style: result.style,
-          features: result.features || [],
+          brand: garment.brand,
+          model: garment.model,
+          type: garment.type || productData?.type,
+          color: garment.color || productData?.color,
+          material: garment.material || productData?.material,
           imageUrl: productData?.imageUrl,
-          material: productData?.material,
-          color: productData?.color,
+          price: productData?.price,
+          style: productData?.style,
+          features: productData?.features || [],
           availability: productData?.availability,
           official_price: productData?.official_price,
           washing_frequency: productData?.washing_frequency,
           care_instructions: productData?.care_instructions,
-          type: productData?.type || result.type,
         };
       });
 
