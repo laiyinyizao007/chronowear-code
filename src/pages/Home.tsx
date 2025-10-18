@@ -50,33 +50,49 @@ export default function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [todaysPickId, setTodaysPickId] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
+  const [addedToOOTD, setAddedToOOTD] = useState(false);
 
   useEffect(() => {
     loadWeatherAndRecommendation();
     loadTrendOutfits();
   }, []);
 
-  const loadWeatherAndRecommendation = async () => {
+  const loadWeatherAndRecommendation = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
       setLoadError(false);
 
-      // Check for cached outfit from today
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const today = new Date().toISOString().split('T')[0];
-      const cachedKey = `todayPick_${today}`;
-      const cached = localStorage.getItem(cachedKey);
-      
-      if (cached) {
-        try {
-          const parsedCache = JSON.parse(cached);
-          setWeather(parsedCache.weather);
-          setOutfits(parsedCache.outfits);
+
+      // Check database for existing Today's Pick (unless forced refresh)
+      if (!forceRefresh) {
+        const { data: existingPick } = await supabase
+          .from('todays_picks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .maybeSingle();
+
+        if (existingPick) {
+          console.log('Loaded today\'s pick from database');
+          setWeather(existingPick.weather as any as WeatherData);
+          setOutfits([{
+            title: existingPick.title,
+            summary: existingPick.summary,
+            hairstyle: existingPick.hairstyle,
+            items: existingPick.items
+          }]);
+          setOutfitImageUrl(existingPick.image_url || "");
+          setTodaysPickId(existingPick.id);
+          setIsLiked(existingPick.is_liked);
+          setAddedToOOTD(existingPick.added_to_ootd);
           setLoading(false);
-          console.log('Loaded today\'s pick from cache');
           return;
-        } catch (e) {
-          console.warn('Failed to parse cached outfit, regenerating');
-          localStorage.removeItem(cachedKey);
         }
       }
       
@@ -88,7 +104,7 @@ export default function Home() {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
             timeout: 8000,
-            maximumAge: 300000 // Cache for 5 minutes
+            maximumAge: 300000
           });
         });
         latitude = position.coords.latitude;
@@ -133,19 +149,46 @@ export default function Home() {
         const outfitsData = recommendationData.outfits || [];
         setOutfits(outfitsData);
 
-        // Cache the result for today
-        localStorage.setItem(cachedKey, JSON.stringify({
-          weather: weatherData,
-          outfits: outfitsData,
-        }));
-
-        // Generate outfit image for the first outfit
+        // Save to database (replace if exists for today)
         if (outfitsData[0]) {
-          generateOutfitImage(outfitsData[0]);
+          const outfit = outfitsData[0];
+          
+          // If force refresh, delete old Today's Pick for today
+          if (forceRefresh) {
+            await supabase
+              .from('todays_picks')
+              .delete()
+              .eq('user_id', user.id)
+              .eq('date', today);
+          }
+
+          const { data: savedPick, error: saveError } = await supabase
+            .from('todays_picks')
+            .insert({
+              user_id: user.id,
+              date: today,
+              title: outfit.title,
+              summary: outfit.summary,
+              hairstyle: outfit.hairstyle,
+              items: outfit.items,
+              weather: weatherData
+            })
+            .select()
+            .single();
+
+          if (!saveError && savedPick) {
+            setTodaysPickId(savedPick.id);
+            setIsLiked(false);
+            setAddedToOOTD(false);
+            console.log('Saved new today\'s pick to database');
+          }
+
+          // Generate outfit image
+          generateOutfitImage(outfit);
         }
       } catch (aiError) {
         console.error('AI service unavailable:', aiError);
-        // Use complete mock data when AI is unavailable and immediately enrich with images
+        // Use complete mock data when AI is unavailable
         const basicOutfits = [
           {
             title: "Casual Chic",
@@ -162,7 +205,6 @@ export default function Home() {
           }
         ];
 
-        console.log('Enriching basic recommendation with images...');
         const enrichedOutfits = await Promise.all(
           basicOutfits.map(async (outfit) => {
             const enrichedItems = await enrichItemsWithImages(outfit.items, garments || []);
@@ -171,12 +213,37 @@ export default function Home() {
         );
         
         setOutfits(enrichedOutfits);
-        
-        // Cache the fallback result for today
-        localStorage.setItem(cachedKey, JSON.stringify({
-          weather: weatherData,
-          outfits: enrichedOutfits,
-        }));
+
+        // Save fallback to database
+        if (enrichedOutfits[0]) {
+          if (forceRefresh) {
+            await supabase
+              .from('todays_picks')
+              .delete()
+              .eq('user_id', user.id)
+              .eq('date', today);
+          }
+
+          const { data: savedPick } = await supabase
+            .from('todays_picks')
+            .insert({
+              user_id: user.id,
+              date: today,
+              title: enrichedOutfits[0].title,
+              summary: enrichedOutfits[0].summary,
+              hairstyle: enrichedOutfits[0].hairstyle,
+              items: enrichedOutfits[0].items,
+              weather: weatherData
+            })
+            .select()
+            .single();
+
+          if (savedPick) {
+            setTodaysPickId(savedPick.id);
+            setIsLiked(false);
+            setAddedToOOTD(false);
+          }
+        }
         
         toast({
           title: "AI Service Unavailable",
@@ -318,6 +385,14 @@ export default function Home() {
       if (data?.imageUrl) {
         console.log('Outfit image generated successfully');
         setOutfitImageUrl(data.imageUrl);
+
+        // Update database with image_url if todaysPickId exists
+        if (todaysPickId) {
+          await supabase
+            .from('todays_picks')
+            .update({ image_url: data.imageUrl })
+            .eq('id', todaysPickId);
+        }
       } else {
         console.warn('No image URL returned from generate-outfit-image');
       }
@@ -329,6 +404,49 @@ export default function Home() {
       }
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  // Handle refresh outfit - force regenerate today's pick
+  const handleRefreshOutfit = async () => {
+    setRecommendationLoading(true);
+    await loadWeatherAndRecommendation(true);
+  };
+
+  // Toggle like status
+  const toggleLikeStatus = async () => {
+    if (!todaysPickId) return;
+
+    const newLikedStatus = !isLiked;
+    setIsLiked(newLikedStatus);
+
+    const { error } = await supabase
+      .from('todays_picks')
+      .update({ is_liked: newLikedStatus })
+      .eq('id', todaysPickId);
+
+    if (error) {
+      console.error('Failed to update like status:', error);
+      setIsLiked(!newLikedStatus); // Revert on error
+      toast({
+        title: "Error",
+        description: "Failed to update favorite status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Mark as added to OOTD
+  const markAddedToOOTD = async () => {
+    if (!todaysPickId) return;
+
+    const { error } = await supabase
+      .from('todays_picks')
+      .update({ added_to_ootd: true })
+      .eq('id', todaysPickId);
+
+    if (!error) {
+      setAddedToOOTD(true);
     }
   };
 
@@ -403,54 +521,6 @@ export default function Home() {
     return updated;
   };
 
-  const handleRefreshOutfit = async () => {
-    if (!weather) return;
-    
-    try {
-      setOutfitImageUrl(""); // Clear current image
-      setRecommendationLoading(true);
-      
-      // Fetch user's garments
-      const { data: garments } = await supabase
-        .from('garments')
-        .select('id, type, color, material, brand, image_url');
-
-      // Generate new AI recommendation
-      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
-        'generate-outfit-recommendation',
-        {
-          body: {
-            temperature: weather.current.temperature,
-            weatherDescription: weather.current.weatherDescription,
-            uvIndex: weather.current.uvIndex,
-            garments: garments || []
-          }
-        }
-      );
-
-      if (recError) throw recError;
-      setOutfits(recommendationData.outfits || []);
-      
-      // Generate outfit image for the first outfit
-      if (recommendationData.outfits?.[0]) {
-        generateOutfitImage(recommendationData.outfits[0]);
-      }
-      
-      toast({
-        title: "New Outfits Generated",
-        description: "Fresh outfit recommendations based on current weather!",
-      });
-    } catch (error: any) {
-      console.error('Error generating new outfits:', error);
-      toast({
-        title: "Failed to Refresh",
-        description: "Could not generate new outfit. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setRecommendationLoading(false);
-    }
-  };
 
   const handleAddToCloset = async (item: any, index: number) => {
     try {
@@ -540,7 +610,7 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center py-16 space-y-4">
         <div className="text-muted-foreground">Failed to load data</div>
-        <Button onClick={loadWeatherAndRecommendation}>Try Again</Button>
+        <Button onClick={() => loadWeatherAndRecommendation(false)}>Try Again</Button>
       </div>
     );
   }
@@ -807,54 +877,59 @@ export default function Home() {
                     variant="default"
                     size="sm"
                     className="flex-1"
-                    onClick={async () => {
-                        try {
-                          const { data: { user } } = await supabase.auth.getUser();
-                          if (!user) throw new Error("Not authenticated");
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (!user) throw new Error("Not authenticated");
 
-                          // Get garment IDs from outfit items that are in closet
-                          const { data: garments } = await supabase
-                            .from('garments')
-                            .select('id, type, brand')
-                            .eq('user_id', user.id);
+                        // Get garment IDs from outfit items that are in closet
+                        const { data: garments } = await supabase
+                          .from('garments')
+                          .select('id, type, brand')
+                          .eq('user_id', user.id);
 
-                          const garmentIds = outfits[0].items
-                            ?.filter((item: any) => item.fromCloset)
-                            .map((item: any) => {
-                              const match = garments?.find(g => 
-                                g.type?.toLowerCase() === item.type?.toLowerCase() &&
-                                g.brand?.toLowerCase() === item.brand?.toLowerCase()
-                              );
-                              return match?.id;
-                            })
-                            .filter(Boolean) || [];
+                        const garmentIds = outfits[0].items
+                          ?.filter((item: any) => item.fromCloset)
+                          .map((item: any) => {
+                            const match = garments?.find(g => 
+                              g.type?.toLowerCase() === item.type?.toLowerCase() &&
+                              g.brand?.toLowerCase() === item.brand?.toLowerCase()
+                            );
+                            return match?.id;
+                          })
+                          .filter(Boolean) || [];
 
-                          const { error } = await supabase
-                            .from('ootd_records')
-                            .insert({
-                              user_id: user.id,
-                              date: new Date().toISOString().split('T')[0],
-                              photo_url: outfitImageUrl || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80',
-                              garment_ids: garmentIds,
-                              weather: weather?.current.weatherDescription || '',
-                              location: weather?.location || '',
-                              notes: `${outfits[0].title} - ${outfits[0].summary}`,
-                              products: outfits[0].items || []
-                            });
-
-                          if (error) throw error;
-                          toast({
-                            title: "Added to OOTD!",
-                            description: "Today's outfit has been saved to your diary.",
+                        const { error } = await supabase
+                          .from('ootd_records')
+                          .insert({
+                            user_id: user.id,
+                            date: new Date().toISOString().split('T')[0],
+                            photo_url: outfitImageUrl || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80',
+                            garment_ids: garmentIds,
+                            weather: weather?.current.weatherDescription || '',
+                            location: weather?.location || '',
+                            notes: `${outfits[0].title} - ${outfits[0].summary}`,
+                            products: outfits[0].items || []
                           });
-                        } catch (error: any) {
-                          toast({
-                            title: "Error",
-                            description: "Failed to add to OOTD",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
+
+                        if (error) throw error;
+
+                        // Mark as added to OOTD in todays_picks
+                        await markAddedToOOTD();
+
+                        toast({
+                          title: "Added to OOTD!",
+                          description: "Today's outfit has been saved to your diary.",
+                        });
+                      } catch (error: any) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to add to OOTD",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                     >
                       <Calendar className="w-3 h-3 mr-1" />
                       OOTD
@@ -985,7 +1060,8 @@ export default function Home() {
                       </Button>
                       <Button
                         variant="default"
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           try {
                             const { data: { user } } = await supabase.auth.getUser();
                             if (!user) throw new Error("Not authenticated");
@@ -1020,6 +1096,10 @@ export default function Home() {
                               });
 
                             if (error) throw error;
+
+                            // Mark as added to OOTD
+                            await markAddedToOOTD();
+
                             toast({
                               title: "Added to OOTD!",
                               description: "Today's outfit has been saved to your diary.",

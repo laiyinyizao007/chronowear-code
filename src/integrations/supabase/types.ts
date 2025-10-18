@@ -228,6 +228,54 @@ export type Database = {
           },
         ]
       }
+      todays_picks: {
+        Row: {
+          added_to_ootd: boolean
+          created_at: string
+          date: string
+          hairstyle: string | null
+          id: string
+          image_url: string | null
+          is_liked: boolean
+          items: Json
+          summary: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          weather: Json | null
+        }
+        Insert: {
+          added_to_ootd?: boolean
+          created_at?: string
+          date?: string
+          hairstyle?: string | null
+          id?: string
+          image_url?: string | null
+          is_liked?: boolean
+          items?: Json
+          summary?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          weather?: Json | null
+        }
+        Update: {
+          added_to_ootd?: boolean
+          created_at?: string
+          date?: string
+          hairstyle?: string | null
+          id?: string
+          image_url?: string | null
+          is_liked?: boolean
+          items?: Json
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weather?: Json | null
+        }
+        Relationships: []
+      }
       trends: {
         Row: {
           created_at: string
