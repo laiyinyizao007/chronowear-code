@@ -787,14 +787,14 @@ export default function OOTDDiary() {
                 })()}
               </div>
             ) : (
-              <div className="space-y-4 px-2 max-w-5xl mx-auto">
-                {/* First row - 4 items (Mon-Thu) */}
-                <div className="grid grid-cols-4 gap-2 justify-items-center">
+              <div className="space-y-3 px-2 max-w-4xl mx-auto">
+                {/* Week view - 7 equal columns */}
+                <div className="grid grid-cols-7 gap-2">
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-                    const firstRowDays = [0, 1, 2, 3].map(i => addDays(weekStart, i));
+                    const allWeekDays = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i));
 
-                    return firstRowDays.map((day) => {
+                    return allWeekDays.map((day) => {
                       const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
                       const hasRecord = dayRecords.length > 0;
                       const isToday = isSameDay(day, new Date());
@@ -818,84 +818,13 @@ export default function OOTDDiary() {
                           <div className="relative">
                             {/* Date Label */}
                             <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm px-2 py-1.5 border-b">
-                              <div className="flex items-baseline gap-1">
+                              <div className="flex flex-col items-start">
                                 <span className="text-sm font-medium">{format(day, "d")}</span>
                                 <span className="text-xs text-muted-foreground">{format(day, "EEE")}</span>
                               </div>
                             </div>
 
-                            {/* Vertical card image - double height */}
-                            <div className="aspect-[3/10]">
-                              {hasRecord ? (
-                                <>
-                                  <img
-                                    src={dayRecords[0].photo_url}
-                                    alt={`OOTD ${format(day, "MMM d")}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-10 right-1 h-7 w-7 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeleteRecordId(dayRecords[0].id);
-                                    }}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <div className="flex items-center justify-center h-full bg-secondary/50">
-                                  <Plus className="w-6 h-6 text-muted-foreground/40" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    });
-                  })()}
-                </div>
-
-                {/* Second row - 3 items centered (Fri-Sun) */}
-                <div className="grid grid-cols-7 gap-2 justify-items-center">
-                  <div className="col-span-1" />
-                  {(() => {
-                    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-                    const secondRowDays = [4, 5, 6].map(i => addDays(weekStart, i));
-
-                    return secondRowDays.map((day) => {
-                      const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
-                      const hasRecord = dayRecords.length > 0;
-                      const isToday = isSameDay(day, new Date());
-
-                      return (
-                        <Card
-                          key={day.toISOString()}
-                          className={cn(
-                            "group overflow-hidden cursor-pointer transition-all hover:shadow-medium col-span-2",
-                            isToday && "ring-2 ring-primary"
-                          )}
-                          onClick={() => {
-                            if (hasRecord) {
-                              setSelectedRecord(dayRecords[0]);
-                            } else {
-                              setSelectedDateForLog(day);
-                              setIsAddDialogOpen(true);
-                            }
-                          }}
-                        >
-                          <div className="relative">
-                            {/* Date Label */}
-                            <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm px-2 py-1.5 border-b">
-                              <div className="flex items-baseline gap-1">
-                                <span className="text-sm font-medium">{format(day, "d")}</span>
-                                <span className="text-xs text-muted-foreground">{format(day, "EEE")}</span>
-                              </div>
-                            </div>
-
-                            {/* Vertical card image - double height */}
+                            {/* Vertical card image */}
                             <div className="aspect-[3/10]">
                               {hasRecord ? (
                                 <>
