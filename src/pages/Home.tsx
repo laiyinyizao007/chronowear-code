@@ -328,90 +328,36 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
 
-      console.log('🎨 Calling generate-fashion-trends API...', {
+      console.log('🎨 Calling save-fashion-trends API...', {
         temperature: currentWeather.current.temperature,
         weatherDescription: currentWeather.current.weatherDescription,
         garmentCount: currentGarments.length
       });
 
-      // Call AI to generate fashion trends
-      const { data: trendsData, error: trendsError } = await supabase.functions.invoke('generate-fashion-trends', {
+      // Call AI to generate and save fashion trends
+      const { data: trendsData, error: trendsError } = await supabase.functions.invoke('save-fashion-trends', {
         body: {
           temperature: currentWeather.current.temperature,
           weatherDescription: currentWeather.current.weatherDescription,
-          userGarments: currentGarments
+          currentWeather: currentWeather
         }
       });
 
       if (trendsError) {
-        console.error('❌ Error calling generate-fashion-trends:', trendsError);
+        console.error('❌ Error calling save-fashion-trends:', trendsError);
         throw trendsError;
       }
 
-      console.log('✅ Gemini API response received:', trendsData);
+      console.log('✅ Trends saved to database:', trendsData);
 
       if (trendsData?.trends) {
-        // Generate images for each trend and save to database
-        const trendsToSave = [];
-        const formattedTrends = [];
-        
-        for (const trend of trendsData.trends) {
-          // Generate AI image for this trend
-          let imageUrl = getRandomFashionImage(); // fallback
-          
-          try {
-            console.log('Generating AI image for trend:', trend.title);
-            const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-outfit-image', {
-              body: {
-                items: trend.items || [],
-                weather: currentWeather?.current,
-                hairstyle: trend.hairstyle
-              }
-            });
-            
-            if (!imageError && imageData?.imageUrl) {
-              imageUrl = imageData.imageUrl;
-              console.log('✅ AI image generated for trend:', trend.title);
-            } else {
-              console.warn('⚠️ Failed to generate AI image, using fallback');
-            }
-          } catch (imgError) {
-            console.error('Error generating trend image:', imgError);
-          }
-          
-          // Prepare trend for database
-          trendsToSave.push({
-            user_id: user.id,
-            date: today,
-            title: trend.title,
-            description: trend.summary,
-            summary: trend.summary,
-            hairstyle: trend.hairstyle,
-            items: trend.items,
-            image_url: imageUrl,
-            weather: currentWeather
-          });
-          
-          // Prepare trend for display
-          formattedTrends.push({
-            title: trend.title,
-            summary: trend.summary,
-            hairstyle: trend.hairstyle,
-            imageUrl: imageUrl,
-            items: trend.items
-          });
-        }
-
-        // Save all trends to database
-        const { error: saveError } = await supabase
-          .from('trends')
-          .insert(trendsToSave);
-
-        if (saveError) {
-          console.error('Failed to save trends:', saveError);
-        } else {
-          console.log('✅ Saved', trendsToSave.length, 'trends to database with AI images');
-        }
+        const formattedTrends = trendsData.trends.map((trend: any) => ({
+          title: trend.title,
+          summary: trend.summary || trend.description,
+          hairstyle: trend.hairstyle,
+          imageUrl: trend.image_url || getRandomFashionImage(),
+          items: trend.items || []
+        }));
         
         console.log('✅ Fashion trends formatted:', formattedTrends.length, 'trends');
         setTrendOutfits(formattedTrends);
