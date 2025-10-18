@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { loadImage, removeBackground } from "@/lib/backgroundRemoval";
 
 interface Garment {
   id: string;
@@ -87,26 +86,24 @@ export default function Stylist() {
     try {
       setProcessingBg(true);
       
-      // Fetch the image
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
+      console.log('Calling backend to remove background...');
+      const { data, error } = await supabase.functions.invoke('remove-background', {
+        body: { imageUrl }
+      });
+
+      if (error) throw error;
       
-      // Load as HTMLImageElement
-      const imgElement = await loadImage(blob);
-      
-      // Remove background
-      const resultBlob = await removeBackground(imgElement);
-      
-      // Create a data URL for display (use base64 so backend can access it)
-      const arrayBuffer = await resultBlob.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      const dataUrl = `data:image/png;base64,${base64}`;
-      setRemovedBgImageUrl(dataUrl);
-      
-      toast.success("Background removed successfully!");
+      if (data?.imageUrl) {
+        setRemovedBgImageUrl(data.imageUrl);
+        toast.success("Background removed successfully!");
+      } else {
+        throw new Error("No result from background removal");
+      }
     } catch (error) {
       console.error("Error removing background:", error);
-      toast.error("Failed to remove background");
+      toast.error("Failed to remove background. Using original photo.");
+      // Fallback: use original photo if background removal fails
+      setRemovedBgImageUrl(imageUrl);
     } finally {
       setProcessingBg(false);
     }

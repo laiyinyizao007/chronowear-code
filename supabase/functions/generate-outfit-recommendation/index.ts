@@ -16,9 +16,9 @@ serve(async (req) => {
     
     console.log('Generating outfit recommendation for:', { temperature, weatherDescription, uvIndex });
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const HUGGING_FACE_ACCESS_TOKEN = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+    if (!HUGGING_FACE_ACCESS_TOKEN) {
+      throw new Error('HUGGING_FACE_ACCESS_TOKEN is not configured');
     }
 
     // Build garment inventory with IDs for matching
@@ -105,45 +105,33 @@ CRITICAL:
 3. Include the "garmentId" field ONLY when "fromCloset" is true
 4. Suggest a hairstyle that complements the outfit's style and is weather-appropriate (e.g., updos for windy weather, protective styles for rain)`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-70B-Instruct", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${HUGGING_FACE_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
+        inputs: `${systemPrompt}\n\nUser: ${userPrompt}\n\nAssistant:`,
+        parameters: {
+          max_new_tokens: 4000,
+          temperature: 0.7,
+          return_full_text: false,
+        },
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI gateway error");
+      console.error("Hugging Face API error:", response.status, errorText);
+      throw new Error("AI API error");
     }
 
     const data = await response.json();
-    let recommendation = data.choices[0].message.content;
+    let recommendation = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text;
 
     if (!recommendation) {
-      throw new Error('No content in OpenAI response');
+      throw new Error('No content in AI response');
     }
 
     // Extract JSON from markdown code blocks if present

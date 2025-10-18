@@ -3,8 +3,7 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, Sun, CloudRain, Search } from "lucide-react";
-import GlobalSearch from "@/components/GlobalSearch";
+import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, Sun, CloudRain } from "lucide-react";
 
 interface WeatherData {
   location: string;
@@ -19,7 +18,6 @@ export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -82,8 +80,6 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
-      
       {/* Top Header - Clean minimal design */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border/50">
         <div className="container mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
@@ -94,16 +90,6 @@ export default function Layout() {
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">ChronoWear</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Search Button */}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setSearchOpen(true)}
-              className="hover:bg-muted h-9 w-9 sm:h-10 sm:w-10"
-              aria-label="Search"
-            >
-              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
 
             {/* Weather - Hidden on small screens */}
             {weather && (
@@ -139,7 +125,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-24 sm:pb-28">
+      <main className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-20 sm:pb-24">
         <Outlet />
       </main>
 

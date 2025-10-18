@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import OutfitRecommendationCard from "@/components/OutfitRecommendationCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import AIAssistant from "@/components/AIAssistant";
 
 interface WeatherData {
   location: string;
@@ -48,6 +49,7 @@ export default function Home() {
   const [loadError, setLoadError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   useEffect(() => {
     loadWeatherAndRecommendation();
@@ -490,6 +492,22 @@ export default function Home() {
 
   return (
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+      {/* AI Assistant Section */}
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl sm:text-2xl font-bold">AI Fashion Assistant</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAIAssistant(!showAIAssistant)}
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            {showAIAssistant ? "Hide" : "Chat with AI"}
+          </Button>
+        </div>
+        {showAIAssistant && <AIAssistant />}
+      </div>
+
       {/* Trend Section */}
       <div className="space-y-3 sm:space-y-4">
         <h2 className="text-xl sm:text-2xl font-bold">Fashion Trends</h2>
