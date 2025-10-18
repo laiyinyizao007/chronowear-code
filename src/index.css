@@ -120,29 +120,6 @@ All colors MUST be HSL.
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Background image support */
-  html[style*="--outfit-bg-image"] body {
-    background-image: var(--outfit-bg-image);
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-  }
-
-  html[style*="--outfit-bg-image"] body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(to bottom, 
-      hsl(var(--background) / 0.95) 0%,
-      hsl(var(--background) / 0.85) 30%,
-      hsl(var(--background) / 0.7) 50%,
-      hsl(var(--background) / 0.85) 70%,
-      hsl(var(--background) / 0.95) 100%
-    );
-    z-index: -1;
-    pointer-events: none;
-  }
-
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans;
     letter-spacing: 0.04em;
