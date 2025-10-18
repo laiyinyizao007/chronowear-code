@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays, Sparkles, MapPin, Sun, Loader2, RefreshCw, Cloud, CloudRain, Droplets, Heart, ShoppingCart } from "lucide-react";
+import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays, Sparkles, MapPin, Sun, Loader2, RefreshCw, Cloud, CloudRain, Droplets, Heart, ShoppingCart, ShirtIcon } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import OutfitCard from "@/components/OutfitCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1783,17 +1783,17 @@ export default function OOTDDiary() {
                 ))}
               </div>
 
-              {/* Main image - mobile optimized */}
+              {/* Main image - show selected item image */}
               <div className="relative aspect-[3/4] sm:aspect-[3/4] rounded-lg overflow-hidden bg-secondary/20">
-                {outfitImageUrl ? (
+                {selectedItem?.imageUrl ? (
                   <img
-                    src={outfitImageUrl}
-                    alt="Outfit"
-                    className="w-full h-full object-cover"
+                    src={selectedItem.imageUrl}
+                    alt={selectedItem.name}
+                    className="w-full h-full object-contain bg-background"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground/40" />
+                    <ShirtIcon className="w-16 h-16 text-muted-foreground/40" />
                   </div>
                 )}
                 <Button
@@ -1833,19 +1833,53 @@ export default function OOTDDiary() {
                 )}
               </div>
 
-              {/* Add to OOTD button - mobile optimized */}
-              <Button
-                className="w-full h-11 sm:h-10 text-sm sm:text-base"
-                onClick={() => {
-                  setSelectedDateForLog(currentDate);
-                  setItemDetailOpen(false);
-                  setIsAddDialogOpen(true);
-                  markAddedToOOTD();
-                }}
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                Add to OOTD
-              </Button>
+              {/* Action buttons */}
+              <div className="space-y-2">
+                <Button
+                  className="w-full h-11 sm:h-10 text-sm sm:text-base"
+                  variant="default"
+                  onClick={async () => {
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) {
+                        toast.error("Please sign in to add items to closet");
+                        return;
+                      }
+
+                      // Add to closet
+                      const { error } = await supabase.from('garments').insert({
+                        user_id: user.id,
+                        type: selectedItem.type || 'clothing',
+                        brand: selectedItem.brand || 'Unknown',
+                        color: selectedItem.color,
+                        material: selectedItem.material,
+                        image_url: selectedItem.imageUrl || '',
+                      });
+
+                      if (error) throw error;
+                      toast.success("Added to closet!");
+                      setItemDetailOpen(false);
+                    } catch (error: any) {
+                      console.error('Error adding to closet:', error);
+                      toast.error("Failed to add to closet");
+                    }
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add to Closet
+                </Button>
+
+                <Button
+                  className="w-full h-11 sm:h-10 text-sm sm:text-base"
+                  variant="outline"
+                  onClick={() => {
+                    toast.info("Shopping cart feature requires Shopify integration");
+                  }}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Add to Cart
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
