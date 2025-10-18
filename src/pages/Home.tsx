@@ -187,12 +187,13 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
 
-      // Use complete mock trend data when AI is unavailable
+      // Use complete mock trend data with fashion images
       const mockTrends = [
         {
           title: "Elegant Evening",
           summary: "Sophisticated evening look with all accessories",
           hairstyle: "Elegant updo",
+          imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
           items: [
             { type: "Hairstyle", name: "Elegant Updo", description: "Classic sophisticated updo", fromCloset: false },
             { type: "Dress", name: "Little Black Dress", brand: "Zara", model: "Classic", color: "Black", material: "Polyester", fromCloset: false },
@@ -205,6 +206,7 @@ export default function Home() {
           title: "Weekend Casual",
           summary: "Relaxed weekend style with comfortable accessories",
           hairstyle: "Messy bun",
+          imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80",
           items: [
             { type: "Hairstyle", name: "Messy Bun", description: "Casual and effortless bun", fromCloset: false },
             { type: "Top", name: "Oversized Sweater", brand: "H&M", model: "Cozy", color: "Gray", material: "Wool", fromCloset: false },
@@ -218,6 +220,7 @@ export default function Home() {
           title: "Smart Office",
           summary: "Professional office attire with polished details",
           hairstyle: "Sleek straight",
+          imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&q=80",
           items: [
             { type: "Hairstyle", name: "Sleek Straight", description: "Professional sleek straight hair", fromCloset: false },
             { type: "Top", name: "Blazer", brand: "Banana Republic", model: "Tailored", color: "Navy", material: "Wool blend", fromCloset: false },
@@ -231,6 +234,7 @@ export default function Home() {
           title: "Sporty Active",
           summary: "Athletic look perfect for workouts or active days",
           hairstyle: "High ponytail",
+          imageUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80",
           items: [
             { type: "Hairstyle", name: "High Ponytail", description: "Athletic high ponytail", fromCloset: false },
             { type: "Top", name: "Sports Bra", brand: "Nike", model: "Pro", color: "Black", material: "Spandex", fromCloset: false },
@@ -244,6 +248,7 @@ export default function Home() {
           title: "Bohemian Chic",
           summary: "Free-spirited boho style with artisan accessories",
           hairstyle: "Loose beach waves",
+          imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80",
           items: [
             { type: "Hairstyle", name: "Beach Waves", description: "Loose, carefree beach waves", fromCloset: false },
             { type: "Dress", name: "Maxi Dress", brand: "Free People", model: "Flowy", color: "Floral", material: "Cotton", fromCloset: false },
