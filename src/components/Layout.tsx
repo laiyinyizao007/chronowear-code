@@ -3,7 +3,8 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, Sun, CloudRain } from "lucide-react";
+import { Home, Shirt, Sparkles, Calendar, Settings as SettingsIcon, Sun, CloudRain, Search } from "lucide-react";
+import GlobalSearch from "@/components/GlobalSearch";
 
 interface WeatherData {
   location: string;
@@ -18,6 +19,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -80,18 +82,32 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-background">
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+      
       {/* Top Header - Clean minimal design */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center">
-              <Shirt className="w-6 h-6 text-accent-foreground" />
+        <div className="container mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 bg-accent rounded-xl flex items-center justify-center">
+              <Shirt className="w-5 h-5 sm:w-6 sm:h-6 text-accent-foreground" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">ChronoWear</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">ChronoWear</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Search Button */}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setSearchOpen(true)}
+              className="hover:bg-muted h-9 w-9 sm:h-10 sm:w-10"
+              aria-label="Search"
+            >
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+
+            {/* Weather - Hidden on small screens */}
             {weather && (
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="hidden md:flex items-center gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                   {weather.current.weatherDescription.toLowerCase().includes('rain') ? (
                     <CloudRain className="w-4 h-4" />
@@ -107,35 +123,37 @@ export default function Layout() {
                 </div>
               </div>
             )}
+            
+            {/* Settings - Hidden on small screens */}
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="icon" 
               onClick={() => navigate("/settings")}
-              className="hover:bg-muted"
+              className="hidden sm:flex hover:bg-muted h-10 w-10"
+              aria-label="Settings"
             >
-              <SettingsIcon className="w-4 h-4 mr-2" />
-              Settings
+              <SettingsIcon className="w-5 h-5" />
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8 pb-28">
+      <main className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-24 sm:pb-28">
         <Outlet />
       </main>
 
       {/* Bottom Navigation - Minimal with accent highlights */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 z-50">
-        <div className="container mx-auto px-6">
-          <div className="flex justify-around items-center h-20">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border/50 z-50 safe-bottom">
+        <div className="container mx-auto px-2 sm:px-6">
+          <div className="flex justify-around items-center h-16 sm:h-20">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-5 py-2.5 rounded-xl transition-all duration-300 ${
+                  `flex flex-col items-center gap-0.5 sm:gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all duration-300 ${
                     isActive
                       ? "text-foreground bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -144,8 +162,8 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                    <span className="text-xs font-medium tracking-wide">{item.label}</span>
+                    <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                    <span className="text-[10px] sm:text-xs font-medium tracking-wide">{item.label}</span>
                   </>
                 )}
               </NavLink>
