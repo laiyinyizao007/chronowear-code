@@ -279,30 +279,45 @@ export type Database = {
       trends: {
         Row: {
           created_at: string
+          date: string | null
           description: string | null
+          hairstyle: string | null
           id: string
           image_url: string | null
+          items: Json | null
+          summary: string | null
           title: string
           updated_at: string
           user_id: string
+          weather: Json | null
         }
         Insert: {
           created_at?: string
+          date?: string | null
           description?: string | null
+          hairstyle?: string | null
           id?: string
           image_url?: string | null
+          items?: Json | null
+          summary?: string | null
           title: string
           updated_at?: string
           user_id: string
+          weather?: Json | null
         }
         Update: {
           created_at?: string
+          date?: string | null
           description?: string | null
+          hairstyle?: string | null
           id?: string
           image_url?: string | null
+          items?: Json | null
+          summary?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+          weather?: Json | null
         }
         Relationships: []
       }

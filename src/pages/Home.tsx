@@ -290,6 +290,33 @@ export default function Home() {
         return;
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Check if we have trends for today
+      const { data: existingTrends } = await supabase
+        .from('trends')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (existingTrends && existingTrends.length > 0) {
+        console.log('✅ Loaded trends from database:', existingTrends.length);
+        setTrendOutfits(existingTrends.map(trend => ({
+          title: trend.title,
+          summary: trend.summary || trend.description,
+          hairstyle: trend.hairstyle,
+          imageUrl: trend.image_url || getRandomFashionImage(),
+          items: trend.items || []
+        })));
+        setTrendLoading(false);
+        return;
+      }
+
       const currentGarments = garments || (await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
@@ -317,12 +344,35 @@ export default function Home() {
       console.log('✅ Gemini API response received:', trendsData);
 
       if (trendsData?.trends) {
+        // Save trends to database
+        const trendsToSave = trendsData.trends.map((trend: any) => ({
+          user_id: user.id,
+          date: today,
+          title: trend.title,
+          description: trend.summary,
+          summary: trend.summary,
+          hairstyle: trend.hairstyle,
+          items: trend.items,
+          image_url: getRandomFashionImage(),
+          weather: currentWeather
+        }));
+
+        const { error: saveError } = await supabase
+          .from('trends')
+          .insert(trendsToSave);
+
+        if (saveError) {
+          console.error('Failed to save trends:', saveError);
+        } else {
+          console.log('✅ Saved', trendsToSave.length, 'trends to database');
+        }
+
         // Transform AI response to match expected format
         const formattedTrends = trendsData.trends.map((trend: any) => ({
           title: trend.title,
           summary: trend.summary,
           hairstyle: trend.hairstyle,
-          imageUrl: getRandomFashionImage(), // Use placeholder images
+          imageUrl: getRandomFashionImage(),
           items: trend.items
         }));
         
