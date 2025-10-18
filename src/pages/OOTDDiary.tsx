@@ -1030,20 +1030,8 @@ export default function OOTDDiary() {
         <div className="space-y-4 sm:space-y-6">
           {/* Navigation Controls - Compact */}
           <div className="flex items-center justify-between gap-3">
-            {/* Plan Button - Only show in week view */}
-            {viewMode === 'week' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPlanDialog(true)}
-                className="gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                AI Plan
-              </Button>
-            ) : (
-              <div className="w-20" /> 
-            )}
+            {/* Placeholder for symmetry */}
+            <div className="w-20" />
 
             {/* Date Navigation with View Toggle */}
             <div className="flex items-center gap-2">
@@ -1517,6 +1505,20 @@ export default function OOTDDiary() {
               </div>
             )}
           </div>
+
+          {/* Floating AI Plan Button - Only in week view */}
+          {viewMode === 'week' && (
+            <div className="fixed bottom-20 right-6 z-40">
+              <Button
+                size="lg"
+                onClick={() => setShowPlanDialog(true)}
+                className="rounded-full shadow-lg hover:shadow-xl transition-shadow gap-2"
+              >
+                <Sparkles className="w-5 h-5" />
+                AI Plan
+              </Button>
+            </div>
+          )}
 
           {/* Record Detail Dialog */}
           <Dialog open={!!selectedRecord} onOpenChange={() => setSelectedRecord(null)}>
