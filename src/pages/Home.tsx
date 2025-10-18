@@ -646,7 +646,10 @@ export default function Home() {
             Today's Pick
           </h2>
           {outfits.length > 0 && (
-            <Button variant="ghost" size="icon" onClick={loadMoreOutfits} disabled={moreOutfitsLoading}>
+            <Button variant="ghost" size="icon" onClick={() => {
+              setOutfitImageUrl(null); // 清除当前图片
+              loadMoreOutfits(); // 加载新outfit
+            }} disabled={moreOutfitsLoading}>
               {moreOutfitsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </Button>
           )}
