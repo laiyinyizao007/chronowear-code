@@ -17,31 +17,12 @@ serve(async (req) => {
 
     console.log('Searching product info for:', brand, model);
 
-    // Use Unsplash API as free alternative
-    const searchQuery = `${brand} ${model} fashion clothing`;
-    const unsplashUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=1&client_id=your_access_key`;
+    // Use Unsplash Source for direct image URLs without API key
+    // This provides random fashion-related images based on search terms
+    const searchTerms = `${brand} ${model}`.trim().replace(/\s+/g, '-').toLowerCase();
+    let productImageUrl = `https://source.unsplash.com/400x600/?fashion,${searchTerms}`;
     
-    let productImageUrl = '';
-    
-    try {
-      // Try Unsplash first
-      const unsplashResponse = await fetch(unsplashUrl);
-      if (unsplashResponse.ok) {
-        const unsplashData = await unsplashResponse.json();
-        if (unsplashData.results?.[0]?.urls?.regular) {
-          productImageUrl = unsplashData.results[0].urls.regular;
-          console.log('Found image from Unsplash:', productImageUrl);
-        }
-      }
-    } catch (error) {
-      console.error('Unsplash search failed:', error);
-    }
-
-    // Fallback to generic fashion image if no image found
-    if (!productImageUrl) {
-      console.log('Using fallback image');
-      productImageUrl = `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80`;
-    }
+    console.log('Using Unsplash Source URL:', productImageUrl);
 
     const productInfo = {
       imageUrl: productImageUrl,
