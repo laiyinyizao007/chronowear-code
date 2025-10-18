@@ -824,8 +824,8 @@ export default function OOTDDiary() {
                               </div>
                             </div>
 
-                            {/* Vertical card image - double height */}
-                            <div className="aspect-[3/10]">
+                              {/* Vertical card image - double height */}
+                              <div className="w-full aspect-[3/10]">
                               {hasRecord ? (
                                 <>
                                   <img
@@ -895,8 +895,8 @@ export default function OOTDDiary() {
                               </div>
                             </div>
 
-                            {/* Vertical card image - double height */}
-                            <div className="aspect-[3/10]">
+                              {/* Vertical card image - double height */}
+                              <div className="w-full aspect-[3/10]">
                               {hasRecord ? (
                                 <>
                                   <img
