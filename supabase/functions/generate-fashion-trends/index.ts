@@ -16,10 +16,10 @@ serve(async (req) => {
     
     console.log('Generating fashion trends for:', { temperature, weatherDescription });
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY is not configured');
-      throw new Error('GEMINI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY is not configured');
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // Build garment context
@@ -79,36 +79,35 @@ IMPORTANT:
 - Ensure weather appropriateness
 - Include hairstyle as both a field and an item in the items array`;
 
-    console.log('Calling Gemini API for fashion trends');
+    console.log('Calling Lovable AI for fashion trends');
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: systemPrompt + "\n\n" + userPrompt }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 4000,
-        }
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.8,
+        max_tokens: 4000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      console.error("Lovable AI error:", response.status, errorText);
+      throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('Gemini response received');
+    console.log('Lovable AI response received');
     
-    let trendsText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    let trendsText = data.choices?.[0]?.message?.content;
 
     if (!trendsText) {
       throw new Error('No content in AI response');

@@ -729,43 +729,19 @@ export default function Home() {
       )}
 
 
-      {/* Trend Section */}
+      {/* Trend Section - Carousel */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={async () => {
-              // Clear existing trends and force regenerate
-              setTrendOutfits([]);
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                const today = new Date().toISOString().split('T')[0];
-                // Delete today's trends
-                await supabase
-                  .from('trends')
-                  .delete()
-                  .eq('user_id', user.id)
-                  .eq('date', today);
-              }
-              // Reload trends with current weather
-              await loadTrendOutfits(weather);
-            }} 
-            disabled={trendLoading}
-          >
-            {trendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          </Button>
-        </div>
+        <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
         {trendLoading ? (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-accent" />
           </div>
         ) : trendOutfits.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {trendOutfits.slice(0, 8).map((outfit, index) => (
-              <Card 
-                key={index}
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {trendOutfits.map((outfit, index) => (
+                <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <Card
                 className="w-full shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
                 onClick={async () => {
                   setSelectedTrendOutfit(outfit);
@@ -825,8 +801,12 @@ export default function Home() {
                   </Button>
                 </div>
               </Card>
-            ))}
-          </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         ) : null}
       </div>
 
