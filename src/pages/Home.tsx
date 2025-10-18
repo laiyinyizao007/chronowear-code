@@ -512,39 +512,19 @@ export default function Home() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Weather Info Card */}
+      {/* Weather Info Card - Compact */}
       {weather && (
-        <Card className="shadow-medium">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <Cloud className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold">Today's Weather</h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Temperature</p>
-                    <p className="text-lg font-bold">
-                      {weather.daily.temperatureMax}°F
-                      <span className="text-sm text-muted-foreground font-normal"> / {weather.daily.temperatureMin}°F</span>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Condition</p>
-                    <p className="text-sm font-medium">{weather.current.weatherDescription}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">UV Index</p>
-                    <p className={`text-sm font-medium ${getUVLevel(weather.current.uvIndex).color}`}>
-                      {weather.current.uvIndex} - {getUVLevel(weather.current.uvIndex).level}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Humidity</p>
-                    <p className="text-sm font-medium">{weather.current.humidity}%</p>
-                  </div>
-                </div>
+        <Card className="mb-4">
+          <CardContent className="py-2.5 px-4">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sun className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="font-medium capitalize truncate">{weather.current.weatherDescription}</span>
+              </div>
+              <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+                <span className="font-semibold">{Math.round(weather.daily.temperatureMax)}°/{Math.round(weather.daily.temperatureMin)}°</span>
+                <span className="text-muted-foreground hidden sm:inline">UV {weather.current.uvIndex}</span>
+                <span className="text-muted-foreground hidden sm:inline">{weather.current.humidity}%</span>
               </div>
             </div>
           </CardContent>
@@ -571,11 +551,11 @@ export default function Home() {
       </div>
 
       {/* Trend Section */}
-      <div className="space-y-4 sm:space-y-5">
-        <h2 className="text-xl sm:text-2xl font-bold">Fashion Trends</h2>
+      <div className="space-y-3">
+        <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
         {trendLoading ? (
-          <div className="flex items-center justify-center py-8 sm:py-12">
-            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-accent" />
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-accent" />
           </div>
         ) : trendOutfits.length > 0 ? (
           <Carousel className="w-full">
@@ -594,7 +574,7 @@ export default function Home() {
                       setSelectedTrendOutfit((prev: any) => ({ ...prev, items: updatedItems }));
                     }}
                   >
-                    <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+                    <div className="relative aspect-[2/3] bg-muted overflow-hidden">
                       {outfit.imageUrl ? (
                         <img 
                           src={outfit.imageUrl} 
@@ -606,11 +586,11 @@ export default function Home() {
                           <Sparkles className="w-12 h-12 text-muted-foreground" />
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 sm:p-4">
-                        <p className="text-white font-medium text-xs sm:text-sm line-clamp-2">{outfit.title}</p>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 sm:p-3">
+                        <p className="text-white font-medium text-xs line-clamp-1">{outfit.title}</p>
                       </div>
                     </div>
-                    <CardContent className="p-3">
+                    <CardContent className="p-2">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -661,11 +641,11 @@ export default function Home() {
                   onClick={() => navigate('/stylist')}
                   aria-label="Explore more trends"
                 >
-                  <div className="relative aspect-[3/4] bg-muted/60 flex items-center justify-center">
-                    <div className="text-center px-6">
-                      <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-accent" />
-                      <p className="mt-3 font-semibold">Explore more</p>
-                      <p className="text-sm text-muted-foreground">See additional trending looks</p>
+                  <div className="relative aspect-[2/3] bg-muted/60 flex items-center justify-center">
+                    <div className="text-center px-4">
+                      <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 mx-auto text-accent" />
+                      <p className="mt-2 font-semibold text-sm">Explore more</p>
+                      <p className="text-xs text-muted-foreground">See more trends</p>
                     </div>
                   </div>
                 </Card>
