@@ -1225,29 +1225,19 @@ export default function OOTDDiary() {
                         <Sparkles className="w-5 h-5 text-primary" />
                         Today's Pick
                       </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={toggleLikeStatus}
-                          className="h-8 w-8"
-                        >
-                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleRefreshOutfit}
-                          disabled={recommendationLoading}
-                          className="h-8 w-8"
-                        >
-                          {recommendationLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRefreshOutfit}
+                        disabled={recommendationLoading}
+                        className="h-8 w-8"
+                      >
+                        {recommendationLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -1326,10 +1316,18 @@ export default function OOTDDiary() {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleLikeStatus}
+                            className="self-end"
+                          >
+                            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                          </Button>
                           <Button
                             variant="default"
-                            className="flex-1"
+                            className="w-full"
                             onClick={() => {
                               setSelectedDateForLog(currentDate);
                               setIsAddDialogOpen(true);
@@ -1339,13 +1337,6 @@ export default function OOTDDiary() {
                           >
                             <CalendarDays className="w-4 h-4 mr-2" />
                             {addedToOOTD ? 'Added to OOTD' : 'Log'}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={toggleLikeStatus}
-                          >
-                            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                           </Button>
                         </div>
                       </div>
