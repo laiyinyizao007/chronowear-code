@@ -485,19 +485,19 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
       {/* Trend Section */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Fashion Trends</h2>
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold">Fashion Trends</h2>
         {trendLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <div className="flex items-center justify-center py-8 sm:py-12">
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-accent" />
           </div>
         ) : trendOutfits.length > 0 ? (
           <Carousel className="w-full">
             <CarouselContent className="-ml-2 md:-ml-4">
               {trendOutfits.map((outfit, index) => (
-                <CarouselItem key={index} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                   <Card 
                     className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
                     onClick={async () => {
@@ -522,8 +522,8 @@ export default function Home() {
                           <Sparkles className="w-12 h-12 text-muted-foreground" />
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                        <p className="text-white font-medium text-sm">{outfit.title}</p>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 sm:p-4">
+                        <p className="text-white font-medium text-xs sm:text-sm line-clamp-2">{outfit.title}</p>
                       </div>
                     </div>
                     <CardContent className="p-3">
@@ -577,10 +577,10 @@ export default function Home() {
       </div>
 
       {/* Today's Pick - Single Outfit */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-accent" />
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
             Today's Pick
           </h2>
           {outfits.length > 0 && (
@@ -591,16 +591,16 @@ export default function Home() {
         </div>
         
         {recommendationLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <div className="flex items-center justify-center py-12 sm:py-16">
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-accent" />
           </div>
         ) : outfits.length > 0 ? (
           <Card className="shadow-medium overflow-hidden">
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Left: AI Generated Outfit Image */}
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">{outfits[0].title}</h3>
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-base sm:text-lg font-semibold">{outfits[0].title}</h3>
                   <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -618,8 +618,8 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{outfits[0].summary}</p>
-                  <div className="flex gap-2">
+                  <p className="text-xs sm:text-sm text-muted-foreground">{outfits[0].summary}</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button 
                       className="flex-1" 
                       variant="outline"
