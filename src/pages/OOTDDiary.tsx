@@ -1150,9 +1150,20 @@ export default function OOTDDiary() {
                   <Card className="overflow-hidden shadow-elegant">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-primary" />
-                          Today's Pick
+                        <CardTitle className="flex items-center gap-3">
+                          {weather && (
+                            <>
+                              {getWeatherIcon(weather.current.weatherCode)}
+                              <div className="flex items-center gap-2 text-sm font-normal">
+                                <span className="font-semibold">
+                                  {Math.round(weather.current.temperature)}{weather.temperatureUnit || '°'} / {Math.round(weather.daily.temperatureMin)}{weather.temperatureUnit || '°'}
+                                </span>
+                                <span className={`${getUVColor(weather.current.uvIndex)}`}>
+                                  UV {weather.current.uvIndex.toFixed(1)}
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </CardTitle>
                         <Button
                           variant="ghost"
@@ -1282,28 +1293,6 @@ export default function OOTDDiary() {
                     </CardContent>
                   </Card>
 
-                  {/* Weather Section - No Border, Below Today's Pick */}
-                  {weather && (
-                    <div className="px-2">
-                      <div className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                          {getWeatherIcon(weather.current.weatherCode)}
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="font-semibold">
-                              {Math.round(weather.current.temperature)}{weather.temperatureUnit || '°'} / {Math.round(weather.daily.temperatureMin)}{weather.temperatureUnit || '°'}
-                            </span>
-                            <span className={`${getUVColor(weather.current.uvIndex)}`}>
-                              UV {weather.current.uvIndex.toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
-                          <span>{weather.location}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
 
