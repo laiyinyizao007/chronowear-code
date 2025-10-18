@@ -56,6 +56,8 @@ interface OOTDRecord {
 interface WeatherData {
   location: string;
   temperatureUnit?: string; // e.g., "°F" or "°C"
+  latitude?: number;
+  longitude?: number;
   current: {
     temperature: number;
     humidity: number;
@@ -413,6 +415,19 @@ export default function OOTDDiary() {
     });
   };
 
+  // Calculate distance between two GPS coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
+  };
+
   // Today's Pick Functions
   const loadWeatherAndRecommendation = async (forceRefresh: boolean = false) => {
     try {
@@ -423,7 +438,24 @@ export default function OOTDDiary() {
 
       const today = new Date().toISOString().split('T')[0];
 
-      // Check database for existing Today's Pick (unless forced refresh)
+      // Get current location first
+      let currentLat = 35.6764225; // Default fallback
+      let currentLng = 139.650027;
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 300000,
+          });
+        });
+        currentLat = position.coords.latitude;
+        currentLng = position.coords.longitude;
+      } catch (geoError) {
+        console.warn('Geolocation failed, using default coords:', geoError);
+      }
+
+      // Check database for existing Today's Pick
       if (!forceRefresh) {
         const { data: existingPick } = await supabase
           .from('todays_picks')
@@ -435,43 +467,48 @@ export default function OOTDDiary() {
         if (existingPick) {
           let pickedWeather: any = (existingPick as any).weather || null;
 
-          // Force refresh if no temperatureUnit (old data) or unknown location
-          const needsRefresh = !pickedWeather?.temperatureUnit || 
+          // Calculate distance between saved and current location
+          const hasSavedCoords = pickedWeather?.latitude && pickedWeather?.longitude;
+          let locationChanged = false;
+          
+          if (hasSavedCoords) {
+            const distance = calculateDistance(
+              pickedWeather.latitude,
+              pickedWeather.longitude,
+              currentLat,
+              currentLng
+            );
+            // If moved more than 10km, consider location changed
+            locationChanged = distance > 10;
+            console.log(`Location check: ${distance.toFixed(2)}km from saved location`);
+          }
+
+          // Refresh if: no coords saved, location changed, missing temperatureUnit, or unknown location
+          const needsRefresh = !hasSavedCoords || 
+                              locationChanged ||
+                              !pickedWeather?.temperatureUnit || 
                               !pickedWeather?.location || 
                               /unknown/i.test(pickedWeather.location);
 
           if (needsRefresh) {
-            console.log('Refreshing weather data - old format or missing location');
-            try {
-              let latitude = 35.6764225;
-              let longitude = 139.650027;
-              try {
-                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                  navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 8000,
-                    maximumAge: 300000,
-                  });
-                });
-                latitude = position.coords.latitude;
-                longitude = position.coords.longitude;
-              } catch {}
+            console.log('Refreshing weather data:', { 
+              reason: !hasSavedCoords ? 'no coords' : locationChanged ? 'location changed' : 'missing data' 
+            });
+            
+            const { data: freshWeather } = await supabase.functions.invoke('get-weather', {
+              body: { lat: currentLat, lng: currentLng },
+            });
 
-              const { data: freshWeather } = await supabase.functions.invoke('get-weather', {
-                body: { lat: latitude, lng: longitude },
-              });
-
-              if (freshWeather) {
-                pickedWeather = freshWeather;
-                await supabase
-                  .from('todays_picks')
-                  .update({ weather: freshWeather })
-                  .eq('id', existingPick.id);
-                console.log('Weather data refreshed with correct units:', freshWeather);
-              }
-            } catch (wErr) {
-              console.warn('Failed to refresh weather', wErr);
+            if (freshWeather) {
+              pickedWeather = { ...freshWeather, latitude: currentLat, longitude: currentLng };
+              await supabase
+                .from('todays_picks')
+                .update({ weather: pickedWeather })
+                .eq('id', existingPick.id);
+              console.log('Weather refreshed for location change');
             }
+          } else {
+            console.log('Using cached weather data - location unchanged');
           }
 
           setWeather(pickedWeather as WeatherData);
@@ -498,33 +535,19 @@ export default function OOTDDiary() {
         }
       }
       
-      // Get user's location with graceful fallback
-      let latitude = 35.6764225;
-      let longitude = 139.650027;
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 300000
-          });
-        });
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
-      } catch (geoError: any) {
-        console.warn('Geolocation failed, using default coords:', geoError);
-      }
-
-      // Fetch weather data
+      // No existing pick or force refresh - fetch fresh weather
       const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
         'get-weather',
         {
-          body: { lat: latitude, lng: longitude }
+          body: { lat: currentLat, lng: currentLng }
         }
       );
 
       if (weatherError) throw weatherError;
-      setWeather(weatherData);
+      
+      // Add coordinates to weather data
+      const weatherWithCoords = { ...weatherData, latitude: currentLat, longitude: currentLng };
+      setWeather(weatherWithCoords);
 
       // Fetch user's garments
       const { data: garments } = await supabase
@@ -574,7 +597,7 @@ export default function OOTDDiary() {
               summary: outfit.summary,
               hairstyle: outfit.hairstyle,
               items: outfit.items,
-              weather: weatherData
+              weather: weatherWithCoords
             })
             .select()
             .single();

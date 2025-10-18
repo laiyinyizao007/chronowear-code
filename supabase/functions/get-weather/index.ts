@@ -97,6 +97,8 @@ serve(async (req) => {
     const result = {
       location: locationName,
       temperatureUnit: unitSymbol,
+      latitude: lat,
+      longitude: lng,
       current: {
         temperature: Math.round(weatherData.current.temperature_2m),
         humidity: weatherData.current.relative_humidity_2m,
