@@ -259,9 +259,142 @@ export default function Stylist() {
         </TabsList>
 
         <TabsContent value="virtual-tryon" className="space-y-4 mt-6">
-          <div className="flex gap-3 h-[calc(100vh-16rem)]">
-            {/* Left: Model Display (70% width) */}
-            <div className="w-[70%] relative">
+          {/* Mobile Layout */}
+          <div className="lg:hidden space-y-4">
+            {/* Model Display */}
+            <div className="relative">
+              <div className="aspect-[3/4] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
+                {processingBg ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                    <div className="text-center space-y-3">
+                      <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+                      <p className="text-sm text-muted-foreground">Processing image...</p>
+                    </div>
+                  </div>
+                ) : tryOnResultUrl ? (
+                  <img
+                    src={tryOnResultUrl}
+                    alt="Virtual try-on result"
+                    className="w-full h-full object-contain p-4"
+                  />
+                ) : removedBgImageUrl ? (
+                  <img
+                    src={removedBgImageUrl}
+                    alt="Your photo"
+                    className="w-full h-full object-contain p-4"
+                  />
+                ) : (
+                  <img
+                    src={fullBodyPhotoUrl}
+                    alt="Your photo"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                
+                {/* Bottom action bar */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent">
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className="rounded-full px-6"
+                    >
+                      Save Look
+                    </Button>
+                    <Button
+                      size="lg"
+                      className="rounded-full px-6"
+                      onClick={handleGenerateTryOn}
+                      disabled={!selectedGarment || generating || processingBg}
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Try On
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Garment Selection Grid */}
+            <div>
+              <h3 className="text-sm font-medium mb-3">Select Garment</h3>
+              {garments.length === 0 ? (
+                <Card className="shadow-medium">
+                  <CardContent className="text-center py-8">
+                    <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-3">No garments yet</p>
+                    <Button size="sm" onClick={() => window.location.href = "/closet"}>
+                      Add Garments
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {garments.map((garment) => (
+                    <div
+                      key={garment.id}
+                      onClick={() => setSelectedGarment(garment)}
+                      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
+                        selectedGarment?.id === garment.id
+                          ? "border-primary shadow-lg ring-2 ring-primary/20"
+                          : "border-border/50 hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="aspect-square bg-muted">
+                        <img
+                          src={garment.image_url}
+                          alt={`${garment.brand} ${garment.type}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Garment info overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-2">
+                        <p className="text-white text-xs font-medium truncate">{garment.brand}</p>
+                        <p className="text-white/80 text-[10px] truncate">{garment.type}</p>
+                      </div>
+
+                      {/* Like button */}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-2 right-2 h-7 w-7 bg-background/80 hover:bg-background rounded-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLikeGarment(garment.id, garment.liked || false);
+                        }}
+                      >
+                        <Heart 
+                          className={`w-3.5 h-3.5 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
+                        />
+                      </Button>
+
+                      {/* Selected indicator */}
+                      {selectedGarment?.id === garment.id && (
+                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
+                          Selected
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden lg:flex gap-4 h-[calc(100vh-16rem)]">
+            {/* Left: Model Display (60% width for better balance) */}
+            <div className="w-[60%] relative">
               <div className="h-full bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
                 {processingBg ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/80">
@@ -323,11 +456,12 @@ export default function Stylist() {
               </div>
             </div>
 
-            {/* Right: Garment Selection (30% width) */}
-            <div className="w-[30%] flex flex-col">
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            {/* Right: Garment Selection (40% width for better readability) */}
+            <div className="w-[40%] flex flex-col">
+              <h3 className="text-sm font-medium mb-3">Select Garment</h3>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 {garments.length === 0 ? (
-                  <Card className="h-full flex items-center justify-center">
+                  <Card className="h-full flex items-center justify-center shadow-medium">
                     <CardContent className="text-center py-8">
                       <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                       <p className="text-sm text-muted-foreground mb-3">No garments yet</p>
@@ -343,8 +477,8 @@ export default function Stylist() {
                       onClick={() => setSelectedGarment(garment)}
                       className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
                         selectedGarment?.id === garment.id
-                          ? "border-primary shadow-lg ring-2 ring-primary/20"
-                          : "border-border/50 hover:border-primary/50"
+                          ? "border-primary shadow-lg ring-2 ring-primary/20 scale-[1.02]"
+                          : "border-border/50 hover:border-primary/50 hover:shadow-md"
                       }`}
                     >
                       <div className="aspect-square bg-muted">
@@ -355,30 +489,30 @@ export default function Stylist() {
                         />
                       </div>
                       
-                      {/* Garment info overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-3">
-                        <p className="text-white text-sm font-medium truncate">{garment.brand}</p>
-                        <p className="text-white/80 text-xs truncate">{garment.type}</p>
+                      {/* Garment info overlay - improved with better spacing */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3">
+                        <p className="text-white text-sm font-medium line-clamp-1">{garment.brand}</p>
+                        <p className="text-white/90 text-xs line-clamp-1">{garment.type}</p>
                       </div>
 
                       {/* Like button */}
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background rounded-full"
+                        className="absolute top-2 right-2 h-8 w-8 bg-background/90 hover:bg-background rounded-full shadow-sm backdrop-blur-sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleLikeGarment(garment.id, garment.liked || false);
                         }}
                       >
                         <Heart 
-                          className={`w-4 h-4 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
+                          className={`w-4 h-4 transition-all ${garment.liked ? 'fill-red-500 text-red-500 scale-110' : ''}`}
                         />
                       </Button>
 
                       {/* Selected indicator */}
                       {selectedGarment?.id === garment.id && (
-                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">
+                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2.5 py-1 rounded-full font-medium shadow-md animate-fade-in">
                           Selected
                         </div>
                       )}
