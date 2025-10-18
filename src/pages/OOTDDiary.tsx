@@ -117,7 +117,7 @@ export default function OOTDDiary() {
     markAddedToOOTD
   } = useTodaysPick();
   
-  // Derived states for compatibility
+  // Derived states for compatibility with existing UI
   const outfits = outfit ? [outfit] : [];
   const outfitImageUrl = imageUrl;
   const todaysPickId = todaysPick?.id || null;
