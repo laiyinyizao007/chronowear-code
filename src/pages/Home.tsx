@@ -659,21 +659,6 @@ export default function Home() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Weather Info - Minimal */}
-      {weather && (
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          {getWeatherIcon(weather.current.weatherDescription)}
-          <span className="font-medium">
-            {Math.round(weather.daily.temperatureMax)}° / {Math.round(weather.daily.temperatureMin)}°
-          </span>
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">UV</span>
-            <span className={`text-sm font-medium ${getUVColor(weather.current.uvIndex)}`}>
-              {weather.current.uvIndex.toFixed(1)}
-            </span>
-          </div>
-        </div>
-      )}
 
 
       {/* Trend Section - Carousel */}
@@ -770,10 +755,27 @@ export default function Home() {
       {/* Today's Pick - Single Outfit */}
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
-            Today's Pick
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
+              Today's Pick
+            </h2>
+            {/* Weather Info */}
+            {weather && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {getWeatherIcon(weather.current.weatherDescription)}
+                <span className="font-medium">
+                  {Math.round(weather.daily.temperatureMax)}° / {Math.round(weather.daily.temperatureMin)}°
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">UV</span>
+                  <span className={`text-sm font-medium ${getUVColor(weather.current.uvIndex)}`}>
+                    {weather.current.uvIndex.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
           {outfits.length > 0 && (
             <Button variant="ghost" size="icon" onClick={handleRefreshOutfit} disabled={recommendationLoading}>
               {recommendationLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
