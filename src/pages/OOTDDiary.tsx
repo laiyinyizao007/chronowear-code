@@ -789,7 +789,7 @@ export default function OOTDDiary() {
             ) : (
               <div className="space-y-4 px-2 max-w-5xl mx-auto">
                 {/* First row - 4 items (Mon-Thu) */}
-                <div className="grid grid-cols-4 gap-2 justify-items-center">
+                <div className="grid grid-cols-4 gap-2 justify-items-stretch">
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
                     const firstRowDays = [0, 1, 2, 3].map(i => addDays(weekStart, i));
@@ -803,7 +803,7 @@ export default function OOTDDiary() {
                         <Card
                           key={day.toISOString()}
                           className={cn(
-                            "group overflow-hidden cursor-pointer transition-all hover:shadow-medium",
+                            "group w-full overflow-hidden cursor-pointer transition-all hover:shadow-medium",
                             isToday && "ring-2 ring-primary"
                           )}
                           onClick={() => {
@@ -859,7 +859,7 @@ export default function OOTDDiary() {
                 </div>
 
                 {/* Second row - 3 items centered (Fri-Sun) */}
-                <div className="grid grid-cols-7 gap-2 justify-items-center">
+                <div className="grid grid-cols-7 gap-2 justify-items-stretch">
                   <div className="col-span-1" />
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -874,7 +874,7 @@ export default function OOTDDiary() {
                         <Card
                           key={day.toISOString()}
                           className={cn(
-                            "group overflow-hidden cursor-pointer transition-all hover:shadow-medium col-span-2",
+                            "group w-full overflow-hidden cursor-pointer transition-all hover:shadow-medium col-span-2",
                             isToday && "ring-2 ring-primary"
                           )}
                           onClick={() => {
