@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle } from "lucide-react";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
@@ -16,6 +16,15 @@ interface Garment {
   brand: string;
   color: string;
   liked?: boolean;
+}
+
+interface AIRecommendedItem {
+  category: string;
+  name: string;
+  brand?: string;
+  imageUrl?: string;
+  isFromCloset?: boolean;
+  closetItemId?: string;
 }
 
 export default function Stylist() {
@@ -31,6 +40,10 @@ export default function Stylist() {
   const [generating, setGenerating] = useState(false);
   const [tryOnResultUrl, setTryOnResultUrl] = useState<string>("");
   const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
+  const [aiRecommendations, setAiRecommendations] = useState<AIRecommendedItem[]>([]);
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [swapDrawerOpen, setSwapDrawerOpen] = useState(false);
+  const [swapCategory, setSwapCategory] = useState<string>("");
 
   const categories = [
     { id: "top", label: "Tops", icon: ShirtIcon },
@@ -154,10 +167,74 @@ export default function Stylist() {
   useEffect(() => {
     if (selectedGarment && removedBgImageUrl && !generating && !processingBg) {
       handleGenerateTryOn();
+      // Clear AI recommendations when selecting a new garment
+      setAiRecommendations([]);
     }
     // We intentionally omit handleGenerateTryOn from deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGarment]);
+
+  const handleAIFinishRest = async () => {
+    if (!selectedGarment) {
+      toast.error("Please select a garment first");
+      return;
+    }
+
+    try {
+      setGeneratingAI(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-outfit-suggestion', {
+        body: {
+          selectedItem: {
+            type: selectedGarment.type,
+            brand: selectedGarment.brand,
+            color: selectedGarment.color,
+          },
+          userGarments: garments.map(g => ({
+            type: g.type,
+            brand: g.brand,
+            color: g.color,
+          })),
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        setAiRecommendations(data.recommendations);
+        toast.success("AI outfit suggestions generated!");
+      }
+    } catch (error: any) {
+      console.error("Error generating AI suggestions:", error);
+      toast.error(error.message || "Failed to generate AI suggestions");
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
+  const handleSwapItem = (category: string) => {
+    setSwapCategory(category);
+    setSwapDrawerOpen(true);
+  };
+
+  const handleReplaceWithClosetItem = (garment: Garment, category: string) => {
+    setAiRecommendations(prev => 
+      prev.map(item => 
+        item.category === category
+          ? {
+              ...item,
+              name: `${garment.brand} ${garment.type}`,
+              brand: garment.brand,
+              imageUrl: garment.image_url,
+              isFromCloset: true,
+              closetItemId: garment.id,
+            }
+          : item
+      )
+    );
+    setSwapDrawerOpen(false);
+    toast.success("Item replaced from your closet");
+  };
 
   const toggleLikeGarment = async (garmentId: string, currentLiked: boolean) => {
     try {
@@ -283,10 +360,10 @@ export default function Stylist() {
                     size="sm"
                     variant="secondary"
                     className="rounded-full bg-white/90 hover:bg-white shadow-md"
-                    onClick={handleGenerateTryOn}
-                    disabled={!selectedGarment || generating || processingBg}
+                    onClick={handleAIFinishRest}
+                    disabled={!selectedGarment || generatingAI}
                   >
-                    {generating ? (
+                    {generatingAI ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                         Generating...
@@ -294,7 +371,7 @@ export default function Stylist() {
                     ) : (
                       <>
                         <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                        Try On
+                        AI Finish the Rest
                       </>
                     )}
                   </Button>
@@ -306,14 +383,20 @@ export default function Stylist() {
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
               {categories.map((category) => {
                 const Icon = category.icon;
+                const hasAIRecommendation = aiRecommendations.some(r => r.category === category.id);
                 return (
                   <button
                     key={category.id}
                     onClick={() => handleCategoryClick(category.id)}
-                    className="flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 border-border/50 hover:border-primary/50 transition-all flex-shrink-0"
+                    className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 transition-all flex-shrink-0 relative ${
+                      hasAIRecommendation ? "border-primary/50 bg-primary/5" : "border-border/50 hover:border-primary/50"
+                    }`}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="text-xs font-medium whitespace-nowrap">{category.label}</span>
+                    {hasAIRecommendation && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
+                    )}
                   </button>
                 );
               })}
@@ -373,6 +456,110 @@ export default function Stylist() {
                 </div>
               </SheetContent>
             </Sheet>
+
+            {/* Swap Item Drawer */}
+            <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
+              <SheetContent side="bottom" className="h-[70vh] bg-background/95 backdrop-blur-sm z-50">
+                <SheetHeader>
+                  <SheetTitle>
+                    Replace with Your {categories.find(c => c.id === swapCategory)?.label}
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 flex items-center justify-center h-[calc(100%-4rem)]">
+                  {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).length === 0 ? (
+                    <div className="text-center">
+                      <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">
+                        No {swapCategory} items in your closet
+                      </p>
+                      <Button size="sm" onClick={() => window.location.href = "/closet"}>
+                        Add Garments
+                      </Button>
+                    </div>
+                  ) : (
+                    <Carousel className="w-full max-w-md">
+                      <CarouselContent>
+                        {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).map((garment) => (
+                          <CarouselItem key={garment.id}>
+                            <div 
+                              onClick={() => handleReplaceWithClosetItem(garment, swapCategory)}
+                              className="cursor-pointer"
+                            >
+                              <Card className="border-2 hover:border-primary transition-all">
+                                <CardContent className="p-4">
+                                  <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-3">
+                                    <img
+                                      src={garment.image_url}
+                                      alt={`${garment.brand} ${garment.type}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="font-medium">{garment.brand}</p>
+                                    <p className="text-sm text-muted-foreground">{garment.type}</p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* AI Recommendations */}
+            {aiRecommendations.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium mb-3">AI Outfit Suggestions</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {aiRecommendations.map((item, index) => (
+                    <Card key={index} className="overflow-hidden">
+                      <CardContent className="p-3">
+                        <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-2 relative">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShirtIcon className="w-12 h-12 text-muted-foreground" />
+                            </div>
+                          )}
+                          {item.isFromCloset && (
+                            <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded-full">
+                              From Closet
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium line-clamp-1">{item.category}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{item.name}</p>
+                          {item.brand && (
+                            <p className="text-xs text-muted-foreground line-clamp-1">{item.brand}</p>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full mt-2 h-7 text-xs"
+                            onClick={() => handleSwapItem(item.category)}
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Swap
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
         </TabsContent>
