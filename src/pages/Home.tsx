@@ -11,6 +11,7 @@ import OutfitRecommendationCard from "@/components/OutfitRecommendationCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 interface WeatherData {
@@ -733,9 +734,19 @@ export default function Home() {
       <div className="space-y-3">
         <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
         {trendLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-accent" />
-          </div>
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <CarouselItem key={i} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <Card className="w-full shadow-medium overflow-hidden">
+                    <Skeleton className="aspect-[16/10] sm:aspect-[4/3] w-full" />
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         ) : trendOutfits.length > 0 ? (
           <Carousel className="w-full">
             <CarouselContent className="-ml-2 md:-ml-4">
