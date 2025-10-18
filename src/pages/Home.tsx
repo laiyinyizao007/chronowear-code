@@ -55,16 +55,26 @@ export default function Home() {
       setLoading(true);
       setLoadError(false);
       
-      // Get user's location
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // Cache for 5 minutes
+      // Get user's location with graceful fallback
+      let latitude = 35.6764225; // Default: Tokyo
+      let longitude = 139.650027;
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 300000 // Cache for 5 minutes
+          });
         });
-      });
-
-      const { latitude, longitude } = position.coords;
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+      } catch (geoError: any) {
+        console.warn('Geolocation failed, using default coords:', geoError);
+        toast({
+          title: "Location Unavailable",
+          description: "Using a default city to load weather and recommendations.",
+        });
+      }
 
       // Fetch weather data
       const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
