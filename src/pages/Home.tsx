@@ -638,14 +638,56 @@ export default function Home() {
             <CardContent className="p-4 sm:p-6">
               {/* Mobile Layout */}
               <div className="md:hidden">
-                <h3 className="text-base font-semibold mb-3">{outfits[0].title}</h3>
-                <div className="flex gap-3">
-                  {/* Left: Outfit Image */}
-                  <div className="w-1/2 space-y-2">
+                <div className="flex gap-2">
+                  {/* Left: Item List (1/3 width) */}
+                  <div className="w-1/3 space-y-1.5">
+                    <h4 className="font-medium text-[10px] text-muted-foreground mb-2">Items</h4>
+                    <div className="space-y-1.5 max-h-[420px] overflow-y-auto">
+                      {outfits[0].items?.map((item: any, index: number) => (
+                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  target.style.display = 'none';
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-muted">
+                                      <svg class="w-4 h-4 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Shirt className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <Badge 
+                            variant={item.fromCloset ? "default" : "secondary"} 
+                            className="absolute bottom-0.5 right-0.5 text-[8px] px-1 py-0 h-4"
+                          >
+                            {item.fromCloset ? "IN" : "BUY"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right: Outfit Image (2/3 width) */}
+                  <div className="w-2/3 space-y-2">
+                    <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
                     <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                        <Loader2 className="w-6 h-6 animate-spin text-accent" />
                       </div>
                     ) : outfitImageUrl ? (
                       <img 
@@ -659,57 +701,7 @@ export default function Home() {
                       </div>
                     )}
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-3">{outfits[0].summary}</p>
-                  </div>
-
-                  {/* Right: Item List */}
-                  <div className="w-1/2 space-y-2">
-                    <h4 className="font-medium text-xs text-muted-foreground">Items</h4>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {outfits[0].items?.map((item: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 p-2 rounded-lg border bg-card">
-                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0 bg-muted">
-                            {item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt={`${item.brand || ''} ${item.model || item.name}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    target.style.display = 'none';
-                                    parent.innerHTML = `
-                                      <div class="w-full h-full flex items-center justify-center bg-muted">
-                                        <svg class="w-5 h-5 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
-                                      </div>
-                                    `;
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-muted">
-                                <Shirt className="w-5 h-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-xs truncate">{item.name || item.type}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {item.color}
-                            </p>
-                          </div>
-                          <Badge 
-                            variant={item.fromCloset ? "default" : "secondary"} 
-                            className="text-[9px] px-1 py-0"
-                          >
-                            {item.fromCloset ? "IN" : "BUY"}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{outfits[0].summary}</p>
                   </div>
                 </div>
 
@@ -840,10 +832,56 @@ export default function Home() {
 
               {/* Desktop Layout */}
               <div className="hidden md:block">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                  {/* Left: AI Generated Outfit Image */}
-                  <div className="space-y-2 sm:space-y-3">
-                    <h3 className="text-base sm:text-lg font-semibold">{outfits[0].title}</h3>
+                <div className="flex gap-4">
+                  {/* Left: Item List (1/3 width) */}
+                  <div className="w-1/3 space-y-3">
+                    <h4 className="font-medium text-sm text-muted-foreground">Items</h4>
+                    <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+                      {outfits[0].items?.map((item: any, index: number) => (
+                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  target.style.display = 'none';
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-muted">
+                                      <svg class="w-8 h-8 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Shirt className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                            <p className="text-white text-xs font-medium truncate">{item.name || item.type}</p>
+                            <p className="text-white/80 text-[10px] truncate">{item.color}</p>
+                          </div>
+                          <Badge 
+                            variant={item.fromCloset ? "default" : "secondary"} 
+                            className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5"
+                          >
+                            {item.fromCloset ? "IN" : "BUY"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right: Outfit Image (2/3 width) */}
+                  <div className="w-2/3 space-y-3">
+                    <h3 className="text-lg font-semibold">{outfits[0].title}</h3>
                     <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                       {generatingImage ? (
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -861,8 +899,8 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{outfits[0].summary}</p>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <p className="text-sm text-muted-foreground">{outfits[0].summary}</p>
+                    <div className="flex gap-2">
                       <Button 
                         className="flex-1" 
                         variant="outline"
