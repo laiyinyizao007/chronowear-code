@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart } from "lucide-react";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
@@ -22,11 +22,25 @@ export default function Stylist() {
   const [removedBgImageUrl, setRemovedBgImageUrl] = useState<string>("");
   const [garments, setGarments] = useState<Garment[]>([]);
   const [selectedGarment, setSelectedGarment] = useState<Garment | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [processingBg, setProcessingBg] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tryOnResultUrl, setTryOnResultUrl] = useState<string>("");
   const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
+
+  const categories = [
+    { id: "all", label: "All", icon: Sparkle },
+    { id: "top", label: "Tops", icon: ShirtIcon },
+    { id: "bottom", label: "Bottoms", icon: UtensilsCrossed },
+    { id: "shoes", label: "Shoes", icon: UtensilsCrossed },
+    { id: "accessories", label: "Accessories", icon: Watch },
+    { id: "hairstyle", label: "Hairstyle", icon: Sparkle },
+  ];
+
+  const filteredGarments = selectedCategory === "all" 
+    ? garments 
+    : garments.filter(g => g.type.toLowerCase().includes(selectedCategory));
 
   useEffect(() => {
     loadData();
@@ -219,11 +233,11 @@ export default function Stylist() {
         </TabsList>
 
         <TabsContent value="virtual-tryon" className="space-y-4 mt-6">
-          {/* Mobile Layout */}
-          <div className="lg:hidden space-y-4">
-            {/* Model Display */}
+          {/* New Layout - Full body photo on top, category tags below */}
+          <div className="space-y-4">
+            {/* Full Body Photo Display */}
             <div className="relative">
-              <div className="h-[70vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
+              <div className="h-[55vh] sm:h-[60vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
                 {processingBg ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                     <div className="text-center space-y-3">
@@ -235,79 +249,91 @@ export default function Stylist() {
                   <img
                     src={tryOnResultUrl}
                     alt="Virtual try-on result"
-                    className="w-full h-full object-cover object-center"
+                    className="w-full h-full object-contain"
                   />
                 ) : removedBgImageUrl ? (
                   <img
                     src={removedBgImageUrl}
                     alt="Your photo"
-                    className="w-full h-full object-cover object-center"
-                    style={{ objectPosition: '50% 50%' }}
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <img
                     src={fullBodyPhotoUrl}
                     alt="Your photo"
-                    className="w-full h-full object-cover object-center"
-                    style={{ objectPosition: '50% 50%' }}
+                    className="w-full h-full object-contain"
                   />
                 )}
                 
-                {/* Bottom action bar */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent">
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      className="rounded-full px-6"
-                    >
-                      Save Look
-                    </Button>
-                    <Button
-                      size="lg"
-                      className="rounded-full px-6"
-                      onClick={handleGenerateTryOn}
-                      disabled={!selectedGarment || generating || processingBg}
-                    >
-                      {generating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Try On
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                {/* Action buttons overlay */}
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="rounded-full bg-white/90 hover:bg-white shadow-md"
+                    onClick={handleGenerateTryOn}
+                    disabled={!selectedGarment || generating || processingBg}
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                        Try On
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Garment Selection Grid */}
+            {/* Category Tags */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {categories.map((category) => {
+                const Icon = category.icon;
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 transition-all flex-shrink-0 ${
+                      selectedCategory === category.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/50 hover:border-primary/50"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs font-medium whitespace-nowrap">{category.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Garment Grid */}
             <div>
-              <h3 className="text-sm font-medium mb-3">Select Garment</h3>
-              {garments.length === 0 ? (
+              {filteredGarments.length === 0 ? (
                 <Card className="shadow-medium">
                   <CardContent className="text-center py-8">
                     <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground mb-3">No garments yet</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {selectedCategory === "all" ? "No garments yet" : `No ${selectedCategory} items yet`}
+                    </p>
                     <Button size="sm" onClick={() => window.location.href = "/closet"}>
                       Add Garments
                     </Button>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {garments.map((garment) => (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+                  {filteredGarments.map((garment) => (
                     <div
                       key={garment.id}
                       onClick={() => setSelectedGarment(garment)}
-                      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
+                      className={`relative rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
                         selectedGarment?.id === garment.id
-                          ? "border-primary shadow-lg ring-2 ring-primary/20"
+                          ? "border-primary shadow-lg ring-2 ring-primary/20 scale-105"
                           : "border-border/50 hover:border-primary/50"
                       }`}
                     >
@@ -319,31 +345,12 @@ export default function Stylist() {
                         />
                       </div>
                       
-                      {/* Garment info overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-2">
-                        <p className="text-white text-xs font-medium truncate">{garment.brand}</p>
-                        <p className="text-white/80 text-[10px] truncate">{garment.type}</p>
-                      </div>
-
-                      {/* Like button */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-2 right-2 h-7 w-7 bg-background/80 hover:bg-background rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLikeGarment(garment.id, garment.liked || false);
-                        }}
-                      >
-                        <Heart 
-                          className={`w-3.5 h-3.5 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
-                        />
-                      </Button>
-
                       {/* Selected indicator */}
                       {selectedGarment?.id === garment.id && (
-                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
-                          Selected
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <div className="bg-primary text-primary-foreground text-[10px] px-2 py-1 rounded-full font-medium">
+                            Selected
+                          </div>
                         </div>
                       )}
                     </div>
@@ -353,139 +360,6 @@ export default function Stylist() {
             </div>
           </div>
 
-          {/* Desktop Layout */}
-          <div className="hidden lg:flex gap-4 h-[calc(100vh-16rem)]">
-            {/* Left: Model Display (60% width for better balance) */}
-            <div className="w-[60%] relative">
-              <div className="h-full bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
-                {processingBg ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                    <div className="text-center space-y-3">
-                      <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-                      <p className="text-sm text-muted-foreground">Processing image...</p>
-                    </div>
-                  </div>
-                ) : tryOnResultUrl ? (
-                  <img
-                    src={tryOnResultUrl}
-                    alt="Virtual try-on result"
-                    className="w-full h-full object-cover object-center"
-                  />
-                ) : removedBgImageUrl ? (
-                  <img
-                    src={removedBgImageUrl}
-                    alt="Your photo"
-                    className="w-full h-full object-cover object-center"
-                    style={{ objectPosition: '50% 50%' }}
-                  />
-                ) : (
-                  <img
-                    src={fullBodyPhotoUrl}
-                    alt="Your photo"
-                    className="w-full h-full object-cover object-center"
-                    style={{ objectPosition: '50% 50%' }}
-                  />
-                )}
-                
-                {/* Bottom action bar */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent">
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      size="lg"
-                      variant="secondary"
-                      className="rounded-full px-6"
-                    >
-                      Save Look
-                    </Button>
-                    <Button
-                      size="lg"
-                      className="rounded-full px-6"
-                      onClick={handleGenerateTryOn}
-                      disabled={!selectedGarment || generating || processingBg}
-                    >
-                      {generating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Try On
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Garment Selection (40% width for better readability) */}
-            <div className="w-[40%] flex flex-col">
-              <h3 className="text-sm font-medium mb-3">Select Garment</h3>
-              <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                {garments.length === 0 ? (
-                  <Card className="h-full flex items-center justify-center shadow-medium">
-                    <CardContent className="text-center py-8">
-                      <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground mb-3">No garments yet</p>
-                      <Button size="sm" onClick={() => window.location.href = "/closet"}>
-                        Add Garments
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  garments.map((garment) => (
-                    <div
-                      key={garment.id}
-                      onClick={() => setSelectedGarment(garment)}
-                      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
-                        selectedGarment?.id === garment.id
-                          ? "border-primary shadow-lg ring-2 ring-primary/20 scale-[1.02]"
-                          : "border-border/50 hover:border-primary/50 hover:shadow-md"
-                      }`}
-                    >
-                      <div className="aspect-square bg-muted">
-                        <img
-                          src={garment.image_url}
-                          alt={`${garment.brand} ${garment.type}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      
-                      {/* Garment info overlay - improved with better spacing */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3">
-                        <p className="text-white text-sm font-medium line-clamp-1">{garment.brand}</p>
-                        <p className="text-white/90 text-xs line-clamp-1">{garment.type}</p>
-                      </div>
-
-                      {/* Like button */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-2 right-2 h-8 w-8 bg-background/90 hover:bg-background rounded-full shadow-sm backdrop-blur-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLikeGarment(garment.id, garment.liked || false);
-                        }}
-                      >
-                        <Heart 
-                          className={`w-4 h-4 transition-all ${garment.liked ? 'fill-red-500 text-red-500 scale-110' : ''}`}
-                        />
-                      </Button>
-
-                      {/* Selected indicator */}
-                      {selectedGarment?.id === garment.id && (
-                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2.5 py-1 rounded-full font-medium shadow-md animate-fade-in">
-                          Selected
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
         </TabsContent>
 
         <TabsContent value="stylebook" className="space-y-6 mt-6">
