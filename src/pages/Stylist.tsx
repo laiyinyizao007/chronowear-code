@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { removeBackgroundTF, loadImageFromUrl } from "@/lib/tfBackgroundRemoval";
+import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
 
 interface Garment {
   id: string;
@@ -89,13 +89,17 @@ export default function Stylist() {
       
       console.log('Loading image for background removal...');
       
+      // Fetch image and create blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
       // Load image
-      const img = await loadImageFromUrl(imageUrl);
+      const img = await loadImage(blob);
       
-      console.log('Removing background using TensorFlow.js SelfieSegmentation...');
+      console.log('Removing background using Transformers.js...');
       
-      // Remove background using TF.js
-      const resultBlob = await removeBackgroundTF(img);
+      // Remove background
+      const resultBlob = await removeBackground(img);
       
       // Convert blob to data URL for immediate display
       const reader = new FileReader();

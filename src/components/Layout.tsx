@@ -125,7 +125,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-20 sm:pb-24">
+      <main className="mx-auto py-4 sm:py-8 pb-20 sm:pb-24">
         <Outlet />
       </main>
 

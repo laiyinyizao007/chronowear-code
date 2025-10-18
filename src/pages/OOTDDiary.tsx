@@ -66,7 +66,7 @@ export default function OOTDDiary() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [removingBackground, setRemovingBackground] = useState(false);
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<'day' | '3day' | 'week'>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateForLog, setSelectedDateForLog] = useState<Date | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -554,111 +554,117 @@ export default function OOTDDiary() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {/* Giant Month Title */}
-          <div className="relative text-center py-8">
-            <div className="text-7xl sm:text-9xl md:text-[12rem] font-black text-primary/10 leading-none tracking-tighter select-none">
-              {format(currentMonth, 'MMM').toUpperCase()}
+          {/* Navigation Controls */}
+          <div className="flex items-center justify-between gap-4 mb-6 px-4">
+            {/* View Mode Tabs */}
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+              <Button
+                variant={viewMode === 'day' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('day')}
+                className="text-xs px-3"
+              >
+                Day
+              </Button>
+              <Button
+                variant={viewMode === '3day' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('3day')}
+                className="text-xs px-3"
+              >
+                3 Days
+              </Button>
+              <Button
+                variant={viewMode === 'week' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('week')}
+                className="text-xs px-3"
+              >
+                Week
+              </Button>
             </div>
-          </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <CalendarDays className="w-4 h-4" />
-                  {format(currentMonth, 'MMMM yyyy')}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={currentMonth}
-                  onSelect={(date) => {
-                    if (date) {
-                      setCurrentMonth(date);
-                      setCalendarOpen(false);
-                    }
-                  }}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            {/* Month Navigation */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => {
+                  if (viewMode === 'day') setCurrentDate(subDays(currentDate, 1));
+                  else if (viewMode === '3day') setCurrentDate(subDays(currentDate, 3));
+                  else setCurrentDate(subWeeks(currentDate, 1));
+                }}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 min-w-[140px]">
+                    <CalendarDays className="w-4 h-4" />
+                    {format(currentDate, 'MMM yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setCurrentDate(date);
+                        setCalendarOpen(false);
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => {
+                  if (viewMode === 'day') setCurrentDate(addDays(currentDate, 1));
+                  else if (viewMode === '3day') setCurrentDate(addDays(currentDate, 3));
+                  else setCurrentDate(addWeeks(currentDate, 1));
+                }}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Giant Month Title */}
           <div className="relative my-8">
             <div className="text-center">
               <div className="text-7xl sm:text-9xl md:text-[12rem] font-black text-primary/10 leading-none tracking-tighter select-none">
-                {format(currentMonth, 'MMM').toUpperCase()}
+                {format(currentDate, 'MMM').toUpperCase()}
               </div>
             </div>
           </div>
 
-          {/* Calendar Grid - Simplified with Dotted Borders */}
+          {/* Calendar Grid - Responsive based on view mode */}
           <div className="bg-card rounded-lg border-2 border-dashed border-primary/30 p-4 sm:p-6">
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
-              {/* Day Headers - Bold uppercase */}
-              {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day, idx) => (
-                <div
-                  key={idx}
-                  className="text-center text-xs sm:text-sm font-black text-primary py-2 tracking-wider"
-                >
-                  {day}
-                </div>
-              ))}
-
-              {/* Calendar Days - Dotted borders like reference */}
-              {(() => {
-                const monthStart = startOfMonth(currentMonth);
-                const monthEnd = endOfMonth(currentMonth);
-                
-                // Adjust to start from Monday
-                const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-                const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-                const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-
-                return days.map((day) => {
+            {viewMode === 'day' ? (
+              <div className="max-w-md mx-auto">
+                {(() => {
+                  const day = currentDate;
                   const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
                   const hasRecord = dayRecords.length > 0;
-                  const isToday = isSameDay(day, new Date());
-                  const isCurrentMonth = isSameMonth(day, currentMonth);
 
                   return (
                     <div
-                      key={day.toISOString()}
-                      className={`aspect-square border-2 border-dashed rounded-lg transition-all cursor-pointer ${
-                        isCurrentMonth
-                          ? "border-primary/40 hover:border-primary hover:bg-primary/5"
-                          : "border-muted/30 opacity-40"
-                      } ${isToday ? "ring-2 ring-primary bg-primary/10" : ""}`}
+                      className="aspect-square border-2 border-dashed rounded-lg border-primary/40 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
                       onClick={() => {
                         if (hasRecord) {
                           setSelectedRecord(dayRecords[0]);
-                        } else if (isCurrentMonth) {
+                        } else {
                           setSelectedDateForLog(day);
                           setIsAddDialogOpen(true);
                         }
                       }}
                     >
-                      <div className="relative w-full h-full p-1 sm:p-2">
+                      <div className="relative w-full h-full p-4">
                         {hasRecord ? (
                           <>
                             <img
@@ -667,15 +673,77 @@ export default function OOTDDiary() {
                               className="w-full h-full object-cover rounded"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded" />
-                            <div className="absolute bottom-1 left-1 right-1 text-white">
-                              <div className="text-xl sm:text-3xl font-bold leading-none">
+                            <div className="absolute bottom-4 left-4 right-4 text-white">
+                              <div className="text-5xl font-bold leading-none mb-2">
                                 {format(day, "d")}
                               </div>
+                              <div className="text-sm opacity-80">{format(day, "EEEE")}</div>
                             </div>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="absolute top-0.5 right-0.5 h-5 w-5 bg-black/40 hover:bg-black/60 text-white"
+                              className="absolute top-2 right-2 h-8 w-8 bg-black/40 hover:bg-black/60 text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteRecordId(dayRecords[0].id);
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full">
+                            <span className="text-6xl font-black text-primary mb-2">
+                              {format(day, "d")}
+                            </span>
+                            <span className="text-lg text-muted-foreground">{format(day, "EEEE")}</span>
+                            <div className="mt-4 w-3 h-3 rounded-full bg-primary/40" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : viewMode === '3day' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[0, 1, 2].map((offset) => {
+                  const day = addDays(currentDate, offset);
+                  const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
+                  const hasRecord = dayRecords.length > 0;
+
+                  return (
+                    <div
+                      key={offset}
+                      className="aspect-square border-2 border-dashed rounded-lg border-primary/40 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
+                      onClick={() => {
+                        if (hasRecord) {
+                          setSelectedRecord(dayRecords[0]);
+                        } else {
+                          setSelectedDateForLog(day);
+                          setIsAddDialogOpen(true);
+                        }
+                      }}
+                    >
+                      <div className="relative w-full h-full p-2 sm:p-4">
+                        {hasRecord ? (
+                          <>
+                            <img
+                              src={dayRecords[0].photo_url}
+                              alt={`OOTD ${format(day, "d")}`}
+                              className="w-full h-full object-cover rounded"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded" />
+                            <div className="absolute bottom-2 left-2 right-2 text-white">
+                              <div className="text-3xl sm:text-4xl font-bold leading-none">
+                                {format(day, "d")}
+                              </div>
+                              <div className="text-xs opacity-80">{format(day, "EEE")}</div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-1 right-1 h-6 w-6 bg-black/40 hover:bg-black/60 text-white"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setDeleteRecordId(dayRecords[0].id);
@@ -686,24 +754,97 @@ export default function OOTDDiary() {
                           </>
                         ) : (
                           <div className="flex flex-col items-center justify-center h-full">
-                            <span
-                              className={`text-2xl sm:text-4xl font-black ${
-                                isCurrentMonth ? "text-primary" : "text-muted-foreground/30"
-                              }`}
-                            >
+                            <span className="text-4xl sm:text-5xl font-black text-primary">
                               {format(day, "d")}
                             </span>
-                            {isCurrentMonth && (
-                              <div className="mt-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary/40" />
-                            )}
+                            <span className="text-xs text-muted-foreground mt-1">{format(day, "EEE")}</span>
+                            <div className="mt-2 w-2 h-2 rounded-full bg-primary/40" />
                           </div>
                         )}
                       </div>
                     </div>
                   );
-                });
-              })()}
-            </div>
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                {/* Day Headers */}
+                {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day, idx) => (
+                  <div
+                    key={idx}
+                    className="text-center text-xs sm:text-sm font-black text-primary py-2 tracking-wider"
+                  >
+                    {day}
+                  </div>
+                ))}
+
+                {/* Week Days */}
+                {(() => {
+                  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+                  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+                  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+                  return days.map((day) => {
+                    const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
+                    const hasRecord = dayRecords.length > 0;
+                    const isToday = isSameDay(day, new Date());
+
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className={`aspect-square border-2 border-dashed rounded-lg transition-all cursor-pointer border-primary/40 hover:border-primary hover:bg-primary/5 ${
+                          isToday ? "ring-2 ring-primary bg-primary/10" : ""
+                        }`}
+                        onClick={() => {
+                          if (hasRecord) {
+                            setSelectedRecord(dayRecords[0]);
+                          } else {
+                            setSelectedDateForLog(day);
+                            setIsAddDialogOpen(true);
+                          }
+                        }}
+                      >
+                        <div className="relative w-full h-full p-1 sm:p-2">
+                          {hasRecord ? (
+                            <>
+                              <img
+                                src={dayRecords[0].photo_url}
+                                alt={`OOTD ${format(day, "d")}`}
+                                className="w-full h-full object-cover rounded"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded" />
+                              <div className="absolute bottom-1 left-1 right-1 text-white">
+                                <div className="text-xl sm:text-3xl font-bold leading-none">
+                                  {format(day, "d")}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-0.5 right-0.5 h-5 w-5 bg-black/40 hover:bg-black/60 text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteRecordId(dayRecords[0].id);
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full">
+                              <span className="text-2xl sm:text-4xl font-black text-primary">
+                                {format(day, "d")}
+                              </span>
+                              <div className="mt-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary/40" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
           </div>
 
           {/* Record Detail Dialog */}
