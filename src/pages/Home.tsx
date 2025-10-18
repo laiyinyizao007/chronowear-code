@@ -713,7 +713,34 @@ export default function Home() {
 
       {/* Trend Section */}
       <div className="space-y-3">
-        <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
+          {trendOutfits.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={async () => {
+                // Clear existing trends and force regenerate
+                setTrendOutfits([]);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  const today = new Date().toISOString().split('T')[0];
+                  // Delete today's trends
+                  await supabase
+                    .from('trends')
+                    .delete()
+                    .eq('user_id', user.id)
+                    .eq('date', today);
+                }
+                // Reload trends with current weather
+                await loadTrendOutfits(weather);
+              }} 
+              disabled={trendLoading}
+            >
+              {trendLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </Button>
+          )}
+        </div>
         {trendLoading ? (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-accent" />
