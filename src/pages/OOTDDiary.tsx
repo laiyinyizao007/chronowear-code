@@ -1101,10 +1101,10 @@ export default function OOTDDiary() {
 
           {/* Today's Pick Section - Only in Day View */}
           {viewMode === 'day' && (
-            <div className="mb-6">
+            <>
               {/* Today's Pick */}
               {todayPickLoading || recommendationLoading ? (
-                <div className="px-4 sm:px-6">
+                <div className="px-4 sm:px-6 mb-6">
                   <Card className="overflow-hidden shadow-elegant">
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
@@ -1122,7 +1122,7 @@ export default function OOTDDiary() {
               ) : outfits.length > 0 && (
                 <>
                   {/* Full screen background with floating elements */}
-                  <div className="relative w-full h-[calc(100vh-140px)] overflow-hidden">
+                  <div className="relative w-screen h-[calc(100vh-140px)] -mx-4 sm:-mx-6 overflow-hidden">
                     {/* Background Image - Full width */}
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
@@ -1303,7 +1303,7 @@ export default function OOTDDiary() {
                   </div>
                 </>
               )}
-            </div>
+            </>
           )}
 
           {/* Week View Content */}
