@@ -61,8 +61,8 @@ export default function AuthPage() {
   const handleGoogleAuth = async () => {
     setLoading(true);
     try {
-      // Clear any existing sessions first to prevent 403 errors
-      await supabase.auth.signOut();
+      // Clear any existing sessions and storage to prevent conflicts
+      await supabase.auth.signOut({ scope: 'local' });
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -70,7 +70,7 @@ export default function AuthPage() {
           redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account', // Force account selection to avoid cached credentials
           },
         },
       });
