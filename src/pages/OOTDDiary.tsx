@@ -726,11 +726,28 @@ export default function OOTDDiary() {
     try {
       setGeneratingImage(true);
       
+      // Get user's full body photo
+      const { data: { user } } = await supabase.auth.getUser();
+      let userPhotoUrl = '';
+      
+      if (user) {
+        const { data: settingsData } = await supabase
+          .from("user_settings")
+          .select("full_body_photo_url")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        
+        if (settingsData?.full_body_photo_url) {
+          userPhotoUrl = settingsData.full_body_photo_url;
+        }
+      }
+      
       const { data, error } = await supabase.functions.invoke('generate-outfit-image', {
         body: {
           items: outfit.items || [],
           weather: weather?.current,
-          hairstyle: outfit.hairstyle
+          hairstyle: outfit.hairstyle,
+          userPhotoUrl: userPhotoUrl
         }
       });
 
