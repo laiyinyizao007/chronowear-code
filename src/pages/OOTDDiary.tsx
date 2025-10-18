@@ -1304,29 +1304,9 @@ export default function OOTDDiary() {
                   const day = currentDate;
                   const isToday = isSameDay(day, new Date());
                   
-                  // Hide today's record in day view
+                  // Don't show today's record in day view
                   if (isToday) {
-                    return (
-                      <Card className="overflow-hidden cursor-pointer transition-all hover:shadow-medium"
-                        onClick={() => {
-                          setSelectedDateForLog(day);
-                          setIsAddDialogOpen(true);
-                        }}
-                      >
-                        <div className="relative aspect-[3/4]">
-                          <div className="flex flex-col items-center justify-center h-full bg-secondary">
-                            <Plus className="w-12 h-12 text-muted-foreground/40 mb-4" />
-                            <span className="text-sm text-muted-foreground">Log Today's Outfit</span>
-                          </div>
-                          <div className="absolute bottom-4 left-4 right-4 text-center">
-                            <div className="text-3xl font-light text-muted-foreground mb-1">
-                              {format(day, "d")}
-                            </div>
-                            <div className="text-sm text-muted-foreground">{format(day, "EEEE")}</div>
-                          </div>
-                        </div>
-                      </Card>
-                    );
+                    return null;
                   }
 
                   const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
