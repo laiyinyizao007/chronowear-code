@@ -698,7 +698,28 @@ export default function Home() {
 
                   {/* Right: Outfit Image (2/3 width) */}
                   <div className="w-2/3 space-y-2">
-                    <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => generateOutfitImage(outfits[0])}
+                        disabled={generatingImage}
+                        className="h-7 text-xs"
+                      >
+                        {generatingImage ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            生成中...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            生成图片
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <div className="relative aspect-[3/4] bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 rounded-lg overflow-hidden">
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center bg-background/50">
