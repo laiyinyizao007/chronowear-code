@@ -119,15 +119,32 @@ export default function Home() {
         loadTrendOutfits(weatherData, garments || []);
       } catch (aiError) {
         console.error('AI service unavailable:', aiError);
-        // Use mock data when AI is unavailable
+        // Use complete mock data when AI is unavailable
         setOutfits([
           {
-            title: "Casual Comfort",
-            summary: "Perfect for today's weather",
-            hairstyle: "Natural",
+            title: "Casual Chic",
+            summary: "Perfect casual outfit for today's weather with complete accessories",
+            hairstyle: "Natural wavy hair",
             items: [
-              { type: "Top", name: "T-Shirt", brand: "Uniqlo", model: "Basic Tee", fromCloset: false },
-              { type: "Bottom", name: "Jeans", brand: "Levi's", model: "501", fromCloset: false }
+              { type: "Hairstyle", name: "Natural Waves", description: "Soft, natural wavy hairstyle", fromCloset: false },
+              { type: "Top", name: "White T-Shirt", brand: "Uniqlo", model: "Basic Tee", color: "White", material: "Cotton", fromCloset: false },
+              { type: "Bottom", name: "Blue Jeans", brand: "Levi's", model: "501", color: "Blue", material: "Denim", fromCloset: false },
+              { type: "Shoes", name: "White Sneakers", brand: "Adidas", model: "Stan Smith", color: "White", material: "Leather", fromCloset: false },
+              { type: "Bag", name: "Tote Bag", brand: "Canvas", model: "Classic", color: "Beige", material: "Canvas", fromCloset: false },
+              { type: "Accessories", name: "Watch", brand: "Casio", model: "Simple", color: "Silver", material: "Metal", fromCloset: false }
+            ]
+          },
+          {
+            title: "Business Casual",
+            summary: "Professional yet comfortable outfit with all essentials",
+            hairstyle: "Sleek low ponytail",
+            items: [
+              { type: "Hairstyle", name: "Low Ponytail", description: "Sleek and professional low ponytail", fromCloset: false },
+              { type: "Top", name: "Silk Blouse", brand: "Zara", model: "Professional", color: "Cream", material: "Silk", fromCloset: false },
+              { type: "Bottom", name: "Tailored Pants", brand: "Mango", model: "Office", color: "Black", material: "Polyester", fromCloset: false },
+              { type: "Shoes", name: "Heels", brand: "Clarks", model: "Comfort", color: "Black", material: "Leather", fromCloset: false },
+              { type: "Bag", name: "Structured Handbag", brand: "Michael Kors", model: "Professional", color: "Brown", material: "Leather", fromCloset: false },
+              { type: "Accessories", name: "Pearl Earrings", brand: "Classic", model: "Simple", color: "White", material: "Pearl", fromCloset: false }
             ]
           }
         ]);
@@ -170,33 +187,69 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
 
-      // Use mock trend data when AI is unavailable
+      // Use complete mock trend data when AI is unavailable
       const mockTrends = [
         {
-          title: "Classic Chic",
-          summary: "Timeless elegance",
-          hairstyle: "Natural",
+          title: "Elegant Evening",
+          summary: "Sophisticated evening look with all accessories",
+          hairstyle: "Elegant updo",
           items: [
-            { type: "Top", name: "White Shirt", brand: "Classic", model: "Basic", fromCloset: false },
-            { type: "Bottom", name: "Black Pants", brand: "Essential", model: "Standard", fromCloset: false }
+            { type: "Hairstyle", name: "Elegant Updo", description: "Classic sophisticated updo", fromCloset: false },
+            { type: "Dress", name: "Little Black Dress", brand: "Zara", model: "Classic", color: "Black", material: "Polyester", fromCloset: false },
+            { type: "Shoes", name: "Strappy Heels", brand: "Steve Madden", model: "Evening", color: "Black", material: "Leather", fromCloset: false },
+            { type: "Bag", name: "Clutch", brand: "Luxury", model: "Evening", color: "Gold", material: "Satin", fromCloset: false },
+            { type: "Accessories", name: "Statement Necklace", brand: "Jewelry", model: "Bold", color: "Gold", material: "Metal", fromCloset: false }
           ]
         },
         {
-          title: "Casual Street",
-          summary: "Urban comfort",
-          hairstyle: "Casual",
+          title: "Weekend Casual",
+          summary: "Relaxed weekend style with comfortable accessories",
+          hairstyle: "Messy bun",
           items: [
-            { type: "Top", name: "Hoodie", brand: "Street", model: "Urban", fromCloset: false },
-            { type: "Bottom", name: "Jeans", brand: "Denim", model: "Classic", fromCloset: false }
+            { type: "Hairstyle", name: "Messy Bun", description: "Casual and effortless bun", fromCloset: false },
+            { type: "Top", name: "Oversized Sweater", brand: "H&M", model: "Cozy", color: "Gray", material: "Wool", fromCloset: false },
+            { type: "Bottom", name: "Leggings", brand: "Lululemon", model: "Align", color: "Black", material: "Nylon", fromCloset: false },
+            { type: "Shoes", name: "Slip-on Sneakers", brand: "Vans", model: "Classic", color: "White", material: "Canvas", fromCloset: false },
+            { type: "Bag", name: "Backpack", brand: "Herschel", model: "Classic", color: "Navy", material: "Polyester", fromCloset: false },
+            { type: "Accessories", name: "Sunglasses", brand: "Ray-Ban", model: "Aviator", color: "Black", material: "Metal", fromCloset: false }
           ]
         },
         {
-          title: "Smart Casual",
-          summary: "Professional yet relaxed",
-          hairstyle: "Neat",
+          title: "Smart Office",
+          summary: "Professional office attire with polished details",
+          hairstyle: "Sleek straight",
           items: [
-            { type: "Top", name: "Polo Shirt", brand: "Smart", model: "Professional", fromCloset: false },
-            { type: "Bottom", name: "Chinos", brand: "Business", model: "Casual", fromCloset: false }
+            { type: "Hairstyle", name: "Sleek Straight", description: "Professional sleek straight hair", fromCloset: false },
+            { type: "Top", name: "Blazer", brand: "Banana Republic", model: "Tailored", color: "Navy", material: "Wool blend", fromCloset: false },
+            { type: "Bottom", name: "Pencil Skirt", brand: "Ann Taylor", model: "Professional", color: "Gray", material: "Polyester", fromCloset: false },
+            { type: "Shoes", name: "Pumps", brand: "Nine West", model: "Classic", color: "Black", material: "Leather", fromCloset: false },
+            { type: "Bag", name: "Leather Tote", brand: "Coach", model: "Professional", color: "Brown", material: "Leather", fromCloset: false },
+            { type: "Accessories", name: "Minimalist Watch", brand: "Daniel Wellington", model: "Classic", color: "Rose Gold", material: "Leather", fromCloset: false }
+          ]
+        },
+        {
+          title: "Sporty Active",
+          summary: "Athletic look perfect for workouts or active days",
+          hairstyle: "High ponytail",
+          items: [
+            { type: "Hairstyle", name: "High Ponytail", description: "Athletic high ponytail", fromCloset: false },
+            { type: "Top", name: "Sports Bra", brand: "Nike", model: "Pro", color: "Black", material: "Spandex", fromCloset: false },
+            { type: "Bottom", name: "Yoga Pants", brand: "Athleta", model: "Salutation", color: "Navy", material: "Nylon", fromCloset: false },
+            { type: "Shoes", name: "Running Shoes", brand: "Adidas", model: "Ultraboost", color: "White", material: "Mesh", fromCloset: false },
+            { type: "Bag", name: "Gym Bag", brand: "Under Armour", model: "Duffle", color: "Black", material: "Polyester", fromCloset: false },
+            { type: "Accessories", name: "Fitness Tracker", brand: "Fitbit", model: "Charge", color: "Black", material: "Silicone", fromCloset: false }
+          ]
+        },
+        {
+          title: "Bohemian Chic",
+          summary: "Free-spirited boho style with artisan accessories",
+          hairstyle: "Loose beach waves",
+          items: [
+            { type: "Hairstyle", name: "Beach Waves", description: "Loose, carefree beach waves", fromCloset: false },
+            { type: "Dress", name: "Maxi Dress", brand: "Free People", model: "Flowy", color: "Floral", material: "Cotton", fromCloset: false },
+            { type: "Shoes", name: "Sandals", brand: "Birkenstock", model: "Arizona", color: "Brown", material: "Leather", fromCloset: false },
+            { type: "Bag", name: "Crossbody Bag", brand: "Fossil", model: "Boho", color: "Tan", material: "Suede", fromCloset: false },
+            { type: "Accessories", name: "Layered Necklaces", brand: "Artisan", model: "Boho", color: "Gold", material: "Mixed metals", fromCloset: false }
           ]
         }
       ];
