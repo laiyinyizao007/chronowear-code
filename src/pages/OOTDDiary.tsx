@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTodaysPick } from "@/hooks/useTodaysPick";
+import { searchProductInfo } from "@/services/outfitService";
 
 interface IdentifiedProduct {
   brand: string;
@@ -257,19 +258,6 @@ export default function OOTDDiary() {
     }
   };
 
-  const searchProductInfo = async (brand: string, model: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("search-product-info", {
-        body: { brand, model },
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (error: any) {
-      console.error("Product search error:", error);
-      return null;
-    }
-  };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

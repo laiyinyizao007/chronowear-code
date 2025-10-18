@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shirt, ChevronRight, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { searchProductInfo } from "@/services/outfitService";
 
 interface OutfitItem {
   type: string;
@@ -48,16 +48,9 @@ export default function OutfitRecommendationCard({
 
           try {
             console.log(`OutfitRecommendationCard: Fetching image for: ${item.brand} ${item.model}`);
-            const { data, error } = await supabase.functions.invoke('search-product-info', {
-              body: { brand: item.brand, model: item.model }
-            });
+            const data = await searchProductInfo(item.brand, item.model);
             
-            console.log(`OutfitRecommendationCard: Response for ${item.brand} ${item.model}:`, { data, error });
-            
-            if (error) {
-              console.error(`OutfitRecommendationCard: Error fetching product info for ${item.brand} ${item.model}:`, error);
-              return item;
-            }
+            console.log(`OutfitRecommendationCard: Response for ${item.brand} ${item.model}:`, data);
 
             if (data?.imageUrl) {
               console.log(`OutfitRecommendationCard: Got image URL for ${item.brand} ${item.model}:`, data.imageUrl);

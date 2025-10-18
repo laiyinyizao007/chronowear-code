@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { searchProductInfo } from "@/services/outfitService";
 
 interface SearchResult {
   type: 'garment' | 'ootd' | 'product';
@@ -88,11 +89,7 @@ export default function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) 
 
     setSearchingExternal(true);
     try {
-      const { data, error } = await supabase.functions.invoke('search-product-info', {
-        body: { brand: query, model: '' }
-      });
-
-      if (error) throw error;
+      const data = await searchProductInfo(query, '');
       
       if (data) {
         setExternalResults([{
