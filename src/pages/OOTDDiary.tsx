@@ -1126,144 +1126,190 @@ export default function OOTDDiary() {
                 </Card>
               ) : outfits.length > 0 && (
                 <>
-                  <Card className="overflow-hidden shadow-elegant">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-primary" />
-                          Today's Pick
-                        </CardTitle>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleRefreshOutfit}
-                          disabled={recommendationLoading}
-                          className="h-8 w-8"
-                        >
-                          {recommendationLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
-                          )}
-                        </Button>
+                  {/* Full screen background with floating elements */}
+                  <div className="relative w-full h-[calc(100vh-200px)] overflow-hidden">
+                    {/* Background Image */}
+                    {generatingImage ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
+                        <Loader2 className="w-12 h-12 animate-spin text-primary" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="flex flex-col">
-                        {/* Top section - Items and Image aligned */}
-                        <div className="flex">
-                          {/* Left sidebar - Items list */}
-                          {outfits[0]?.items && outfits[0].items.length > 0 && (
-                            <div className="w-20 bg-secondary/20 p-2 flex flex-col flex-shrink-0">
-                              <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">
-                                Items
-                              </div>
-                              <div className="space-y-2 flex-1">
-                                {outfits[0].items.map((item: any, idx: number) => (
-                                  <div 
-                                    key={idx} 
-                                    className={cn(
-                                      "relative aspect-square rounded overflow-hidden bg-background transition-opacity group cursor-pointer",
-                                      !item.fromCloset && "opacity-20"
-                                    )}
-                                    onClick={() => {
-                                      setSelectedItem(item);
-                                      setItemDetailOpen(true);
-                                    }}
-                                  >
-                                    {item.imageUrl ? (
-                                      <img
-                                        src={item.imageUrl}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center bg-secondary/50">
-                                        <span className="text-[9px] text-muted-foreground text-center p-1 leading-tight">
-                                          {item.type}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {/* Overlay on hover */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
-                                      <span className="text-[8px] text-white text-center leading-tight">
-                                        {item.name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                    ) : outfitImageUrl ? (
+                      <img
+                        src={outfitImageUrl}
+                        alt={outfits[0]?.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
+                        <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                      </div>
+                    )}
 
-                          {/* Right side - Main content */}
-                          <div className="flex-1 p-4 flex flex-col">
-                            {/* Title */}
-                            <div className="text-center mb-3">
-                              <h3 className="font-bold text-lg uppercase tracking-wide">{outfits[0]?.title}</h3>
+                    {/* Floating Elements */}
+                    {/* Top Left - Weather & Calendar Navigation */}
+                    <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
+                      {/* Weather Info */}
+                      {weather && (
+                        <div className="flex items-center gap-3 bg-background/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg">
+                          <div className="flex items-center gap-2">
+                            {getWeatherIcon(weather.current.weatherCode)}
+                            <span className="text-2xl font-bold">{Math.round(weather.current.temperature)}°</span>
+                          </div>
+                          <div className="border-l border-border/50 pl-3">
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {weather.location}
                             </div>
-
-                            {/* Outfit Image - aligned with left items */}
-                            <div className="relative flex-1 rounded-lg overflow-hidden bg-secondary/20">
-                              {generatingImage ? (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                                </div>
-                              ) : outfitImageUrl ? (
-                                <img
-                                  src={outfitImageUrl}
-                                  alt={outfits[0]?.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Sparkles className="w-12 h-12 text-muted-foreground/40" />
-                                </div>
-                              )}
-                              
-                              {/* Overlay text at bottom */}
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                                <p className="text-white text-xs leading-relaxed">
-                                  {outfits[0]?.summary}
-                                </p>
-                              </div>
-                              
-                              {/* Heart button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={toggleLikeStatus}
-                                className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-                              >
-                                <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                              </Button>
+                            <div className="text-xs text-muted-foreground">
+                              {weather.current.weatherDescription}
                             </div>
                           </div>
                         </div>
+                      )}
 
-                        {/* Bottom section - Log button */}
-                        <div className="p-4 pt-0">
-                          <Button
-                            variant="default"
-                            className="w-full"
-                            onClick={() => {
-                              setSelectedDateForLog(currentDate);
-                              setIsAddDialogOpen(true);
-                              markAddedToOOTD();
-                            }}
-                            disabled={addedToOOTD}
-                          >
-                            <CalendarDays className="w-4 h-4 mr-2" />
-                            {addedToOOTD ? 'Added to OOTD' : 'Log'}
-                          </Button>
+                      {/* Date Navigation */}
+                      <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-2 shadow-lg">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setCurrentDate(subDays(currentDate, 1))}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        
+                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="gap-2 min-w-[120px]">
+                              <CalendarIcon className="w-4 h-4" />
+                              <span className="text-sm">{format(currentDate, 'MMM d')}</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="center">
+                            <Calendar
+                              mode="single"
+                              selected={currentDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setCurrentDate(date);
+                                  setCalendarOpen(false);
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setCurrentDate(addDays(currentDate, 1))}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Top Right - Refresh Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshOutfit}
+                      disabled={recommendationLoading}
+                      className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm hover:bg-background shadow-lg h-10 w-10"
+                    >
+                      {recommendationLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+
+                    {/* Left Sidebar - Items */}
+                    {outfits[0]?.items && outfits[0].items.length > 0 && (
+                      <div className="absolute left-4 top-24 bottom-24 w-20 bg-background/80 backdrop-blur-sm rounded-lg p-2 shadow-lg z-10">
+                        <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">
+                          Items
+                        </div>
+                        <div className="space-y-2 overflow-y-auto max-h-full">
+                          {outfits[0].items.map((item: any, idx: number) => (
+                            <div 
+                              key={idx} 
+                              className={cn(
+                                "relative aspect-square rounded overflow-hidden bg-background transition-opacity group cursor-pointer",
+                                !item.fromCloset && "opacity-20"
+                              )}
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setItemDetailOpen(true);
+                              }}
+                            >
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-secondary/50">
+                                  <span className="text-[9px] text-muted-foreground text-center p-1 leading-tight">
+                                    {item.type}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
+                                <span className="text-[8px] text-white text-center leading-tight">
+                                  {item.name}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
 
-                  {/* Weather Section - No Border, Below Today's Pick */}
+                    {/* Center - Title */}
+                    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 z-10 bg-background/80 backdrop-blur-sm rounded-lg px-6 py-3 shadow-lg">
+                      <h3 className="font-bold text-xl uppercase tracking-wide text-center">{outfits[0]?.title}</h3>
+                    </div>
+
+                    {/* Bottom - Summary & Actions */}
+                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
+                      <p className="text-white text-sm leading-relaxed mb-4">
+                        {outfits[0]?.summary}
+                      </p>
+                      
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={toggleLikeStatus}
+                          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm h-12 w-12"
+                        >
+                          <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                        </Button>
+                        
+                        <Button
+                          variant="default"
+                          className="flex-1"
+                          onClick={() => {
+                            setSelectedDateForLog(currentDate);
+                            setIsAddDialogOpen(true);
+                            markAddedToOOTD();
+                          }}
+                          disabled={addedToOOTD}
+                        >
+                          <CalendarDays className="w-4 h-4 mr-2" />
+                          {addedToOOTD ? 'Added to OOTD' : 'Log'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Weather Section - Below full screen module */}
                   {weather && (
-                    <div className="px-2">
+                    <div className="px-2 hidden">
                       <div className="flex items-center justify-between py-2">
                         <div className="flex items-center gap-3">
                           {getWeatherIcon(weather.current.weatherCode)}
