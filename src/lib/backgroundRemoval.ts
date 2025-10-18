@@ -2,7 +2,7 @@ import { pipeline, env } from '@huggingface/transformers';
 
 // Configure transformers.js
 env.allowLocalModels = false;
-env.useBrowserCache = false;
+env.useBrowserCache = true; // Enable caching for better performance
 
 const MAX_IMAGE_DIMENSION = 1024;
 
@@ -31,12 +31,44 @@ function resizeImageIfNeeded(canvas: HTMLCanvasElement, ctx: CanvasRenderingCont
   return false;
 }
 
+// Check WebGPU support
+async function checkWebGPUSupport(): Promise<boolean> {
+  if (!(navigator as any).gpu) {
+    console.warn('WebGPU not supported, will use WASM fallback');
+    return false;
+  }
+  try {
+    const adapter = await (navigator as any).gpu.requestAdapter();
+    return !!adapter;
+  } catch (error) {
+    console.warn('WebGPU adapter request failed:', error);
+    return false;
+  }
+}
+
 export const removeBackground = async (imageElement: HTMLImageElement): Promise<Blob> => {
   try {
-    console.log('Starting background removal...');
-    const segmenter = await pipeline('image-segmentation', 'Xenova/segformer-b0-finetuned-ade-512-512', {
-      device: 'webgpu',
-    });
+    console.log('Starting background removal process...');
+    
+    // Check device support
+    const hasWebGPU = await checkWebGPUSupport();
+    const device = hasWebGPU ? 'webgpu' : 'wasm';
+    console.log(`Using device: ${device}`);
+    
+    console.log('Loading segmentation model (this may take a moment on first load)...');
+    const segmenter = await pipeline(
+      'image-segmentation', 
+      'Xenova/segformer-b0-finetuned-ade-512-512',
+      { 
+        device,
+        progress_callback: (progress: any) => {
+          if (progress.status === 'downloading') {
+            console.log(`Downloading model: ${Math.round(progress.progress || 0)}%`);
+          }
+        }
+      }
+    );
+    console.log('Model loaded successfully');
     
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -49,13 +81,16 @@ export const removeBackground = async (imageElement: HTMLImageElement): Promise<
     const imageData = canvas.toDataURL('image/jpeg', 0.8);
     console.log('Image converted to base64');
     
-    console.log('Processing with segmentation model...');
+    console.log('Running segmentation (this may take 10-30 seconds)...');
+    const startTime = Date.now();
     const result = await segmenter(imageData);
+    const endTime = Date.now();
+    console.log(`Segmentation completed in ${((endTime - startTime) / 1000).toFixed(1)}s`);
     
     console.log('Segmentation result:', result);
     
     if (!result || !Array.isArray(result) || result.length === 0 || !result[0].mask) {
-      throw new Error('Invalid segmentation result');
+      throw new Error('Invalid segmentation result - no mask data returned');
     }
     
     const outputCanvas = document.createElement('canvas');
@@ -71,6 +106,7 @@ export const removeBackground = async (imageElement: HTMLImageElement): Promise<
     const data = outputImageData.data;
     
     // Apply inverted mask to alpha channel
+    console.log('Applying mask to remove background...');
     for (let i = 0; i < result[0].mask.data.length; i++) {
       const alpha = Math.round((1 - result[0].mask.data[i]) * 255);
       data[i * 4 + 3] = alpha;
@@ -83,7 +119,7 @@ export const removeBackground = async (imageElement: HTMLImageElement): Promise<
       outputCanvas.toBlob(
         (blob) => {
           if (blob) {
-            console.log('Successfully created final blob');
+            console.log(`Successfully created final blob (${(blob.size / 1024).toFixed(1)}KB)`);
             resolve(blob);
           } else {
             reject(new Error('Failed to create blob'));
@@ -95,6 +131,12 @@ export const removeBackground = async (imageElement: HTMLImageElement): Promise<
     });
   } catch (error) {
     console.error('Error removing background:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
     throw error;
   }
 };

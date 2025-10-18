@@ -86,17 +86,23 @@ export default function Stylist() {
   const processBackgroundRemoval = async (imageUrl: string) => {
     try {
       setProcessingBg(true);
+      toast.info("Removing background... This may take 30-60 seconds on first load.");
       
-      console.log('Loading image for background removal...');
+      console.log('Loading image for background removal from:', imageUrl);
       
       // Fetch image and create blob
       const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
       const blob = await response.blob();
+      console.log(`Image blob loaded: ${(blob.size / 1024).toFixed(1)}KB`);
       
       // Load image
       const img = await loadImage(blob);
+      console.log(`Image loaded: ${img.naturalWidth}x${img.naturalHeight}`);
       
-      console.log('Removing background using Transformers.js...');
+      console.log('Starting background removal with Transformers.js...');
       
       // Remove background
       const resultBlob = await removeBackground(img);
@@ -108,11 +114,15 @@ export default function Stylist() {
         setRemovedBgImageUrl(dataUrl);
         toast.success("Background removed successfully!");
       };
+      reader.onerror = () => {
+        throw new Error('Failed to read result blob');
+      };
       reader.readAsDataURL(resultBlob);
       
     } catch (error) {
-      console.error("Error removing background:", error);
-      toast.error("Failed to remove background. Using original photo.");
+      console.error("Background removal error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to remove background: ${errorMessage}. Using original photo.`);
       // Fallback: use original photo if background removal fails
       setRemovedBgImageUrl(imageUrl);
     } finally {
