@@ -86,7 +86,9 @@ export default function Home() {
             hairstyle: existingPick.hairstyle,
             items: existingPick.items
           }]);
-          setOutfitImageUrl(existingPick.image_url || "");
+          const itemsArr = (existingPick.items as any[]) || [];
+          const fallbackHero = itemsArr.find((it: any) => it?.imageUrl)?.imageUrl || "";
+          setOutfitImageUrl(existingPick.image_url || fallbackHero);
           setTodaysPickId(existingPick.id);
           setIsLiked(existingPick.is_liked);
           setAddedToOOTD(existingPick.added_to_ootd);
@@ -192,8 +194,8 @@ export default function Home() {
             console.log('Saved new today\'s pick to database');
           }
 
-          // Generate outfit image
-          generateOutfitImage(outfit);
+          // Generate outfit image and persist image_url to DB for this pick
+          await generateOutfitImage(outfit, savedPick?.id);
         }
       } catch (aiError) {
         console.error('AI service unavailable:', aiError);
@@ -399,7 +401,7 @@ export default function Home() {
     return images[Math.floor(Math.random() * images.length)];
   };
 
-  const generateOutfitImage = async (outfit: any) => {
+  const generateOutfitImage = async (outfit: any, pickId?: string) => {
     try {
       setGeneratingImage(true);
       console.log('Generating outfit image with items:', outfit.items?.length || 0);
@@ -421,12 +423,13 @@ export default function Home() {
         console.log('Outfit image generated successfully');
         setOutfitImageUrl(data.imageUrl);
 
-        // Update database with image_url if todaysPickId exists
-        if (todaysPickId) {
+        // Update database with image_url using provided pickId or fallback to state
+        const targetId = pickId || todaysPickId;
+        if (targetId) {
           await supabase
             .from('todays_picks')
             .update({ image_url: data.imageUrl })
-            .eq('id', todaysPickId);
+            .eq('id', targetId);
         }
       } else {
         console.warn('No image URL returned from generate-outfit-image');

@@ -528,7 +528,9 @@ export default function OOTDDiary() {
               items: existingPick.items,
             },
           ]);
-          setOutfitImageUrl(existingPick.image_url || "");
+          const itemsArr = (existingPick.items as any[]) || [];
+          const fallbackHero = itemsArr.find((it: any) => it?.imageUrl)?.imageUrl || "";
+          setOutfitImageUrl(existingPick.image_url || fallbackHero);
           setTodaysPickId(existingPick.id);
           setIsLiked(existingPick.is_liked);
           setAddedToOOTD(existingPick.added_to_ootd);
@@ -647,7 +649,7 @@ export default function OOTDDiary() {
             setAddedToOOTD(false);
           }
 
-          generateOutfitImage(outfit);
+          await generateOutfitImage(outfit, savedPick?.id);
         }
       } catch (aiError) {
         console.error('AI service unavailable:', aiError);
@@ -661,7 +663,7 @@ export default function OOTDDiary() {
     }
   };
 
-  const generateOutfitImage = async (outfit: any) => {
+  const generateOutfitImage = async (outfit: any, pickId?: string) => {
     try {
       setGeneratingImage(true);
       
@@ -696,11 +698,12 @@ export default function OOTDDiary() {
       if (data?.imageUrl) {
         setOutfitImageUrl(data.imageUrl);
 
-        if (todaysPickId) {
+        const targetId = pickId || todaysPickId;
+        if (targetId) {
           await supabase
             .from('todays_picks')
             .update({ image_url: data.imageUrl })
-            .eq('id', todaysPickId);
+            .eq('id', targetId);
         }
       }
     } catch (error) {
