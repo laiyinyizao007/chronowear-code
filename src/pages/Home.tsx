@@ -729,25 +729,21 @@ export default function Home() {
                       <img 
                         src={outfitImageUrl} 
                         alt="Today's outfit"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover object-center"
+                        style={{ objectFit: 'cover', objectPosition: 'center' }}
                       />
                     ) : (
                       /* Fallback: 显示第一个物品的图片或占位符 */
                       outfits[0].items?.[0]?.imageUrl ? (
-                        <div className="relative w-full h-full">
-                          <img 
-                            src={outfits[0].items[0].imageUrl} 
-                            alt="Outfit preview"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                            <p className="text-white text-xs">Preview - Full outfit image generating...</p>
-                          </div>
-                        </div>
+                        <img 
+                          src={outfits[0].items[0].imageUrl} 
+                          alt="Outfit preview"
+                          className="w-full h-full object-cover object-center opacity-40"
+                        />
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-3">
                           <Sparkles className="w-12 h-12" />
-                          <p className="text-xs text-center px-4">Outfit visualization coming soon</p>
+                          <p className="text-xs text-center px-4">点击"生成图片"按钮</p>
                         </div>
                       )
                     )}
