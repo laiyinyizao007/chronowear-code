@@ -1,5 +1,7 @@
 # Welcome to your Lovable project
 
+> 注意：本应用为移动端优先（Mobile-first）设计。请以手机尺寸进行体验与测试，所有 UI 位置（如底部提示、导航栏）均针对手机优化。
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/41d5711a-47c1-494d-9d2e-b4f10dd510aa
