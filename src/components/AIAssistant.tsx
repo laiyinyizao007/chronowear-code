@@ -90,15 +90,9 @@ export default function AIAssistant() {
   };
 
   return (
-    <Card className="shadow-medium h-[600px] flex flex-col">
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-accent" />
-          AI Fashion Assistant
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col p-0">
-        <ScrollArea ref={scrollRef} className="flex-1 p-4">
+    <Card className="shadow-soft border-border/50 overflow-hidden rounded-none">
+      <CardContent className="flex flex-col p-0">
+        <ScrollArea ref={scrollRef} className="h-[400px] sm:h-[500px] p-4 sm:p-6">
           <div className="space-y-4">
             {messages.map((msg, idx) => (
               <div
@@ -106,39 +100,39 @@ export default function AIAssistant() {
                 className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-accent" />
+                  <div className="w-7 h-7 bg-primary flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                  className={`max-w-[75%] px-4 py-3 ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
+                      : "bg-muted/50 text-foreground border border-border/30"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-light">{msg.content}</p>
                 </div>
                 {msg.role === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <UserIcon className="w-4 h-4 text-primary" />
+                  <div className="w-7 h-7 bg-muted border border-border/50 flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="w-3.5 h-3.5 text-foreground" strokeWidth={1.5} />
                   </div>
                 )}
               </div>
             ))}
             {isLoading && (
               <div className="flex gap-3 justify-start">
-                <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-accent" />
+                <div className="w-7 h-7 bg-primary flex items-center justify-center">
+                  <Bot className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={1.5} />
                 </div>
-                <div className="bg-muted rounded-2xl px-4 py-2.5">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="bg-muted/50 border border-border/30 px-4 py-3">
+                  <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                 </div>
               </div>
             )}
           </div>
         </ScrollArea>
-        <div className="border-t p-4">
+        <div className="border-t border-border/30 p-3 sm:p-4 bg-background">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -149,12 +143,17 @@ export default function AIAssistant() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me anything about fashion..."
+              placeholder="Type your question..."
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 h-10 sm:h-11 rounded-none border-border/50 bg-background text-sm font-light tracking-wide focus-visible:ring-1 focus-visible:ring-primary/30"
             />
-            <Button type="submit" size="icon" disabled={!input.trim() || isLoading}>
-              <Send className="w-4 h-4" />
+            <Button 
+              type="submit" 
+              size="icon" 
+              disabled={!input.trim() || isLoading}
+              className="h-10 w-10 sm:h-11 sm:w-11 rounded-none bg-primary hover:bg-primary-hover"
+            >
+              <Send className="w-4 h-4" strokeWidth={1.5} />
             </Button>
           </form>
         </div>

@@ -491,25 +491,28 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
-      {/* AI Assistant Section */}
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-bold">AI Fashion Assistant</h2>
+    <div className="space-y-6 sm:space-y-8">
+      {/* AI Search Bar - Minimal Farfetch style */}
+      <div className="w-full max-w-3xl mx-auto">
+        <div className="relative">
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
             onClick={() => setShowAIAssistant(!showAIAssistant)}
+            className="w-full h-12 sm:h-14 px-5 sm:px-6 border border-border hover:border-primary/30 transition-all duration-200 bg-background rounded-none justify-start text-left font-light text-sm sm:text-base text-muted-foreground hover:text-foreground"
           >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            {showAIAssistant ? "Hide" : "Chat with AI"}
+            <MessageSquare className="w-4 h-4 mr-3 flex-shrink-0 stroke-[1.5]" strokeWidth={1.5} />
+            <span className="tracking-wide">Search styles, ask fashion questions...</span>
           </Button>
         </div>
-        {showAIAssistant && <AIAssistant />}
+        {showAIAssistant && (
+          <div className="mt-4 animate-fade-in">
+            <AIAssistant />
+          </div>
+        )}
       </div>
 
       {/* Trend Section */}
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-4 sm:space-y-5">
         <h2 className="text-xl sm:text-2xl font-bold">Fashion Trends</h2>
         {trendLoading ? (
           <div className="flex items-center justify-center py-8 sm:py-12">
