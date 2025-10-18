@@ -82,7 +82,7 @@ interface ProductInfo {
 export default function Closet() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setProgress, startProcessing, stopProcessing } = useProgress();
+  const { setProgress, startProcessing, stopProcessing, startFakeProgress, doneProgress } = useProgress();
   const [garments, setGarments] = useState<Garment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -282,6 +282,9 @@ export default function Closet() {
     setSelectedProduct(null);
     setProcessingProgress(0);
     
+    // 启动假进度条动画（5秒内到99.5%）
+    startFakeProgress(5000);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -289,7 +292,6 @@ export default function Closet() {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-      setProcessingProgress(20);
       const { error: uploadError } = await supabase.storage
         .from("garments")
         .upload(fileName, file);
@@ -302,7 +304,6 @@ export default function Closet() {
 
       setUploadedImageUrl(publicUrl);
       setUploadingImage(false);
-      setProcessingProgress(40);
       
       // Close dialog and start processing
       setIsAddDialogOpen(false);
@@ -316,6 +317,7 @@ export default function Closet() {
       toast.error("Failed to upload image");
       setIsProcessing(false);
       setProcessingProgress(0);
+      doneProgress();
       return null;
     } finally {
       setUploadingImage(false);
@@ -326,8 +328,6 @@ export default function Closet() {
     setIdentifyingProducts(true);
     if (!getMoreResults) {
       setProcessingProgress(50);
-      startProcessing();
-      setProgress(50);
     }
     
     try {
@@ -339,10 +339,7 @@ export default function Closet() {
         if (!getMoreResults) {
           setProcessingProgress(100);
           setIsProcessing(false);
-          setProgress(100);
-          setTimeout(() => {
-            stopProcessing();
-          }, 300);
+          doneProgress();
         }
         setIdentifyingProducts(false);
         return;
@@ -350,7 +347,6 @@ export default function Closet() {
 
       if (!getMoreResults) {
         setProcessingProgress(70);
-        setProgress(70);
       }
       
       // Fetch detailed product info for each identified garment
@@ -407,14 +403,11 @@ export default function Closet() {
         }
         
         setProcessingProgress(100);
-        setProgress(100);
         toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified!`);
         setIsAddDialogOpen(true);
         setIsProcessing(false);
         setProcessingProgress(0);
-        setTimeout(() => {
-          stopProcessing();
-        }, 300);
+        doneProgress();
       }
     } catch (error: any) {
       console.error('Error identifying products:', error);
@@ -422,7 +415,7 @@ export default function Closet() {
       if (!getMoreResults) {
         setIsProcessing(false);
         setProcessingProgress(0);
-        stopProcessing();
+        doneProgress();
       }
     } finally {
       setIdentifyingProducts(false);
@@ -434,10 +427,10 @@ export default function Closet() {
 
   const loadMoreProducts = async () => {
     if (!uploadedImageUrl || isLoadingMore) return;
-    startProcessing();
+    startFakeProgress(3000);
     setIsLoadingMore(true);
     await identifyProducts(uploadedImageUrl, true);
-    stopProcessing();
+    doneProgress();
   };
 
   const handleSaveSelectedProduct = async () => {
