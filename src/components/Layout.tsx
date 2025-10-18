@@ -16,7 +16,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const { weather, fetchWeather } = useWeather();
-  const { progress, isProcessing } = useProgress();
+  const { progress, isProcessing, startFakeProgress, doneProgress } = useProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,7 +77,8 @@ export default function Layout() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const loadingToast = toast.loading("Uploading image...");
+    // 启动进度条（预计5秒完成）
+    startFakeProgress(5000);
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -96,10 +97,9 @@ export default function Layout() {
         .from("garments")
         .getPublicUrl(fileName);
 
-      toast.dismiss(loadingToast);
       navigate(`/closet?action=add&imageUrl=${encodeURIComponent(publicUrl)}`);
     } catch (error: any) {
-      toast.dismiss(loadingToast);
+      doneProgress();
       toast.error("Failed to upload image");
     }
 
