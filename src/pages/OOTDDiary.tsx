@@ -1176,7 +1176,7 @@ export default function OOTDDiary() {
                                     key={idx} 
                                     className={cn(
                                       "relative aspect-square rounded overflow-hidden bg-background transition-opacity group cursor-pointer",
-                                      !item.fromCloset && "opacity-50"
+                                      !item.fromCloset && "opacity-20"
                                     )}
                                     onClick={() => {
                                       setSelectedItem(item);
