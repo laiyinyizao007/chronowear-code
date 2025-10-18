@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X, Scan, ChevronsUpDown, Check, Shirt, Heart, Trash2 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X, Scan, ChevronsUpDown, Check, Shirt, Heart, Trash2, Wand2, BookHeart, ShirtIcon, UtensilsCrossed, Watch, Sparkle, RefreshCw, Book, Loader2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -59,7 +61,17 @@ interface ProductInfo {
   type?: string;
 }
 
+interface AIRecommendedItem {
+  category: string;
+  name: string;
+  brand?: string;
+  imageUrl?: string;
+  isFromCloset?: boolean;
+  closetItemId?: string;
+}
+
 export default function Closet() {
+  const [activeMainTab, setActiveMainTab] = useState("closet");
   const [garments, setGarments] = useState<Garment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -98,6 +110,32 @@ export default function Closet() {
   const [brandSearch, setBrandSearch] = useState("");
   const [isScanningBarcode, setIsScanningBarcode] = useState(false);
   const [isScanningLabel, setIsScanningLabel] = useState(false);
+
+  // AI Stylist states
+  const [fullBodyPhotoUrl, setFullBodyPhotoUrl] = useState<string>("");
+  const [removedBgImageUrl, setRemovedBgImageUrl] = useState<string>("");
+  const [selectedGarmentForTryon, setSelectedGarmentForTryon] = useState<Garment | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [stylistLoading, setStylistLoading] = useState(true);
+  const [processingBg, setProcessingBg] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [tryOnResultUrl, setTryOnResultUrl] = useState<string>("");
+  const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
+  const [aiRecommendations, setAiRecommendations] = useState<AIRecommendedItem[]>([]);
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [swapDrawerOpen, setSwapDrawerOpen] = useState(false);
+  const [swapCategory, setSwapCategory] = useState<string>("");
+  const [stylistActiveTab, setStylistActiveTab] = useState("virtual-tryon");
+
+  const stylistCategories = [
+    { id: "stylebook", label: "Stylebook", icon: Book },
+    { id: "top", label: "Tops", icon: ShirtIcon },
+    { id: "bottom", label: "Bottoms", icon: UtensilsCrossed },
+    { id: "shoes", label: "Shoes", icon: UtensilsCrossed },
+    { id: "accessories", label: "Accessories", icon: Watch },
+    { id: "hairstyle", label: "Hairstyle", icon: Sparkle },
+  ];
 
   // Extract unique filter options from garments
   const filterOptions = useMemo(() => {
@@ -162,6 +200,8 @@ export default function Closet() {
 
   useEffect(() => {
     loadGarments();
+    loadStylistData();
+    loadSavedOutfits();
   }, []);
 
   const loadGarments = async () => {
@@ -180,6 +220,45 @@ export default function Closet() {
     }
   };
 
+  const loadStylistData = async () => {
+    try {
+      setStylistLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load user settings for full body photo
+      const { data: settingsData } = await supabase
+        .from("user_settings")
+        .select("full_body_photo_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (settingsData?.full_body_photo_url) {
+        setFullBodyPhotoUrl(settingsData.full_body_photo_url);
+        setRemovedBgImageUrl(settingsData.full_body_photo_url);
+      }
+    } catch (error) {
+      console.error("Error loading stylist data:", error);
+    } finally {
+      setStylistLoading(false);
+    }
+  };
+
+  const loadSavedOutfits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("saved_outfits")
+        .select("*")
+        .eq("liked", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSavedOutfits(data || []);
+    } catch (error: any) {
+      console.error("Error loading saved outfits:", error);
+    }
+  };
+
   const toggleLikeGarment = async (garmentId: string, currentLiked: boolean) => {
     try {
       const { error } = await supabase
@@ -194,6 +273,145 @@ export default function Closet() {
     } catch (error: any) {
       toast.error("Failed to update favorite");
     }
+  };
+
+  const toggleLikeOutfit = async (outfitId: string, currentLiked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("saved_outfits")
+        .update({ liked: !currentLiked })
+        .eq("id", outfitId);
+
+      if (error) throw error;
+      
+      toast.success(currentLiked ? "Removed from Stylebook" : "Added to Stylebook");
+      loadSavedOutfits();
+    } catch (error: any) {
+      toast.error("Failed to update Stylebook");
+    }
+  };
+
+  // AI Stylist functions
+  const filteredGarmentsForTryon = selectedCategory === "all" 
+    ? garments 
+    : garments.filter(g => g.type.toLowerCase().includes(selectedCategory));
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === "stylebook") {
+      setStylistActiveTab("stylebook");
+      return;
+    }
+    setSelectedCategory(categoryId);
+    setIsDrawerOpen(true);
+  };
+
+  const handleSelectGarment = (garment: Garment) => {
+    setSelectedGarmentForTryon(garment);
+    setIsDrawerOpen(false);
+  };
+
+  const handleGenerateTryOn = async () => {
+    if (!removedBgImageUrl || !selectedGarmentForTryon) {
+      toast.error("Please select a garment to try on");
+      return;
+    }
+
+    try {
+      setGenerating(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-virtual-tryon', {
+        body: {
+          userPhotoUrl: removedBgImageUrl,
+          garmentImageUrl: selectedGarmentForTryon.image_url,
+          garmentType: selectedGarmentForTryon.type,
+        }
+      });
+
+      if (error) throw error;
+
+      const url = data?.imageUrl || data?.tryonImageUrl;
+      if (url) {
+        setTryOnResultUrl(url);
+        toast.success("Virtual try-on generated!");
+      } else {
+        throw new Error("No image generated");
+      }
+    } catch (error: any) {
+      console.error("Error generating try-on:", error);
+      toast.error(error.message || "Failed to generate virtual try-on");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedGarmentForTryon && removedBgImageUrl && !generating && !processingBg) {
+      handleGenerateTryOn();
+      setAiRecommendations([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGarmentForTryon]);
+
+  const handleAIFinishRest = async () => {
+    if (!selectedGarmentForTryon) {
+      toast.error("Please select a garment first");
+      return;
+    }
+
+    try {
+      setGeneratingAI(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-outfit-suggestion', {
+        body: {
+          selectedItem: {
+            type: selectedGarmentForTryon.type,
+            brand: selectedGarmentForTryon.brand,
+            color: selectedGarmentForTryon.color,
+          },
+          userGarments: garments.map(g => ({
+            type: g.type,
+            brand: g.brand,
+            color: g.color,
+          })),
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.recommendations) {
+        setAiRecommendations(data.recommendations);
+        toast.success("AI outfit suggestions generated!");
+      }
+    } catch (error: any) {
+      console.error("Error generating AI suggestions:", error);
+      toast.error(error.message || "Failed to generate AI suggestions");
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
+  const handleSwapItem = (category: string) => {
+    setSwapCategory(category);
+    setSwapDrawerOpen(true);
+  };
+
+  const handleReplaceWithClosetItem = (garment: Garment, category: string) => {
+    setAiRecommendations(prev => 
+      prev.map(item => 
+        item.category === category
+          ? {
+              ...item,
+              name: `${garment.brand} ${garment.type}`,
+              brand: garment.brand,
+              imageUrl: garment.image_url,
+              isFromCloset: true,
+              closetItemId: garment.id,
+            }
+          : item
+      )
+    );
+    setSwapDrawerOpen(false);
+    toast.success("Item replaced from your closet");
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -473,10 +691,29 @@ export default function Closet() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Closet & Stylist</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Manage your wardrobe and try AI styling
+        </p>
+      </div>
+
+      <Tabs value={activeMainTab} onValueChange={setActiveMainTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="closet">
+            <Shirt className="w-4 h-4 mr-2" />
+            Closet
+          </TabsTrigger>
+          <TabsTrigger value="stylist">
+            <Wand2 className="w-4 h-4 mr-2" />
+            AI Stylist
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="closet" className="space-y-4 mt-6">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Closet</h1>
             <p className="text-sm sm:text-base text-muted-foreground">
               {filteredGarments.length} {filteredGarments.length === garments.length ? 'items' : `of ${garments.length} items`}
             </p>
@@ -1249,6 +1486,22 @@ export default function Closet() {
             </div>
           </DialogContent>
         </Dialog>
+        </TabsContent>
+
+        <TabsContent value="stylist" className="space-y-6 mt-6">
+          <Card className="shadow-medium">
+            <CardContent className="py-12 text-center space-y-4">
+              <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-primary" />
+              <div>
+                <h3 className="text-xl font-semibold mb-2">AI Stylist Coming Soon</h3>
+                <p className="text-muted-foreground mb-4">
+                  Virtual try-on and AI styling features are currently being integrated.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       
       {isProcessing && (
         <div className="fixed top-20 left-0 right-0 bg-background/95 backdrop-blur-sm border-b shadow-md p-4 z-[60] animate-fade-in">

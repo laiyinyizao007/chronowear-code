@@ -77,7 +77,6 @@ export default function Layout() {
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/closet", icon: Shirt, label: "Closet" },
-    { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
     { to: "/settings", icon: SettingsIcon, label: "Settings" },
   ];
