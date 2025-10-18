@@ -16,9 +16,9 @@ serve(async (req) => {
     
     console.log('Recommending washing frequency for:', { material, type });
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     const systemPrompt = `You are a garment care expert. Your role is to provide accurate washing frequency recommendations and detailed care instructions based on garment materials and types.
@@ -61,34 +61,43 @@ Return your response in JSON format:
   "care_instructions": "Detailed care instructions covering washing, drying, ironing, and any special considerations (3-5 sentences)"
 }`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_completion_tokens: 800,
+        max_tokens: 800,
         response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error('OpenAI API error');
+      console.error('Lovable AI Gateway error:', response.status, errorText);
+      
+      // Handle rate limit and payment errors
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      if (response.status === 402) {
+        throw new Error('Payment required. Please add credits to your Lovable workspace.');
+      }
+      
+      throw new Error('AI Gateway error');
     }
 
     const data = await response.json();
     let recommendation = data.choices[0].message.content;
 
     if (!recommendation) {
-      throw new Error('No content in OpenAI response');
+      throw new Error('No content in AI response');
     }
 
     // Extract JSON from markdown code blocks if present
