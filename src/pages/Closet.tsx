@@ -611,8 +611,8 @@ export default function Closet() {
                   Add Garment
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-4 sm:p-6">
-              <SheetHeader>
+              <SheetContent side="bottom" className="h-[85vh] overflow-y-auto p-4 sm:p-6">
+              <SheetHeader className="mb-4">
                 <SheetTitle>Add New Garment</SheetTitle>
                 <SheetClose className="absolute right-4 top-4" />
               </SheetHeader>
@@ -901,10 +901,10 @@ export default function Closet() {
                 </form>
               ) : (
                 <div className="space-y-6">
-                  <Carousel className="w-full">
+                  <Carousel className="w-full max-w-full">
                     <CarouselContent className="-ml-4">
                       {productSuggestions.map((product, index) => (
-                        <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                        <CarouselItem key={index} className="pl-4 basis-[min(350px,80vw)]">
                           <ProductCard
                             brand={product.brand}
                             model={product.model}
@@ -993,7 +993,7 @@ export default function Closet() {
                       ))}
                       
                       {/* More Card */}
-                      <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                      <CarouselItem className="pl-4 basis-[min(350px,80vw)]">
                         <Card 
                           className="h-full cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary"
                           onClick={loadMoreProducts}
@@ -1143,7 +1143,7 @@ export default function Closet() {
         </AlertDialog>
 
         <Sheet open={!!selectedGarment} onOpenChange={(open) => !open && setSelectedGarment(null)}>
-          <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden">
+          <SheetContent side="bottom" className="h-[85vh] p-0 flex flex-col overflow-hidden">
             <SheetHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
               <SheetTitle>Garment Details</SheetTitle>
               <SheetClose className="absolute right-4 top-4" />
