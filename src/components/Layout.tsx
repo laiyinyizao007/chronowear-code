@@ -80,28 +80,27 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Header - LV-inspired luxury design */}
-      <header className="sticky top-0 z-50 bg-card/98 backdrop-blur-md border-b border-border/40">
-        <div className="mx-auto px-6 sm:px-8 h-14 sm:h-16 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-sm flex items-center justify-center">
-              <Shirt className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+      {/* Top Header - Farfetch minimal black/white */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+        <div className="mx-auto px-6 sm:px-10 h-14 sm:h-16 flex items-center justify-between max-w-[1600px]">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary flex items-center justify-center">
+              <Shirt className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
             </div>
-            <h1 className="text-lg sm:text-xl font-serif tracking-wider uppercase">ChronoWear</h1>
+            <h1 className="text-sm sm:text-base font-display font-light tracking-[0.2em] uppercase">ChronoWear</h1>
           </div>
-          <div className="flex items-center gap-3 sm:gap-5">
-            {/* Weather - Hidden on small screens */}
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Weather - Ultra minimal */}
             {weather && (
-              <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground uppercase tracking-wide">
+              <div className="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
                 <div className="flex items-center gap-2">
                   {weather.current.weatherDescription.toLowerCase().includes('rain') ? (
-                    <CloudRain className="w-3.5 h-3.5" />
+                    <CloudRain className="w-3 h-3" />
                   ) : (
-                    <Sun className="w-3.5 h-3.5" />
+                    <Sun className="w-3 h-3" />
                   )}
-                  <span className="font-medium">{weather.current.temperature}°F</span>
+                  <span className="font-light">{weather.current.temperature}°</span>
                 </div>
-                <span className="text-xs opacity-70">{weather.current.weatherDescription}</span>
               </div>
             )}
             
@@ -110,23 +109,23 @@ export default function Layout() {
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/settings")}
-              className="hidden sm:flex hover:bg-muted/50 h-9 w-9 rounded-sm"
+              className="hidden sm:flex hover:bg-muted/30 h-8 w-8"
               aria-label="Settings"
             >
-              <SettingsIcon className="w-4 h-4" />
+              <SettingsIcon className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto py-6 sm:py-10 pb-24 sm:pb-28 max-w-7xl px-6 sm:px-8">
+      <main className="mx-auto py-8 sm:py-12 pb-28 sm:pb-32 max-w-[1600px] px-6 sm:px-10">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation - LV luxury minimal */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/98 backdrop-blur-md border-t border-border/30 z-50 safe-bottom">
-        <div className="mx-auto px-4 sm:px-8 max-w-7xl">
+      {/* Bottom Navigation - Farfetch ultra minimal */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
+        <div className="mx-auto px-6 sm:px-10 max-w-[1600px]">
           <div className="flex justify-around items-center h-16 sm:h-18">
             {navItems.slice(0, 2).map((item) => (
               <NavLink
@@ -134,7 +133,7 @@ export default function Layout() {
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-4 sm:px-6 py-2 transition-all duration-300 ${
+                  `flex flex-col items-center gap-1.5 px-5 sm:px-7 py-2.5 transition-all duration-200 ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -143,20 +142,20 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon className={`w-5 h-5 sm:w-5.5 sm:h-5.5 transition-all ${isActive ? 'scale-105' : ''}`} />
-                    <span className="text-[9px] sm:text-[10px] font-medium tracking-widest uppercase">{item.label}</span>
+                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5] ${isActive ? '' : ''}`} strokeWidth={1.5} />
+                    <span className="text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase">{item.label}</span>
                   </>
                 )}
               </NavLink>
             ))}
             
-            {/* CTA Button - Luxe floating accent */}
+            {/* CTA Button - Minimal accent */}
             <Button
               onClick={() => navigate("/stylist")}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-accent shadow-gold hover:shadow-gold hover:scale-105 transition-all duration-300 -mt-8 border-4 border-background"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary hover:bg-primary-hover text-primary-foreground shadow-medium hover:shadow-large transition-all duration-300 -mt-8 border-2 border-background"
               aria-label="AI Stylist"
             >
-              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
+              <Sparkles className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[1.5]" strokeWidth={1.5} />
             </Button>
             
             {navItems.slice(2).map((item) => (
@@ -165,7 +164,7 @@ export default function Layout() {
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 px-4 sm:px-6 py-2 transition-all duration-300 ${
+                  `flex flex-col items-center gap-1.5 px-5 sm:px-7 py-2.5 transition-all duration-200 ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -174,8 +173,8 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon className={`w-5 h-5 sm:w-5.5 sm:h-5.5 transition-all ${isActive ? 'scale-105' : ''}`} />
-                    <span className="text-[9px] sm:text-[10px] font-medium tracking-widest uppercase">{item.label}</span>
+                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5] ${isActive ? '' : ''}`} strokeWidth={1.5} />
+                    <span className="text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase">{item.label}</span>
                   </>
                 )}
               </NavLink>

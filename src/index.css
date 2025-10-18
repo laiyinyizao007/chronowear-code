@@ -15,96 +15,96 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* LV-inspired luxury palette - Deep sophistication with gold accents */
-    --background: 40 8% 97%;
-    --foreground: 30 6% 12%;
+    /* Farfetch-inspired monochromatic luxury palette */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 30 6% 12%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 6% 12%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Primary: Deep charcoal brown - LV signature */
-    --primary: 30 12% 20%;
-    --primary-foreground: 40 8% 97%;
-    --primary-hover: 30 12% 16%;
+    /* Primary: Pure black */
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 0 0% 20%;
 
-    /* Secondary: Warm champagne */
-    --secondary: 40 15% 92%;
-    --secondary-foreground: 30 6% 20%;
+    /* Secondary: Light gray */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
 
-    /* Accent: Luxe gold */
-    --accent: 42 65% 58%;
-    --accent-foreground: 30 12% 12%;
-    --accent-hover: 42 70% 62%;
+    /* Accent: Subtle gold */
+    --accent: 38 60% 50%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 38 65% 55%;
 
-    --muted: 40 10% 94%;
-    --muted-foreground: 30 8% 50%;
+    --muted: 0 0% 98%;
+    --muted-foreground: 0 0% 45%;
 
-    --destructive: 0 60% 48%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 8% 88%;
-    --input: 40 8% 92%;
-    --ring: 42 65% 58%;
+    --border: 0 0% 92%;
+    --input: 0 0% 94%;
+    --ring: 0 0% 10%;
 
-    --radius: 0.25rem;
+    --radius: 0rem;
 
-    /* Luxurious gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(30 12% 20%), hsl(30 15% 16%));
-    --gradient-accent: linear-gradient(135deg, hsl(42 65% 58%), hsl(45 70% 62%));
-    --gradient-hero: linear-gradient(180deg, hsl(40 8% 97%), hsl(40 10% 94%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(40 12% 98%));
+    /* Minimal gradients */
+    --gradient-primary: linear-gradient(180deg, hsl(0 0% 10%), hsl(0 0% 5%));
+    --gradient-accent: linear-gradient(135deg, hsl(38 60% 50%), hsl(40 65% 55%));
+    --gradient-hero: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 99%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
 
-    /* Refined shadows - subtle luxury */
-    --shadow-soft: 0 1px 2px hsl(30 10% 0% / 0.03);
-    --shadow-medium: 0 4px 8px hsl(30 10% 0% / 0.05);
-    --shadow-large: 0 8px 24px hsl(30 10% 0% / 0.08);
-    --shadow-card: 0 2px 6px hsl(30 10% 0% / 0.04);
-    --shadow-gold: 0 4px 16px hsl(42 65% 58% / 0.15);
+    /* Ultra-subtle shadows */
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.02);
+    --shadow-medium: 0 2px 8px hsl(0 0% 0% / 0.04);
+    --shadow-large: 0 4px 16px hsl(0 0% 0% / 0.06);
+    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.03);
+    --shadow-gold: 0 2px 12px hsl(38 60% 50% / 0.1);
 
-    /* Premium transitions */
-    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Refined transitions */
+    --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 30 10% 8%;
-    --foreground: 40 8% 95%;
+    --background: 0 0% 10%;
+    --foreground: 0 0% 95%;
 
-    --card: 30 12% 10%;
-    --card-foreground: 40 8% 95%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 30 12% 10%;
-    --popover-foreground: 40 8% 95%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 42 60% 55%;
-    --primary-foreground: 30 10% 8%;
-    --primary-hover: 42 65% 60%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 10%;
+    --primary-hover: 0 0% 90%;
 
-    --secondary: 30 8% 15%;
-    --secondary-foreground: 40 8% 95%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 95%;
 
-    --accent: 42 65% 58%;
-    --accent-foreground: 30 10% 8%;
-    --accent-hover: 42 70% 62%;
+    --accent: 38 60% 50%;
+    --accent-foreground: 0 0% 10%;
+    --accent-hover: 38 65% 55%;
 
-    --muted: 30 8% 16%;
-    --muted-foreground: 40 6% 55%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 55%;
 
-    --destructive: 0 55% 45%;
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 10% 18%;
-    --input: 30 10% 16%;
-    --ring: 42 65% 58%;
+    --border: 0 0% 20%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 100%;
 
-    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.4);
-    --shadow-medium: 0 4px 8px hsl(0 0% 0% / 0.5);
-    --shadow-large: 0 8px 24px hsl(0 0% 0% / 0.6);
-    --shadow-card: 0 2px 6px hsl(0 0% 0% / 0.5);
-    --shadow-gold: 0 4px 16px hsl(42 65% 58% / 0.25);
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 2px 8px hsl(0 0% 0% / 0.4);
+    --shadow-large: 0 4px 16px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.4);
+    --shadow-gold: 0 2px 12px hsl(38 60% 50% / 0.2);
   }
 }
 
@@ -115,22 +115,23 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans;
-    letter-spacing: 0.015em;
+    letter-spacing: 0.02em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
-    letter-spacing: 0.025em;
-    font-weight: 400;
+    @apply font-sans;
+    letter-spacing: 0.04em;
+    font-weight: 300;
+    text-transform: uppercase;
   }
 
   h1 {
-    @apply text-3xl sm:text-4xl;
+    @apply text-2xl sm:text-3xl;
   }
 
   h2 {
-    @apply text-2xl sm:text-3xl;
+    @apply text-xl sm:text-2xl;
   }
 }

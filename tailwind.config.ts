@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Helvetica Neue', 'sans-serif'],
-        serif: ['Playfair Display', 'Cormorant Garamond', 'Georgia', 'serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Helvetica Neue', 'sans-serif'],
+        display: ['Montserrat', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
