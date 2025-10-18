@@ -135,7 +135,7 @@ export default function Layout() {
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-200 ${
+                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-300 relative ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -144,8 +144,11 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5]`} strokeWidth={1.5} />
-                    <span className="text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase">{item.label}</span>
+                    {isActive && (
+                      <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary animate-fade-in" />
+                    )}
+                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
+                    <span className={`text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase transition-all duration-300 ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
                   </>
                 )}
               </NavLink>
@@ -186,7 +189,7 @@ export default function Layout() {
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-200 ${
+                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-300 relative ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -195,8 +198,11 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5]`} strokeWidth={1.5} />
-                    <span className="text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase">{item.label}</span>
+                    {isActive && (
+                      <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary animate-fade-in" />
+                    )}
+                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
+                    <span className={`text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase transition-all duration-300 ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
                   </>
                 )}
               </NavLink>
