@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw } from "lucide-react";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw, Book } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
@@ -46,6 +46,7 @@ export default function Stylist() {
   const [swapCategory, setSwapCategory] = useState<string>("");
 
   const categories = [
+    { id: "stylebook", label: "Stylebook", icon: Book },
     { id: "top", label: "Tops", icon: ShirtIcon },
     { id: "bottom", label: "Bottoms", icon: UtensilsCrossed },
     { id: "shoes", label: "Shoes", icon: UtensilsCrossed },
@@ -58,6 +59,10 @@ export default function Stylist() {
     : garments.filter(g => g.type.toLowerCase().includes(selectedCategory));
 
   const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === "stylebook") {
+      setActiveTab("stylebook");
+      return;
+    }
     setSelectedCategory(categoryId);
     setIsDrawerOpen(true);
   };
@@ -326,7 +331,7 @@ export default function Stylist() {
           <div className="space-y-4">
             {/* Full Body Photo Display */}
             <div className="relative">
-              <div className="h-[55vh] sm:h-[60vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
+              <div className="h-[50vh] sm:h-[55vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
                 {processingBg ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                     <div className="text-center space-y-3">
@@ -404,7 +409,7 @@ export default function Stylist() {
 
             {/* Selection Drawer */}
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <SheetContent side="bottom" className="h-[70vh] bg-background/95 backdrop-blur-sm z-50">
+              <SheetContent side="bottom" className="h-[50vh] bg-background/95 backdrop-blur-sm z-50">
                 <SheetHeader>
                   <SheetTitle>
                     Select {categories.find(c => c.id === selectedCategory)?.label}
@@ -459,7 +464,7 @@ export default function Stylist() {
 
             {/* Swap Item Drawer */}
             <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
-              <SheetContent side="bottom" className="h-[70vh] bg-background/95 backdrop-blur-sm z-50">
+              <SheetContent side="bottom" className="h-[50vh] bg-background/95 backdrop-blur-sm z-50">
                 <SheetHeader>
                   <SheetTitle>
                     Replace with Your {categories.find(c => c.id === swapCategory)?.label}
