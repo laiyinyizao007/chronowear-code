@@ -98,6 +98,8 @@ export default function OOTDDiary() {
   const [planningMode, setPlanningMode] = useState<'closet-only' | 'with-wishlist' | 'any-items'>('closet-only');
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [ootdPlan, setOotdPlan] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [itemDetailOpen, setItemDetailOpen] = useState(false);
   
   // Today's Pick states
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -1256,6 +1258,10 @@ export default function OOTDDiary() {
                                   "relative aspect-square rounded overflow-hidden bg-background transition-opacity group cursor-pointer",
                                   !item.fromCloset && "opacity-50"
                                 )}
+                                onClick={() => {
+                                  setSelectedItem(item);
+                                  setItemDetailOpen(true);
+                                }}
                               >
                                 {item.imageUrl ? (
                                   <img
@@ -1812,6 +1818,108 @@ export default function OOTDDiary() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Item Detail Dialog */}
+      <Dialog open={itemDetailOpen} onOpenChange={setItemDetailOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              OUTFIT DETAILS
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedItem && (
+            <div className="space-y-4">
+              {/* Item thumbnails */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {outfits[0]?.items?.map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer border-2 transition-all",
+                      item === selectedItem ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                    )}
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-secondary/50 flex items-center justify-center text-[10px] text-center p-1">
+                        {item.type}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Main image */}
+              <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-secondary/20">
+                {outfitImageUrl ? (
+                  <img
+                    src={outfitImageUrl}
+                    alt="Outfit"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                  onClick={toggleLikeStatus}
+                >
+                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                </Button>
+              </div>
+
+              {/* Item details */}
+              <div className="space-y-2 text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="font-bold text-lg uppercase">{selectedItem.name}</h3>
+                  {selectedItem.type && (
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedItem.type}
+                    </Badge>
+                  )}
+                </div>
+                
+                {selectedItem.brand && (
+                  <p className="text-sm text-muted-foreground">{selectedItem.brand}</p>
+                )}
+
+                {(selectedItem.color || selectedItem.material) && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    {selectedItem.color && <span>• {selectedItem.color}</span>}
+                    {selectedItem.material && <span>• {selectedItem.material}</span>}
+                  </div>
+                )}
+
+                {selectedItem.style && (
+                  <p className="text-sm text-muted-foreground italic">{selectedItem.style}</p>
+                )}
+              </div>
+
+              {/* Add to OOTD button */}
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setSelectedDateForLog(currentDate);
+                  setItemDetailOpen(false);
+                  setIsAddDialogOpen(true);
+                  markAddedToOOTD();
+                }}
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                Add to OOTD
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
