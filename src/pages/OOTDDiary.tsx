@@ -1187,7 +1187,7 @@ export default function OOTDDiary() {
                           </Button>
                         </div>
 
-                        {/* Weather & Refresh */}
+                        {/* Weather, Refresh & View Toggle */}
                         <div className="flex items-center gap-2">
                           {weather && (
                             <div className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-full px-3 py-2">
@@ -1217,6 +1217,21 @@ export default function OOTDDiary() {
                               <RefreshCw className="w-4 h-4" />
                             )}
                           </Button>
+
+                          {/* Week View Toggle Button */}
+                          <div className="relative">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setViewMode('week')}
+                              className="h-9 w-9 bg-background/60 backdrop-blur-sm hover:bg-background/80 rounded-full"
+                            >
+                              <CalendarDays className="w-4 h-4" />
+                            </Button>
+                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                              D
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1269,25 +1284,30 @@ export default function OOTDDiary() {
                       <h3 className="font-bold text-base sm:text-lg uppercase tracking-wider text-center whitespace-nowrap">{outfits[0]?.title}</h3>
                     </div>
 
-                    {/* Bottom - Summary & Actions */}
-                    <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 pb-6">
-                      <p className="text-white text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3">
-                        {outfits[0]?.summary}
-                      </p>
+                    {/* Bottom - Fixed Action Bar */}
+                    <div className="absolute bottom-0 left-0 right-0 z-20">
+                      {/* Summary */}
+                      <div className="bg-gradient-to-t from-black/95 via-black/70 to-transparent px-4 pt-8 pb-2">
+                        <p className="text-white text-xs sm:text-sm leading-relaxed mb-3 line-clamp-2">
+                          {outfits[0]?.summary}
+                        </p>
+                      </div>
                       
-                      <div className="flex items-center gap-2">
+                      {/* Action Bar - Fixed at bottom */}
+                      <div className="bg-black/95 px-4 py-4 flex items-center gap-3 border-t border-white/10">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={toggleLikeStatus}
-                          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm h-11 w-11 rounded-full shrink-0"
+                          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm h-12 w-12 rounded-full shrink-0"
                         >
                           <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
                         </Button>
                         
                         <Button
                           variant="default"
-                          className="flex-1 h-11 rounded-full font-semibold shadow-lg"
+                          size="lg"
+                          className="flex-1 h-12 rounded-full font-bold shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={() => {
                             setSelectedDateForLog(currentDate);
                             setIsAddDialogOpen(true);
@@ -1295,8 +1315,8 @@ export default function OOTDDiary() {
                           }}
                           disabled={addedToOOTD}
                         >
-                          <CalendarDays className="w-4 h-4 mr-2" />
-                          {addedToOOTD ? 'Added to OOTD' : 'Add to OOTD'}
+                          <CalendarDays className="w-5 h-5 mr-2" />
+                          <span className="text-base">{addedToOOTD ? 'Added to OOTD' : 'Add to OOTD'}</span>
                         </Button>
                       </div>
                     </div>
