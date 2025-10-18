@@ -30,8 +30,10 @@ serve(async (req) => {
     console.log('Image generation prompt:', prompt);
 
     // 使用Pollinations.ai - 完全免费，无需API密钥
+    // 右侧卡片是 w-2/3，aspect-[3/4] (宽:高 = 3:4)
+    // 使用768x1024的尺寸来匹配3:4比例，确保图片填充整个frame
     const encodedPrompt = encodeURIComponent(prompt);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1024&model=flux&nologo=true&seed=${Date.now()}`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1024&model=flux&nologo=true&enhance=true&seed=${Date.now()}`;
 
     console.log('Image generated with Pollinations.ai');
 
