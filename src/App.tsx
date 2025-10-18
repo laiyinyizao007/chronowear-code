@@ -7,6 +7,7 @@ import AuthPage from "./components/AuthPage";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Closet from "./pages/Closet";
+import Stylist from "./pages/Stylist";
 import OOTDDiary from "./pages/OOTDDiary";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/closet" element={<Closet />} />
+            <Route path="/stylist" element={<Stylist />} />
             <Route path="/diary" element={<OOTDDiary />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
