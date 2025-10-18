@@ -55,6 +55,7 @@ interface OOTDRecord {
 
 interface WeatherData {
   location: string;
+  temperatureUnit?: string; // e.g., "°F" or "°C"
   current: {
     temperature: number;
     humidity: number;
@@ -1102,7 +1103,7 @@ export default function OOTDDiary() {
                         {getWeatherIcon(weather.current.weatherCode)}
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-semibold">
-                            {Math.round(weather.current.temperature)}° / {Math.round(weather.daily.temperatureMin)}°
+                            {Math.round(weather.current.temperature)}{weather.temperatureUnit || '°'} / {Math.round(weather.daily.temperatureMin)}{weather.temperatureUnit || '°'}
                           </span>
                           <span className={`${getUVColor(weather.current.uvIndex)}`}>
                             UV {weather.current.uvIndex.toFixed(1)}

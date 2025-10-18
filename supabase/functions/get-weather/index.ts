@@ -15,19 +15,9 @@ serve(async (req) => {
     
     console.log('Getting weather for coordinates:', { lat, lng });
 
-    // Using Open-Meteo API (free, no API key required)
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,uv_index&daily=temperature_2m_max,temperature_2m_min,uv_index_max&temperature_unit=fahrenheit&timezone=auto`;
-    
-    const weatherResponse = await fetch(weatherUrl);
-    
-    if (!weatherResponse.ok) {
-      throw new Error('Failed to fetch weather data');
-    }
-
-    const weatherData = await weatherResponse.json();
-    
     // Get location name using free BigDataCloud reverse geocoding API (no API key required)
     let locationName = 'Unknown Location';
+    let countryCode = '';
     
     try {
       const geocodeUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
@@ -39,10 +29,10 @@ serve(async (req) => {
         
         // Build location name from city and country
         const city = geocodeData.city || geocodeData.locality || geocodeData.principalSubdivision;
-        const country = geocodeData.countryCode;
+        countryCode = geocodeData.countryCode || '';
         
-        if (city && country) {
-          locationName = `${city}, ${country}`;
+        if (city && countryCode) {
+          locationName = `${city}, ${countryCode}`;
         } else if (city) {
           locationName = city;
         } else if (geocodeData.countryName) {
@@ -53,6 +43,25 @@ serve(async (req) => {
       console.error('Geocoding error (non-fatal):', geocodeError);
       // Continue with Unknown Location if geocoding fails
     }
+
+    // Determine temperature unit based on country
+    // Only US, Liberia, Myanmar, and a few territories use Fahrenheit
+    const usesFahrenheit = ['US', 'LR', 'MM', 'PR', 'VI', 'GU', 'AS', 'MP'].includes(countryCode);
+    const tempUnit = usesFahrenheit ? 'fahrenheit' : 'celsius';
+    const unitSymbol = usesFahrenheit ? '°F' : '°C';
+
+    console.log(`Using ${tempUnit} for country ${countryCode}`);
+
+    // Using Open-Meteo API (free, no API key required)
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,uv_index&daily=temperature_2m_max,temperature_2m_min,uv_index_max&temperature_unit=${tempUnit}&timezone=auto`;
+    
+    const weatherResponse = await fetch(weatherUrl);
+    
+    if (!weatherResponse.ok) {
+      throw new Error('Failed to fetch weather data');
+    }
+
+    const weatherData = await weatherResponse.json();
 
     // Map weather codes to descriptions
     const getWeatherDescription = (code: number): string => {
@@ -87,6 +96,7 @@ serve(async (req) => {
 
     const result = {
       location: locationName,
+      temperatureUnit: unitSymbol,
       current: {
         temperature: Math.round(weatherData.current.temperature_2m),
         humidity: weatherData.current.relative_humidity_2m,
