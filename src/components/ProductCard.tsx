@@ -104,7 +104,7 @@ export default function ProductCard({
           className="w-full mt-4 font-semibold"
           size="lg"
         >
-          {selected ? "Selected ✓" : "Add to Bag"}
+          {selected ? "Selected ✓" : "Add to Closet"}
         </Button>
       </CardContent>
     </Card>

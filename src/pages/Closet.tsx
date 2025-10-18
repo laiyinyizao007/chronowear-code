@@ -814,31 +814,51 @@ export default function Closet() {
                         color={product.color}
                         availability={product.availability}
                         selected={selectedProduct === index}
-                        onSelect={() => setSelectedProduct(index)}
+                        onSelect={async () => {
+                          setSelectedProduct(index);
+                          // Save immediately when clicked
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) throw new Error("Not authenticated");
+
+                            const selectedProductData = productSuggestions[index];
+                            
+                            // Get washing frequency and care instructions recommendation
+                            let washingFrequency = null;
+                            let careInstructions = null;
+                            if (selectedProductData.material) {
+                              const recommendation = await getWashingRecommendation(selectedProductData.material, selectedProductData.type || "Top");
+                              washingFrequency = recommendation.frequency;
+                              careInstructions = recommendation.care_instructions;
+                            }
+
+                            const { error } = await supabase.from("garments").insert({
+                              user_id: user.id,
+                              image_url: uploadedImageUrl,
+                              type: selectedProductData.type || "Top",
+                              color: selectedProductData.color || "",
+                              season: "All-Season",
+                              brand: selectedProductData.brand,
+                              material: selectedProductData.material || "",
+                              washing_frequency: washingFrequency,
+                              care_instructions: careInstructions,
+                              usage_count: 0,
+                            });
+
+                            if (error) throw error;
+
+                            toast.success("Garment added to closet!");
+                            setIsAddDialogOpen(false);
+                            setProductSuggestions([]);
+                            setSelectedProduct(null);
+                            setUploadedImageUrl("");
+                            loadGarments();
+                          } catch (error: any) {
+                            toast.error("Failed to save garment");
+                          }
+                        }}
                       />
                     ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setProductSuggestions([]);
-                        setSelectedProduct(null);
-                        setUploadedImageUrl("");
-                        setShowManualForm(false);
-                      }}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={handleSaveSelectedProduct}
-                      disabled={selectedProduct === null}
-                      className="flex-1"
-                    >
-                      Save to Closet
-                    </Button>
                   </div>
                 </div>
               )}
