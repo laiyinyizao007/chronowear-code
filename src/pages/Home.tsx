@@ -51,84 +51,86 @@ export default function Home() {
   }, []);
 
   const loadWeatherAndRecommendation = async () => {
+    setLoading(true);
+    setLoadError(false);
+
     try {
-      setLoading(true);
-      setLoadError(false);
-      
-      // Get user's location
+      // 1) Get user's location
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 300000 // Cache for 5 minutes
+          maximumAge: 300000, // Cache for 5 minutes
         });
       });
 
       const { latitude, longitude } = position.coords;
 
-      // Fetch weather data
+      // 2) Fetch weather data (critical)
       const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
         'get-weather',
-        {
-          body: { lat: latitude, lng: longitude }
-        }
+        { body: { lat: latitude, lng: longitude } }
       );
-
       if (weatherError) throw weatherError;
       setWeather(weatherData);
 
-      // Fetch user's garments
+      // 3) Fetch user's garments (non-critical)
       const { data: garments } = await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url');
 
-      // Generate AI recommendation
-      setRecommendationLoading(true);
-      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
-        'generate-outfit-recommendation',
-        {
-          body: {
-            temperature: weatherData.current.temperature,
-            weatherDescription: weatherData.current.weatherDescription,
-            uvIndex: weatherData.current.uvIndex,
-            garments: garments || []
+      // 4) Generate AI recommendation (non-critical). If it fails, do NOT blank the page.
+      try {
+        setRecommendationLoading(true);
+        const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+          'generate-outfit-recommendation',
+          {
+            body: {
+              temperature: weatherData.current.temperature,
+              weatherDescription: weatherData.current.weatherDescription,
+              uvIndex: weatherData.current.uvIndex,
+              garments: garments || [],
+            },
+          }
+        );
+
+        if (recError) {
+          console.error('Recommendation error:', recError);
+          toast({
+            title: 'AI 服务暂时不可用',
+            description: '穿搭推荐稍后再试。',
+            variant: 'destructive',
+          });
+        } else {
+          setOutfits(recommendationData.outfits || []);
+          if (recommendationData.outfits?.[0]) {
+            generateOutfitImage(recommendationData.outfits[0]);
           }
         }
-      );
-
-      if (recError) {
-        console.error('Recommendation error:', recError);
-        throw new Error('Unable to generate outfit recommendations at this time');
-      }
-      setOutfits(recommendationData.outfits || []);
-
-      // Generate outfit image for the first outfit
-      if (recommendationData.outfits?.[0]) {
-        generateOutfitImage(recommendationData.outfits[0]);
+      } finally {
+        setRecommendationLoading(false);
       }
 
-      // Load trend outfits
+      // 5) Load trend outfits (already handles its own errors)
       loadTrendOutfits(weatherData, garments || []);
-
     } catch (error: any) {
-      console.error('Error loading data:', error);
+      console.error('Error loading critical data:', error);
       setLoadError(true);
-      if (error.code === 1) {
+      if (error?.code === 1) {
         toast({
-          title: "Location Access Denied",
-          description: "Please enable location access to get weather and outfit recommendations.",
-          variant: "destructive",
+          title: '需要定位权限',
+          description: '请允许定位以获取天气和穿搭推荐。',
+          variant: 'destructive',
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to load data. Please try again.",
-          variant: "destructive",
+          title: '加载失败',
+          description: '无法加载定位或天气数据，请重试。',
+          variant: 'destructive',
         });
       }
     } finally {
       setLoading(false);
-      setRecommendationLoading(false);
     }
   };
 
