@@ -101,12 +101,15 @@ CRITICAL:
 3. Include the "garmentId" field ONLY when "fromCloset" is true
 4. Suggest a hairstyle that complements the outfit's style and is weather-appropriate (e.g., updos for windy weather, protective styles for rain)`;
 
-    // Use Lovable AI instead of Hugging Face
+    // Use Lovable AI instead of requiring external API keys
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY is not configured');
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    console.log('Calling Lovable AI with model: google/gemini-2.5-flash');
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -120,16 +123,19 @@ CRITICAL:
           { role: "user", content: userPrompt }
         ],
         max_completion_tokens: 4000,
+        temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Hugging Face API error:", response.status, errorText);
-      throw new Error("AI API error");
+      console.error("Lovable AI API error:", response.status, errorText);
+      throw new Error(`Lovable AI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Lovable AI response received');
+    
     let recommendation = data.choices?.[0]?.message?.content;
 
     if (!recommendation) {

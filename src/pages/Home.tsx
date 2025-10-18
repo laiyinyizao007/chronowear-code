@@ -53,12 +53,32 @@ export default function Home() {
 
   useEffect(() => {
     loadWeatherAndRecommendation();
+    loadTrendOutfits();
   }, []);
 
   const loadWeatherAndRecommendation = async () => {
     try {
       setLoading(true);
       setLoadError(false);
+
+      // Check for cached outfit from today
+      const today = new Date().toISOString().split('T')[0];
+      const cachedKey = `todayPick_${today}`;
+      const cached = localStorage.getItem(cachedKey);
+      
+      if (cached) {
+        try {
+          const parsedCache = JSON.parse(cached);
+          setWeather(parsedCache.weather);
+          setOutfits(parsedCache.outfits);
+          setLoading(false);
+          console.log('Loaded today\'s pick from cache');
+          return;
+        } catch (e) {
+          console.warn('Failed to parse cached outfit, regenerating');
+          localStorage.removeItem(cachedKey);
+        }
+      }
       
       // Get user's location with graceful fallback
       let latitude = 35.6764225; // Default: Tokyo
@@ -75,10 +95,6 @@ export default function Home() {
         longitude = position.coords.longitude;
       } catch (geoError: any) {
         console.warn('Geolocation failed, using default coords:', geoError);
-        toast({
-          title: "Location Unavailable",
-          description: "Using a default city to load weather and recommendations.",
-        });
       }
 
       // Fetch weather data
@@ -113,15 +129,20 @@ export default function Home() {
         );
 
         if (recError) throw recError;
-        setOutfits(recommendationData.outfits || []);
+        
+        const outfitsData = recommendationData.outfits || [];
+        setOutfits(outfitsData);
+
+        // Cache the result for today
+        localStorage.setItem(cachedKey, JSON.stringify({
+          weather: weatherData,
+          outfits: outfitsData,
+        }));
 
         // Generate outfit image for the first outfit
-        if (recommendationData.outfits?.[0]) {
-          generateOutfitImage(recommendationData.outfits[0]);
+        if (outfitsData[0]) {
+          generateOutfitImage(outfitsData[0]);
         }
-
-        // Load trend outfits
-        loadTrendOutfits(weatherData, garments || []);
       } catch (aiError) {
         console.error('AI service unavailable:', aiError);
         // Use complete mock data when AI is unavailable and immediately enrich with images
@@ -150,8 +171,13 @@ export default function Home() {
         );
         
         setOutfits(enrichedOutfits);
-        // Ensure Fashion Trends still renders with mock data when AI fails
-        await loadTrendOutfits(undefined, garments || []);
+        
+        // Cache the fallback result for today
+        localStorage.setItem(cachedKey, JSON.stringify({
+          weather: weatherData,
+          outfits: enrichedOutfits,
+        }));
+        
         toast({
           title: "AI Service Unavailable",
           description: "Showing basic recommendations. AI features are temporarily disabled.",
@@ -680,7 +706,18 @@ export default function Home() {
             <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-accent" />
           </div>
         ) : outfits.length > 0 ? (
-          <Card className="shadow-medium overflow-hidden">
+          <Card 
+            className="shadow-medium overflow-hidden cursor-pointer transition-all hover:shadow-lg"
+            onClick={async () => {
+              setSelectedOutfit(outfits[0]);
+              setShowOutfitDialog(true);
+              const { data: garments } = await supabase
+                .from('garments')
+                .select('id, type, color, material, brand, image_url');
+              const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+              setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+            }}
+          >
             <CardContent className="p-4 sm:p-6">
               {/* Mobile Layout */}
               <div className="md:hidden">
@@ -716,12 +753,12 @@ export default function Home() {
                               <Shirt className="w-4 h-4 text-muted-foreground" />
                             </div>
                           )}
-                          <Badge 
-                            variant={item.fromCloset ? "default" : "secondary"} 
-                            className="absolute bottom-0.5 right-0.5 text-[8px] px-1 py-0 h-4"
-                          >
-                            {item.fromCloset ? "IN" : "BUY"}
-                          </Badge>
+                          <Heart 
+                            className={`absolute top-1 right-1 w-3 h-3 ${
+                              item.fromCloset ? 'fill-red-500 text-red-500' : 'text-white/80'
+                            }`}
+                            style={{ opacity: item.fromCloset ? 1 : 0.4 }}
+                          />
                         </div>
                       ))}
                     </div>
@@ -766,39 +803,10 @@ export default function Home() {
 
                 {/* Action buttons for mobile */}
                 <div className="flex gap-2 mt-3">
-                  <Button 
-                    className="flex-1" 
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                         console.log("View Details clicked, testing search-product-info...");
-                         
-                         // Test search-product-info function
-                         try {
-                           const testResult = await supabase.functions.invoke('search-product-info', {
-                             body: { brand: "Zara", model: "Professional" }
-                           });
-                           console.log("Test search-product-info result:", testResult);
-                         } catch (error) {
-                           console.error("Test search-product-info error:", error);
-                         }
-                         
-                         setSelectedOutfit(outfits[0]);
-                         setShowOutfitDialog(true);
-                         const { data: garments } = await supabase
-                           .from('garments')
-                           .select('id, type, color, material, brand, image_url');
-                         console.log("Before enrichItemsWithImages, items:", outfits[0].items);
-                         const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
-                         console.log("After enrichItemsWithImages, items:", updatedItems);
-                      setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
-                    }}
-                  >
-                    View
-                  </Button>
                   <Button
                     variant="default"
                     size="sm"
+                    className="flex-1"
                     onClick={async () => {
                         try {
                           const { data: { user } } = await supabase.auth.getUser();
@@ -1205,14 +1213,20 @@ export default function Home() {
                     );
                   })()}
                   
-                  {/* Item From Closet Badge */}
-                  {selectedOutfit.items[selectedOutfit.mainDisplayIndex ?? 0]?.fromCloset && (
-                    <div className="absolute top-4 right-4">
-                      <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
-                        From Closet
-                      </Badge>
-                    </div>
-                  )}
+                  {/* Item From Closet Heart Icon */}
+                  <div className="absolute top-4 right-4">
+                    <Heart 
+                      className={`w-6 h-6 ${
+                        selectedOutfit.items[selectedOutfit.mainDisplayIndex ?? 0]?.fromCloset 
+                          ? 'fill-red-500 text-red-500' 
+                          : 'text-white/90'
+                      }`}
+                      style={{ 
+                        opacity: selectedOutfit.items[selectedOutfit.mainDisplayIndex ?? 0]?.fromCloset ? 1 : 0.4,
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Bottom: Item Info & Actions */}
@@ -1377,13 +1391,20 @@ export default function Home() {
                     );
                   })()}
                   
-                  {selectedTrendOutfit.items[selectedTrendOutfit.mainDisplayIndex ?? 0]?.fromCloset && (
-                    <div className="absolute top-4 right-4">
-                      <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
-                        From Closet
-                      </Badge>
-                    </div>
-                  )}
+                  {/* Item From Closet Heart Icon */}
+                  <div className="absolute top-4 right-4">
+                    <Heart 
+                      className={`w-6 h-6 ${
+                        selectedTrendOutfit.items[selectedTrendOutfit.mainDisplayIndex ?? 0]?.fromCloset 
+                          ? 'fill-red-500 text-red-500' 
+                          : 'text-white/90'
+                      }`}
+                      style={{ 
+                        opacity: selectedTrendOutfit.items[selectedTrendOutfit.mainDisplayIndex ?? 0]?.fromCloset ? 1 : 0.4,
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Bottom: Item Info & Actions */}
