@@ -245,10 +245,15 @@ export default function Home() {
           }
         }
         
-        toast({
-          title: "AI Service Unavailable",
-          description: "Showing basic recommendations. AI features are temporarily disabled.",
-        });
+        const msg = (aiError as any)?.message || JSON.stringify(aiError || {});
+        const isCreditOrRateLimit = /402|payment_required|Not enough credits|429|rate limit/i.test(msg);
+        if (!isCreditOrRateLimit) {
+          toast({
+            title: "AI Service Unavailable",
+            description: "Showing basic recommendations. AI features are temporarily disabled.",
+          });
+        }
+
       }
 
     } catch (error: any) {
