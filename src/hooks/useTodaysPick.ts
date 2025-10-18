@@ -82,9 +82,8 @@ export const useTodaysPick = () => {
       }
 
       // Generate new recommendation
-      if (forceRefresh) {
-        await deleteTodaysPick(user.id, today);
-      }
+      // Delete existing record for today before creating new one
+      await deleteTodaysPick(user.id, today);
 
       const { data: garments } = await supabase
         .from("garments")
