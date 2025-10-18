@@ -587,8 +587,8 @@ export default function Home() {
             Today's Pick
           </h2>
           {outfits.length > 0 && (
-            <Button variant="outline" size="sm" onClick={loadMoreOutfits} disabled={moreOutfitsLoading}>
-              {moreOutfitsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Refresh"}
+            <Button variant="ghost" size="icon" onClick={loadMoreOutfits} disabled={moreOutfitsLoading}>
+              {moreOutfitsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </Button>
           )}
         </div>
@@ -665,9 +665,12 @@ export default function Home() {
                               {item.color}
                             </p>
                           </div>
-                          {item.fromCloset && (
-                            <Badge variant="secondary" className="text-[9px] px-1 py-0">IN</Badge>
-                          )}
+                          <Badge 
+                            variant={item.fromCloset ? "default" : "secondary"} 
+                            className="text-[9px] px-1 py-0"
+                          >
+                            {item.fromCloset ? "IN" : "BUY"}
+                          </Badge>
                         </div>
                       ))}
                     </div>
@@ -969,18 +972,31 @@ export default function Home() {
                             {item.color} {item.brand && `• ${item.brand}`}
                           </p>
                         </div>
-                        {item.fromCloset && (
-                          <Badge variant="secondary" className="text-xs">CLOSET</Badge>
-                        )}
+                        <Badge 
+                          variant={item.fromCloset ? "default" : "secondary"} 
+                          className="text-xs"
+                        >
+                          {item.fromCloset ? "IN CLOSET" : "BUY"}
+                        </Badge>
                       </div>
                     ))}
                   </div>
                   {outfits[0].hairstyle && (
                     <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <p className="text-sm font-medium mb-1">Hairstyle Suggestion</p>
-                      <p className="text-xs text-muted-foreground">{outfits[0].hairstyle}</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-accent" />
+                        <p className="text-sm font-medium">Hairstyle Suggestion</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{outfits[0].hairstyle}</p>
+                      <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
+                        <img 
+                          src={`https://images.unsplash.com/photo-1560869713-7d0a29430803?w=400&h=300&fit=crop`}
+                          alt="Hairstyle suggestion"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </div>
-                    )}
+                  )}
                   </div>
                 </div>
               </div>
