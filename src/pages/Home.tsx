@@ -170,41 +170,40 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
 
-      const { data: recommendationData, error } = await supabase.functions.invoke(
-        'generate-outfit-recommendation',
+      // Use mock trend data when AI is unavailable
+      const mockTrends = [
         {
-          body: {
-            temperature: currentWeather.current.temperature,
-            weatherDescription: currentWeather.current.weatherDescription,
-            uvIndex: currentWeather.current.uvIndex,
-            garments: currentGarments
-          }
+          title: "Classic Chic",
+          summary: "Timeless elegance",
+          hairstyle: "Natural",
+          items: [
+            { type: "Top", name: "White Shirt", brand: "Classic", model: "Basic", fromCloset: false },
+            { type: "Bottom", name: "Black Pants", brand: "Essential", model: "Standard", fromCloset: false }
+          ]
+        },
+        {
+          title: "Casual Street",
+          summary: "Urban comfort",
+          hairstyle: "Casual",
+          items: [
+            { type: "Top", name: "Hoodie", brand: "Street", model: "Urban", fromCloset: false },
+            { type: "Bottom", name: "Jeans", brand: "Denim", model: "Classic", fromCloset: false }
+          ]
+        },
+        {
+          title: "Smart Casual",
+          summary: "Professional yet relaxed",
+          hairstyle: "Neat",
+          items: [
+            { type: "Top", name: "Polo Shirt", brand: "Smart", model: "Professional", fromCloset: false },
+            { type: "Bottom", name: "Chinos", brand: "Business", model: "Casual", fromCloset: false }
+          ]
         }
-      );
+      ];
 
-      if (error) throw error;
-      
-      // Generate images for trend outfits
-      const outfitsWithImages = await Promise.all(
-        (recommendationData.outfits || []).slice(0, 5).map(async (outfit: any) => {
-          try {
-            const { data } = await supabase.functions.invoke('generate-outfit-image', {
-              body: {
-                items: outfit.items || [],
-                weather: currentWeather.current,
-                hairstyle: outfit.hairstyle
-              }
-            });
-            return { ...outfit, imageUrl: data?.imageUrl };
-          } catch {
-            return outfit;
-          }
-        })
-      );
-      
-      setTrendOutfits(outfitsWithImages);
+      setTrendOutfits(mockTrends);
     } catch (error) {
-      console.error('AI service unavailable for trends:', error);
+      console.error('Error loading trend outfits:', error);
       setTrendOutfits([]);
     } finally {
       setTrendLoading(false);
