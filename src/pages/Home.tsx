@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -626,6 +626,60 @@ export default function Home() {
                       View Details
                     </Button>
                     <Button
+                      variant="default"
+                      onClick={async () => {
+                        try {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (!user) throw new Error("Not authenticated");
+
+                          // Get garment IDs from outfit items that are in closet
+                          const { data: garments } = await supabase
+                            .from('garments')
+                            .select('id, type, brand')
+                            .eq('user_id', user.id);
+
+                          const garmentIds = outfits[0].items
+                            ?.filter((item: any) => item.fromCloset)
+                            .map((item: any) => {
+                              const match = garments?.find(g => 
+                                g.type?.toLowerCase() === item.type?.toLowerCase() &&
+                                g.brand?.toLowerCase() === item.brand?.toLowerCase()
+                              );
+                              return match?.id;
+                            })
+                            .filter(Boolean) || [];
+
+                          const { error } = await supabase
+                            .from('ootd_records')
+                            .insert({
+                              user_id: user.id,
+                              date: new Date().toISOString().split('T')[0],
+                              photo_url: outfitImageUrl || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80',
+                              garment_ids: garmentIds,
+                              weather: weather?.current.weatherDescription || '',
+                              location: weather?.location || '',
+                              notes: `${outfits[0].title} - ${outfits[0].summary}`,
+                              products: outfits[0].items || []
+                            });
+
+                          if (error) throw error;
+                          toast({
+                            title: "Added to OOTD!",
+                            description: "Today's outfit has been saved to your diary.",
+                          });
+                        } catch (error: any) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to add to OOTD",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Add to OOTD
+                    </Button>
+                    <Button
                       size="icon"
                       variant="outline"
                       onClick={async () => {
@@ -638,7 +692,7 @@ export default function Home() {
                             .insert({
                               user_id: user.id,
                               title: outfits[0].title,
-                              items: JSON.stringify(outfits[0].items || []),
+                              items: outfits[0].items || [],
                               hairstyle: outfits[0].hairstyle,
                               summary: outfits[0].summary,
                               image_url: outfitImageUrl
