@@ -409,7 +409,7 @@ export default function Stylist() {
 
             {/* Selection Drawer */}
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <SheetContent side="bottom" className="h-[50vh] bg-background/95 backdrop-blur-sm z-50">
+              <SheetContent side="bottom" className="h-[45vh] bg-background border-t z-50">
                 <SheetHeader>
                   <SheetTitle>
                     Select {categories.find(c => c.id === selectedCategory)?.label}
@@ -464,7 +464,7 @@ export default function Stylist() {
 
             {/* Swap Item Drawer */}
             <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
-              <SheetContent side="bottom" className="h-[50vh] bg-background/95 backdrop-blur-sm z-50">
+              <SheetContent side="bottom" className="h-[45vh] bg-background border-t z-50">
                 <SheetHeader>
                   <SheetTitle>
                     Replace with Your {categories.find(c => c.id === swapCategory)?.label}
