@@ -36,54 +36,55 @@ export const useTodaysPick = () => {
 
       const today = new Date().toISOString().split("T")[0];
 
-      // Check for existing pick unless force refresh
-      if (!forceRefresh) {
-        const { data: existingPick } = await supabase
-          .from("todays_picks")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("date", today)
-          .maybeSingle();
+      // First check if today's pick exists
+      const { data: existingPick } = await supabase
+        .from("todays_picks")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("date", today)
+        .maybeSingle();
 
-        if (existingPick) {
-          // Check if location changed significantly
-          const currentLocation = await getCurrentLocation();
-          const savedWeather = existingPick.weather as any;
-          
-          const needsRefresh =
-            !savedWeather?.latitude ||
-            !savedWeather?.longitude ||
-            calculateDistance(
-              savedWeather.latitude,
-              savedWeather.longitude,
-              currentLocation.latitude,
-              currentLocation.longitude
-            ) > 10;
+      // If exists and not force refresh, check if we can use cache
+      if (existingPick && !forceRefresh) {
+        const currentLocation = await getCurrentLocation();
+        const savedWeather = existingPick.weather as any;
+        
+        const needsRefresh =
+          !savedWeather?.latitude ||
+          !savedWeather?.longitude ||
+          calculateDistance(
+            savedWeather.latitude,
+            savedWeather.longitude,
+            currentLocation.latitude,
+            currentLocation.longitude
+          ) > 10;
 
-          if (!needsRefresh) {
-            const pick = existingPick as any as TodaysPick;
-            setTodaysPick(pick);
-            setOutfit({
-              title: existingPick.title,
-              summary: existingPick.summary,
-              hairstyle: existingPick.hairstyle,
-              items: existingPick.items as any,
-            });
+        if (!needsRefresh) {
+          // Use cached pick - no need to regenerate
+          const pick = existingPick as any as TodaysPick;
+          setTodaysPick(pick);
+          setOutfit({
+            title: existingPick.title,
+            summary: existingPick.summary,
+            hairstyle: existingPick.hairstyle,
+            items: existingPick.items as any,
+          });
 
-            // Set image with fallback
-            const itemsArr = (existingPick.items as any[]) || [];
-            const fallbackHero =
-              itemsArr.find((it: any) => it?.imageUrl)?.imageUrl || "";
-            setImageUrl(existingPick.image_url || fallbackHero);
+          // Set image with fallback
+          const itemsArr = (existingPick.items as any[]) || [];
+          const fallbackHero =
+            itemsArr.find((it: any) => it?.imageUrl)?.imageUrl || "";
+          setImageUrl(existingPick.image_url || fallbackHero);
 
-            return pick;
-          }
+          return pick;
         }
       }
 
-      // Generate new recommendation
-      // Delete existing record for today before creating new one
-      await deleteTodaysPick(user.id, today);
+      // Need to generate new recommendation
+      // Delete existing record if present to avoid duplicate key error
+      if (existingPick) {
+        await deleteTodaysPick(user.id, today);
+      }
 
       const { data: garments } = await supabase
         .from("garments")
