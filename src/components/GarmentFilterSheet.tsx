@@ -27,6 +27,7 @@ interface FilterState {
   colors: string[];
   brands: string[];
   seasons: string[];
+  liked: boolean;
 }
 
 interface GarmentFilterSheetProps {
@@ -50,6 +51,7 @@ export default function GarmentFilterSheet({
     color: false,
     brand: false,
     season: false,
+    liked: false,
   });
 
   // Sync with parent filters
@@ -61,9 +63,9 @@ export default function GarmentFilterSheet({
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleCheckboxChange = (category: keyof FilterState, value: string) => {
+  const handleCheckboxChange = (category: 'types' | 'colors' | 'brands' | 'seasons', value: string) => {
     setSelectedFilters(prev => {
-      const current = prev[category];
+      const current = prev[category] as string[];
       const updated = current.includes(value)
         ? current.filter(item => item !== value)
         : [...current, value];
@@ -74,12 +76,19 @@ export default function GarmentFilterSheet({
     });
   };
 
+  const handleLikedChange = () => {
+    const newFilters = { ...selectedFilters, liked: !selectedFilters.liked };
+    setSelectedFilters(newFilters);
+    onApplyFilters(newFilters);
+  };
+
   const handleClear = () => {
     const clearedFilters = {
       types: [],
       colors: [],
       brands: [],
       seasons: [],
+      liked: false,
     };
     setSelectedFilters(clearedFilters);
     onApplyFilters(clearedFilters);
@@ -100,6 +109,24 @@ export default function GarmentFilterSheet({
 
           <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-4">
+              {/* FAVORITES FILTER */}
+              <div className="py-3 px-2">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="favorites"
+                    checked={selectedFilters.liked}
+                    onCheckedChange={handleLikedChange}
+                    className="border-muted-foreground/30"
+                  />
+                  <Label
+                    htmlFor="favorites"
+                    className="text-sm font-medium tracking-wider cursor-pointer flex-1"
+                  >
+                    FAVORITES ONLY
+                  </Label>
+                </div>
+              </div>
+
               {/* TYPE FILTER */}
               <Collapsible open={openSections.type} onOpenChange={() => toggleSection('type')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full py-3 hover:bg-muted/50 px-2 rounded-sm transition-colors">

@@ -74,11 +74,13 @@ export default function Closet() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"newest" | "frequency">("newest");
   const [filters, setFilters] = useState({
     types: [] as string[],
     colors: [] as string[],
     brands: [] as string[],
     seasons: [] as string[],
+    liked: false,
   });
   const [newGarment, setNewGarment] = useState({
     image_url: "",
@@ -112,25 +114,34 @@ export default function Closet() {
     };
   }, [garments]);
 
-  // Apply filters to garments
+  // Apply filters and sorting to garments
   const filteredGarments = useMemo(() => {
-    return garments.filter(garment => {
+    let filtered = garments.filter(garment => {
       if (filters.types.length > 0 && !filters.types.includes(garment.type)) return false;
       if (filters.colors.length > 0 && !filters.colors.includes(garment.color)) return false;
       if (filters.brands.length > 0 && !filters.brands.includes(garment.brand)) return false;
       if (filters.seasons.length > 0 && !filters.seasons.includes(garment.season)) return false;
+      if (filters.liked && !garment.liked) return false;
       return true;
     });
-  }, [garments, filters]);
+
+    // Apply sorting
+    if (sortBy === "frequency") {
+      filtered = [...filtered].sort((a, b) => b.usage_count - a.usage_count);
+    }
+
+    return filtered;
+  }, [garments, filters, sortBy]);
 
   // Get active filter tags
   const activeFilterTags = useMemo(() => {
-    const tags: Array<{ category: keyof typeof filters; value: string; label: string }> = [];
+    const tags: Array<{ category: keyof typeof filters; value: string | boolean; label: string }> = [];
     
     filters.types.forEach(type => tags.push({ category: 'types', value: type, label: type }));
     filters.colors.forEach(color => tags.push({ category: 'colors', value: color, label: color }));
     filters.brands.forEach(brand => tags.push({ category: 'brands', value: brand, label: brand }));
     filters.seasons.forEach(season => tags.push({ category: 'seasons', value: season, label: season }));
+    if (filters.liked) tags.push({ category: 'liked', value: true, label: 'Favorites' });
     
     return tags;
   }, [filters]);
@@ -138,11 +149,15 @@ export default function Closet() {
   const hasActiveFilters = activeFilterTags.length > 0;
 
   // Remove individual filter tag
-  const removeFilterTag = (category: keyof typeof filters, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [category]: prev[category].filter((item: string) => item !== value)
-    }));
+  const removeFilterTag = (category: keyof typeof filters, value: string | boolean) => {
+    if (category === 'liked') {
+      setFilters(prev => ({ ...prev, liked: false }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [category]: prev[category].filter((item: string) => item !== value)
+      }));
+    }
   };
 
   useEffect(() => {
@@ -461,12 +476,21 @@ export default function Closet() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">My Closet</h1>
+            <h1 className="text-3xl font-bold">Closet</h1>
             <p className="text-muted-foreground">
               {filteredGarments.length} {filteredGarments.length === garments.length ? 'items' : `of ${garments.length} items`}
             </p>
           </div>
           <div className="flex gap-2">
+            <Select value={sortBy} onValueChange={(value: "newest" | "frequency") => setSortBy(value)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="frequency">Most Worn</SelectItem>
+              </SelectContent>
+            </Select>
             <Button 
               variant={hasActiveFilters ? "default" : "outline"}
               size="icon"
