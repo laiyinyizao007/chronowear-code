@@ -1028,30 +1028,10 @@ export default function OOTDDiary() {
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {/* Navigation Controls - Mobile Optimized */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            {/* View Mode Toggle - Calendar Icons */}
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'day' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => setViewMode('day')}
-                className="h-10 w-10"
-              >
-                <CalendarDays className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'week' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => setViewMode('week')}
-                className="h-10 w-10"
-              >
-                <CalendarIcon className="w-4 h-4" />
-              </Button>
-            </div>
-
+          {/* Navigation Controls - Compact */}
+          <div className="flex items-center justify-between gap-3">
             {/* Plan Button - Only show in week view */}
-            {viewMode === 'week' && (
+            {viewMode === 'week' ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -1061,10 +1041,12 @@ export default function OOTDDiary() {
                 <Sparkles className="w-4 h-4" />
                 AI Plan
               </Button>
+            ) : (
+              <div className="w-20" /> 
             )}
 
-            {/* Date Navigation */}
-            <div className="flex items-center justify-center gap-2">
+            {/* Date Navigation with View Toggle */}
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -1076,6 +1058,7 @@ export default function OOTDDiary() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
+              
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2 min-w-[140px]">
@@ -1097,6 +1080,7 @@ export default function OOTDDiary() {
                   />
                 </PopoverContent>
               </Popover>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -1108,7 +1092,28 @@ export default function OOTDDiary() {
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
+
+              {/* Compact View Toggle - Single button with badge */}
+              <div className="ml-2 relative">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setViewMode(viewMode === 'day' ? 'week' : 'day')}
+                  className="h-10 w-10 relative"
+                >
+                  {viewMode === 'day' ? (
+                    <CalendarDays className="w-4 h-4" />
+                  ) : (
+                    <CalendarIcon className="w-4 h-4" />
+                  )}
+                </Button>
+                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                  {viewMode === 'day' ? 'D' : 'W'}
+                </div>
+              </div>
             </div>
+
+            <div className="w-20" />
           </div>
 
           {/* Month Display removed from day view */}
