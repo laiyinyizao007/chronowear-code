@@ -3,8 +3,10 @@ import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, Camera, Upload, Sparkles } from "lucide-react";
+import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, Camera, Upload, Sparkles, MessageSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import AIAssistant from "./AIAssistant";
 
 interface WeatherData {
   location: string;
@@ -104,6 +106,26 @@ export default function Layout() {
                 </div>
               </div>
             )}
+            
+            {/* AI Assistant */}
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="hover:bg-muted/30 h-8 w-8"
+                  aria-label="AI Assistant"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="font-display font-light tracking-[0.15em] uppercase text-sm">AI Fashion Assistant</DialogTitle>
+                </DialogHeader>
+                <AIAssistant />
+              </DialogContent>
+            </Dialog>
             
             {/* Settings */}
             <Button 
