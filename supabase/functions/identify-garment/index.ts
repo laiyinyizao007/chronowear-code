@@ -30,7 +30,8 @@ serve(async (req) => {
     if (!serpResponse.ok) {
       const errorText = await serpResponse.text();
       console.error('SerpAPI error:', serpResponse.status, errorText);
-      throw new Error(`SerpAPI error: ${serpResponse.status}`);
+      // Fallback to direct Gemini vision analysis when SerpAPI fails (e.g., 429 rate limit)
+      return await directAIAnalysis(imageUrl, GEMINI_API_KEY, corsHeaders);
     }
 
     const serpData = await serpResponse.json();
@@ -168,11 +169,26 @@ async function directAIAnalysis(imageUrl: string, apiKey: string, corsHeaders: R
     }),
   });
 
+  if (!response.ok) {
+    const t = await response.text();
+    console.error('Gemini vision API error:', response.status, t);
+    return new Response(
+      JSON.stringify({ error: 'Gemini vision analysis failed', status: response.status }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   const data = await response.json();
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  const results = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  let results: any;
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    results = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
+  } catch (e) {
+    console.error('Failed to parse Gemini vision response as JSON:', content);
+    results = { garments: [] };
+  }
   
   return new Response(
     JSON.stringify(results),
