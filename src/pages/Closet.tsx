@@ -942,6 +942,15 @@ export default function Closet() {
                     <CarouselPrevious className="hidden md:flex" />
                     <CarouselNext className="hidden md:flex" />
                   </Carousel>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowManualForm(true)}
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Enter Details Manually
+                  </Button>
                 </div>
               )}
               
