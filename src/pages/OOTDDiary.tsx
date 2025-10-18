@@ -375,11 +375,8 @@ export default function OOTDDiary() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">OOTD Diary</h1>
-          <p className="text-sm text-muted-foreground">{records.length} outfits logged</p>
-        </div>
+      {/* Hidden dialog for Log OOTD functionality - accessible via navigation */}
+      <div className="hidden">
         <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
           setIsAddDialogOpen(open);
           if (!open) {
