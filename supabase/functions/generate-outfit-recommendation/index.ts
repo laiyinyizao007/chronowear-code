@@ -16,9 +16,9 @@ serve(async (req) => {
     
     console.log('Generating outfit recommendation for:', { temperature, weatherDescription, uvIndex });
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // Build garment inventory with IDs for matching
@@ -105,27 +105,38 @@ CRITICAL:
 3. Include the "garmentId" field ONLY when "fromCloset" is true
 4. Suggest a hairstyle that complements the outfit's style and is weather-appropriate (e.g., updos for windy weather, protective styles for rain)`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
+        model: "google/gemini-2.5-flash",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 4000,
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
       }),
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error('OpenAI API error');
+      console.error("AI gateway error:", response.status, errorText);
+      throw new Error("AI gateway error");
     }
 
     const data = await response.json();

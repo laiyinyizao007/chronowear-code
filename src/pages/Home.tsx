@@ -148,7 +148,8 @@ export default function Home() {
         );
         
         setOutfits(enrichedOutfits);
-        setTrendOutfits([]);
+        // Ensure Fashion Trends still renders with mock data when AI fails
+        await loadTrendOutfits(undefined, garments || []);
         toast({
           title: "AI Service Unavailable",
           description: "Showing basic recommendations. AI features are temporarily disabled.",
@@ -499,7 +500,7 @@ export default function Home() {
         ) : trendOutfits.length > 0 ? (
           <Carousel className="w-full">
             <CarouselContent className="-ml-2 md:-ml-4">
-              {trendOutfits.map((outfit, index) => (
+              {trendOutfits.slice(0, 3).map((outfit, index) => (
                 <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                   <Card 
                     className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
@@ -572,6 +573,23 @@ export default function Home() {
                   </Card>
                 </CarouselItem>
               ))}
+
+              {/* Explore More card */}
+              <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <Card 
+                  className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
+                  onClick={() => navigate('/stylist')}
+                  aria-label="Explore more trends"
+                >
+                  <div className="relative aspect-[3/4] bg-muted/60 flex items-center justify-center">
+                    <div className="text-center px-6">
+                      <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-accent" />
+                      <p className="mt-3 font-semibold">Explore more</p>
+                      <p className="text-sm text-muted-foreground">See additional trending looks</p>
+                    </div>
+                  </div>
+                </Card>
+              </CarouselItem>
             </CarouselContent>
             <CarouselPrevious />
             <CarouselNext />
