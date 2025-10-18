@@ -85,6 +85,7 @@ export default function Closet() {
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [identifyingProducts, setIdentifyingProducts] = useState(false);
   const [productSuggestions, setProductSuggestions] = useState<ProductInfo[]>([]);
@@ -900,7 +901,12 @@ export default function Closet() {
                             availability={product.availability}
                             selected={selectedProduct === index}
                             onSelect={async () => {
-                              // Save immediately when clicked
+                              // Prevent duplicate saves
+                              if (isSaving) return;
+                              
+                              setIsSaving(true);
+                              toast.loading("Adding to closet...");
+                              
                               try {
                                 const { data: { user } } = await supabase.auth.getUser();
                                 if (!user) throw new Error("Not authenticated");
@@ -933,6 +939,7 @@ export default function Closet() {
 
                                 if (error) throw error;
 
+                                toast.dismiss();
                                 toast.success("Garment added to closet!");
                                 
                                 // Close dialog and reset states
@@ -949,7 +956,10 @@ export default function Closet() {
                                 // Scroll to top to show the closet view
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               } catch (error: any) {
+                                toast.dismiss();
                                 toast.error("Failed to save garment");
+                              } finally {
+                                setIsSaving(false);
                               }
                             }}
                           />
