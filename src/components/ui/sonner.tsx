@@ -12,8 +12,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      position="bottom-center"
-      offset={isMobile ? "calc(160px + env(safe-area-inset-bottom))" : "128px"}
+      position={isMobile ? "top-center" : "bottom-center"}
+      offset={isMobile ? "calc(80px + env(safe-area-inset-top))" : "128px"}
       toastOptions={{
         classNames: {
           toast:
