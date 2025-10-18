@@ -1233,72 +1233,23 @@ export default function Home() {
                         <Heart className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
 
-                  {/* Right: Item List */}
-                  <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-muted-foreground">Items Needed</h4>
-                  <div className="space-y-2">
-                    {outfits[0].items?.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-                        <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-muted">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={`${item.brand || ''} ${item.model || item.name}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  target.style.display = 'none';
-                                  parent.innerHTML = `
-                                    <div class="w-full h-full flex items-center justify-center bg-muted">
-                                      <svg class="w-6 h-6 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                      </svg>
-                                    </div>
-                                  `;
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <Shirt className="w-6 h-6 text-muted-foreground" />
-                            </div>
-                          )}
+                    {outfits[0].hairstyle && (
+                      <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Sparkles className="w-4 h-4 text-accent" />
+                          <p className="text-sm font-medium">Hairstyle Suggestion</p>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.name || item.type}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {item.color} {item.brand && `• ${item.brand}`}
-                          </p>
+                        <p className="text-xs text-muted-foreground mb-2">{outfits[0].hairstyle}</p>
+                        <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
+                          <img 
+                            src={`https://images.unsplash.com/photo-1560869713-7d0a29430803?w=400&h=300&fit=crop`}
+                            alt="Hairstyle suggestion"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <Badge 
-                          variant={item.fromCloset ? "default" : "secondary"} 
-                          className="text-xs"
-                        >
-                          {item.fromCloset ? "IN CLOSET" : "BUY"}
-                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                  {outfits[0].hairstyle && (
-                    <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-accent" />
-                        <p className="text-sm font-medium">Hairstyle Suggestion</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2">{outfits[0].hairstyle}</p>
-                      <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
-                        <img 
-                          src={`https://images.unsplash.com/photo-1560869713-7d0a29430803?w=400&h=300&fit=crop`}
-                          alt="Hairstyle suggestion"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
                   </div>
                 </div>
               </div>
