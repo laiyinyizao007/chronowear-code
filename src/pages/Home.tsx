@@ -1082,27 +1082,6 @@ export default function Home() {
         ) : null}
       </div>
 
-      {/* Floating Action Button */}
-      <DropdownMenu open={fabOpen} onOpenChange={setFabOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            size="lg"
-            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 md:hidden"
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 mb-2">
-          <DropdownMenuItem onClick={() => { navigate("/closet"); setFabOpen(false); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Garment
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => { navigate("/diary"); setFabOpen(false); }}>
-            <Camera className="w-4 h-4 mr-2" />
-            Log OOTD
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
 
       {/* Today's Pick Outfit Details Dialog - Mobile-First Design */}
       <Dialog open={showOutfitDialog} onOpenChange={setShowOutfitDialog}>
