@@ -204,12 +204,17 @@ export default function Home() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating outfit image:', error);
+        // Don't show toast for image generation errors - it's non-critical
+        return;
+      }
       if (data?.imageUrl) {
         setOutfitImageUrl(data.imageUrl);
       }
     } catch (error) {
       console.error('Error generating outfit image:', error);
+      // Non-critical error, just log it
     } finally {
       setGeneratingImage(false);
     }
@@ -291,24 +296,30 @@ export default function Home() {
 
       if (recError) {
         console.error('More outfits error:', recError);
-        throw new Error('Unable to generate more outfits at this time');
+        toast({
+          title: "AI 服务暂时不可用",
+          description: "无法生成更多穿搭推荐，请稍后再试",
+          variant: "destructive",
+        });
+        return;
       }
+      
       setOutfits(recommendationData.outfits || []);
       
-      // Generate outfit image for the first outfit
+      // Generate outfit image for the first outfit (non-critical)
       if (recommendationData.outfits?.[0]) {
         generateOutfitImage(recommendationData.outfits[0]);
       }
       
       toast({
-        title: "New Outfits Generated",
-        description: "Fresh outfit recommendations based on current weather!",
+        title: "新推荐已生成",
+        description: "根据当前天气为您推荐新穿搭！",
       });
     } catch (error: any) {
       console.error('Error generating new outfits:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate new outfits",
+        title: "加载失败",
+        description: "无法生成新穿搭推荐",
         variant: "destructive",
       });
     } finally {
