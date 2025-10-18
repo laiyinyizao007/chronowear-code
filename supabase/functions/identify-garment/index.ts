@@ -73,52 +73,87 @@ async function analyzeGarmentImage(imageUrl: string, getMoreResults: boolean, ap
     
     // Different prompts based on whether getting more or initial results
     const prompt = getMoreResults ? 
-      `Analyze this clothing/outfit image and provide 3 ALTERNATIVE product identifications that are DIFFERENT from previous results. Focus on:
+      `Analyze this clothing/outfit image and provide EXACTLY 3 ALTERNATIVE product identifications that are DIFFERENT from previous results.
+
+Focus on:
 - Less common but plausible brand interpretations
-- Alternative style descriptions
+- Alternative style descriptions  
 - Similar items from mid-tier or affordable brands
 
-For EACH of the 3 alternative items, provide:
+CRITICAL: You MUST provide EXACTLY 3 different garment identifications.
+
+For EACH of the 3 items, provide:
 1. Brand name (suggest alternative brands or use "Generic" if uncertain)
 2. Model/product name or style description  
 3. Type (Top, Bottom, Shoes, Bag, Accessory, or Outerwear)
 4. Dominant color
 5. Material type
 
-Return ONLY this exact JSON format:
+Return ONLY this exact JSON format with EXACTLY 3 items:
 {
   "garments": [
     {
-      "brand": "Brand Name",
-      "model": "Model/Style Name",
-      "type": "Top|Bottom|Shoes|Bag|Accessory|Outerwear",
+      "brand": "Brand Name 1",
+      "model": "Model/Style Name 1",
+      "type": "Bottom",
+      "color": "Color Name",
+      "material": "Material Type"
+    },
+    {
+      "brand": "Brand Name 2",
+      "model": "Model/Style Name 2",
+      "type": "Bottom",
+      "color": "Color Name",
+      "material": "Material Type"
+    },
+    {
+      "brand": "Brand Name 3",
+      "model": "Model/Style Name 3",
+      "type": "Bottom",
       "color": "Color Name",
       "material": "Material Type"
     }
   ]
 }` :
-      `Analyze this clothing/outfit image carefully and identify the 3 MOST LIKELY products.
+      `Analyze this clothing/outfit image carefully and identify EXACTLY 3 MOST LIKELY products.
 
-For EACH of the top 3 matches, provide:
-1. Brand name (make educated guesses based on logos, patterns, or style)
+CRITICAL: You MUST provide EXACTLY 3 different product identifications, ranked from most likely to least likely.
+
+For EACH of the 3 matches, provide:
+1. Brand name (make educated guesses based on logos, patterns, or style - be creative but realistic)
 2. Specific model/product name or style description
 3. Type (must be one of: Top, Bottom, Shoes, Bag, Accessory, Outerwear)
 4. Dominant color
-5. Material type (cotton, denim, leather, synthetic, etc.)
+5. Material type (cotton, denim, leather, synthetic, polyester, etc.)
 
-IMPORTANT:
-- Focus on the 3 most probable matches
+Guidelines:
+- First item: Most likely brand and model based on visible details
+- Second item: Alternative plausible brand interpretation
+- Third item: Another reasonable option or generic brand alternative
 - Use fashion knowledge to identify brands from visual cues
 - Be specific with model names when possible
-- Include all visible items (clothing and accessories)
 
-Return ONLY this exact JSON format (no other text):
+Return ONLY this exact JSON format with EXACTLY 3 items (no other text):
 {
   "garments": [
     {
-      "brand": "Brand Name",
-      "model": "Model/Style Name",
-      "type": "Top|Bottom|Shoes|Bag|Accessory|Outerwear",
+      "brand": "Most Likely Brand",
+      "model": "Most Likely Model",
+      "type": "Bottom",
+      "color": "Color Name",
+      "material": "Material Type"
+    },
+    {
+      "brand": "Alternative Brand",
+      "model": "Alternative Model",
+      "type": "Bottom",
+      "color": "Color Name",
+      "material": "Material Type"
+    },
+    {
+      "brand": "Third Option Brand",
+      "model": "Third Option Model",
+      "type": "Bottom",
       "color": "Color Name",
       "material": "Material Type"
     }
