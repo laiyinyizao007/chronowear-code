@@ -785,7 +785,7 @@ export default function Home() {
             {trendOutfits.slice(0, 8).map((outfit, index) => (
               <Card 
                 key={index}
-                className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
+                className="w-full shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
                 onClick={async () => {
                   setSelectedTrendOutfit(outfit);
                   setShowTrendDialog(true);
