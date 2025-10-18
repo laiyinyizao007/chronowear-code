@@ -574,6 +574,44 @@ export default function OOTDDiary() {
         if (recError) throw recError;
         
         const outfitsData = recommendationData.outfits || [];
+        
+        // Fetch images for items not from closet
+        if (outfitsData[0]?.items) {
+          const itemsWithImages = await Promise.all(
+            outfitsData[0].items.map(async (item: any) => {
+              // If item is from closet, it already has imageUrl from garment
+              if (item.fromCloset && item.garmentId) {
+                const garment = garments?.find(g => g.id === item.garmentId);
+                return {
+                  ...item,
+                  imageUrl: garment?.image_url
+                };
+              }
+              
+              // For non-closet items, search for product image
+              if (!item.fromCloset && item.brand && item.model) {
+                try {
+                  const { data: productData } = await supabase.functions.invoke('search-product-info', {
+                    body: { brand: item.brand, model: item.model }
+                  });
+                  
+                  return {
+                    ...item,
+                    imageUrl: productData?.imageUrl
+                  };
+                } catch (error) {
+                  console.error('Failed to fetch product image:', error);
+                  return item;
+                }
+              }
+              
+              return item;
+            })
+          );
+          
+          outfitsData[0].items = itemsWithImages;
+        }
+        
         setOutfits(outfitsData);
 
         // Save to database
