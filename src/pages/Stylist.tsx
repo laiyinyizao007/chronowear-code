@@ -427,35 +427,33 @@ export default function Stylist() {
                       </Button>
                     </div>
                   ) : (
-                    <Carousel className="w-full max-w-md">
-                      <CarouselContent>
+                    <Carousel className="w-full">
+                      <CarouselContent className="-ml-2">
                         {filteredGarments.map((garment) => (
-                          <CarouselItem key={garment.id}>
+                          <CarouselItem key={garment.id} className="basis-1/3 sm:basis-1/4 pl-2">
                             <div 
                               onClick={() => handleSelectGarment(garment)}
                               className="cursor-pointer"
                             >
-                              <Card className="border-2 hover:border-primary transition-all">
-                                <CardContent className="p-4">
-                                  <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-3">
-                                    <img
-                                      src={garment.image_url}
-                                      alt={`${garment.brand} ${garment.type}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="font-medium">{garment.brand}</p>
-                                    <p className="text-sm text-muted-foreground">{garment.type}</p>
-                                  </div>
-                                </CardContent>
-                              </Card>
+                              <div className="border-2 hover:border-primary transition-all rounded-lg overflow-hidden bg-background">
+                                <div className="aspect-square bg-muted overflow-hidden">
+                                  <img
+                                    src={garment.image_url}
+                                    alt={`${garment.brand} ${garment.type}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="p-2 text-center">
+                                  <p className="text-xs font-medium truncate">{garment.brand}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{garment.type}</p>
+                                </div>
+                              </div>
                             </div>
                           </CarouselItem>
                         ))}
                       </CarouselContent>
-                      <CarouselPrevious />
-                      <CarouselNext />
+                      <CarouselPrevious className="left-0" />
+                      <CarouselNext className="right-0" />
                     </Carousel>
                   )}
                 </div>
@@ -482,35 +480,33 @@ export default function Stylist() {
                       </Button>
                     </div>
                   ) : (
-                    <Carousel className="w-full max-w-md">
-                      <CarouselContent>
+                    <Carousel className="w-full">
+                      <CarouselContent className="-ml-2">
                         {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).map((garment) => (
-                          <CarouselItem key={garment.id}>
+                          <CarouselItem key={garment.id} className="basis-1/3 sm:basis-1/4 pl-2">
                             <div 
                               onClick={() => handleReplaceWithClosetItem(garment, swapCategory)}
                               className="cursor-pointer"
                             >
-                              <Card className="border-2 hover:border-primary transition-all">
-                                <CardContent className="p-4">
-                                  <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-3">
-                                    <img
-                                      src={garment.image_url}
-                                      alt={`${garment.brand} ${garment.type}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="font-medium">{garment.brand}</p>
-                                    <p className="text-sm text-muted-foreground">{garment.type}</p>
-                                  </div>
-                                </CardContent>
-                              </Card>
+                              <div className="border-2 hover:border-primary transition-all rounded-lg overflow-hidden bg-background">
+                                <div className="aspect-square bg-muted overflow-hidden">
+                                  <img
+                                    src={garment.image_url}
+                                    alt={`${garment.brand} ${garment.type}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="p-2 text-center">
+                                  <p className="text-xs font-medium truncate">{garment.brand}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{garment.type}</p>
+                                </div>
+                              </div>
                             </div>
                           </CarouselItem>
                         ))}
                       </CarouselContent>
-                      <CarouselPrevious />
-                      <CarouselNext />
+                      <CarouselPrevious className="left-0" />
+                      <CarouselNext className="right-0" />
                     </Carousel>
                   )}
                 </div>
