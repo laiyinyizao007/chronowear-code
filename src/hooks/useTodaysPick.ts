@@ -6,7 +6,7 @@ import {
   saveTodaysPick,
   deleteTodaysPick,
   createFallbackOutfit,
-  enrichItemsWithProductImages,
+  enrichItemsWithImages,
 } from "@/services/outfitService";
 import {
   generateOutfitImage,
@@ -95,9 +95,9 @@ export const useTodaysPick = () => {
       try {
         outfits = await generateOutfitRecommendation(weather, garments || []);
         
-        // Enrich items with product images
+        // Enrich items with images from closet or product search
         if (outfits[0]?.items) {
-          const enrichedItems = await enrichItemsWithProductImages(
+          const enrichedItems = await enrichItemsWithImages(
             outfits[0].items,
             garments || []
           );
