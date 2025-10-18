@@ -875,20 +875,63 @@ export default function Home() {
               {/* Mobile Layout */}
               <div className="md:hidden">
                 <div className="flex gap-2">
-                  {/* Left: Hairstyle Card */}
-                  {outfits[0].hairstyle && (
-                    <div className="w-24 flex-shrink-0">
-                      <h4 className="font-medium text-[10px] text-muted-foreground mb-2">Hairstyle</h4>
-                      <div className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50">
-                        <div className="w-full h-full flex items-center justify-center">
-                          <p className="text-xs text-center px-2 text-muted-foreground">{outfits[0].hairstyle}</p>
+                  {/* Left: Item List (1/3 width) - clickable items */}
+                  <div className="w-1/3 space-y-1.5">
+                    <h4 className="font-medium text-[10px] text-muted-foreground mb-2">Items</h4>
+                    <div className="space-y-1.5">
+                      {outfits[0].items?.map((item: any, index: number) => (
+                        <div 
+                          key={index} 
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 cursor-pointer hover:ring-2 hover:ring-primary transition-all ${!item.fromCloset ? 'opacity-50' : ''}`}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setSelectedOutfit({ ...outfits[0], mainDisplayIndex: index });
+                            setShowOutfitDialog(true);
+                            const { data: garments } = await supabase
+                              .from('garments')
+                              .select('id, type, color, material, brand, image_url');
+                            const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                            setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems, mainDisplayIndex: index }));
+                          }}
+                        >
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  target.style.display = 'none';
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-muted">
+                                      <svg class="w-4 h-4 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Shirt className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <Heart 
+                            className={`absolute top-1 right-1 w-3 h-3 ${
+                              item.fromCloset ? 'fill-red-500 text-red-500' : 'text-white/80'
+                            }`}
+                            style={{ opacity: item.fromCloset ? 1 : 0.4 }}
+                          />
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Right: Outfit Image */}
-                  <div className="flex-1 space-y-2 flex flex-col">
+                  {/* Right: Outfit Image (2/3 width) - Auto height to match items */}
+                  <div className="w-2/3 space-y-2 flex flex-col">
                     <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
                     <div className="relative flex-1 rounded-lg overflow-hidden bg-background">
                     {generatingImage ? (
@@ -1028,20 +1071,67 @@ export default function Home() {
               {/* Desktop Layout */}
               <div className="hidden md:block">
                 <div className="flex gap-4">
-                  {/* Left: Hairstyle Card */}
-                  {outfits[0].hairstyle && (
-                    <div className="w-32 flex-shrink-0">
-                      <h4 className="font-medium text-sm text-muted-foreground mb-3">Hairstyle</h4>
-                      <div className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50">
-                        <div className="w-full h-full flex items-center justify-center p-4">
-                          <p className="text-sm text-center text-muted-foreground">{outfits[0].hairstyle}</p>
+                  {/* Left: Item List (1/3 width) - Remove scrolling, show all */}
+                  <div className="w-1/3 space-y-3 flex flex-col">
+                    <h4 className="font-medium text-sm text-muted-foreground">Items</h4>
+                    <div className="grid grid-cols-1 gap-2 flex-1">
+                      {outfits[0].items?.map((item: any, index: number) => (
+                        <div 
+                          key={index} 
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors cursor-pointer ${!item.fromCloset ? 'opacity-50' : ''}`}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setSelectedOutfit({ ...outfits[0], mainDisplayIndex: index });
+                            setShowOutfitDialog(true);
+                            const { data: garments } = await supabase
+                              .from('garments')
+                              .select('id, type, color, material, brand, image_url');
+                            const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                            setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems, mainDisplayIndex: index }));
+                          }}
+                        >
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  target.style.display = 'none';
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-muted">
+                                      <svg class="w-8 h-8 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Shirt className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                            <p className="text-white text-xs font-medium truncate">{item.name || item.type}</p>
+                            <p className="text-white/80 text-[10px] truncate">{item.color}</p>
+                          </div>
+                          <Heart 
+                            className={`absolute top-1 right-1 w-4 h-4 ${
+                              item.fromCloset ? 'fill-red-500 text-red-500' : 'text-white/80'
+                            }`}
+                            style={{ opacity: item.fromCloset ? 1 : 0.4 }}
+                          />
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Right: Outfit Image */}
-                  <div className="flex-1 flex flex-col">
+                  {/* Right: Outfit Image (2/3 width) - Auto height to match items */}
+                  <div className="w-2/3 flex flex-col">
                     <h3 className="text-lg font-semibold mb-3">{outfits[0].title}</h3>
                     <div className="relative flex-1 bg-muted rounded-lg overflow-hidden">
                       {generatingImage ? (
