@@ -75,6 +75,7 @@ export default function Layout() {
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/closet", icon: Shirt, label: "Closet" },
+    { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
   ];
 
@@ -126,14 +127,14 @@ export default function Layout() {
       {/* Bottom Navigation - Farfetch ultra minimal */}
       <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
         <div className="mx-auto px-6 sm:px-10 max-w-[1600px]">
-          <div className="flex justify-around items-center h-16 sm:h-18">
-            {navItems.slice(0, 2).map((item) => (
+          <div className="flex justify-between items-center h-16 sm:h-18 max-w-2xl mx-auto w-full px-2">
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-5 sm:px-7 py-2.5 transition-all duration-200 ${
+                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-200 ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -142,7 +143,7 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5] ${isActive ? '' : ''}`} strokeWidth={1.5} />
+                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5]`} strokeWidth={1.5} />
                     <span className="text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase">{item.label}</span>
                   </>
                 )}
@@ -174,37 +175,8 @@ export default function Layout() {
                   <Camera className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
                   <span className="text-sm font-light tracking-wide">Log OOTD</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => navigate("/stylist")}
-                  className="cursor-pointer py-3 px-4 focus:bg-muted/50 focus:text-foreground"
-                >
-                  <Sparkles className="w-4 h-4 mr-3 stroke-[1.5]" strokeWidth={1.5} />
-                  <span className="text-sm font-light tracking-wide">AI Stylist</span>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
-            {navItems.slice(2).map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-5 sm:px-7 py-2.5 transition-all duration-200 ${
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[1.5] ${isActive ? '' : ''}`} strokeWidth={1.5} />
-                    <span className="text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase">{item.label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
           </div>
         </div>
       </nav>
