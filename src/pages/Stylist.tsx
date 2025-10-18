@@ -86,38 +86,23 @@ export default function Stylist() {
   const processBackgroundRemoval = async (imageUrl: string) => {
     try {
       setProcessingBg(true);
-      toast.info("Removing background... This may take 30-60 seconds on first load.");
+      toast.info("Removing background... Using Hugging Face AI (free)");
       
-      console.log('Loading image for background removal from:', imageUrl);
+      console.log('Calling Hugging Face background removal API...');
       
-      // Fetch image and create blob
-      const response = await fetch(imageUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
-      }
-      const blob = await response.blob();
-      console.log(`Image blob loaded: ${(blob.size / 1024).toFixed(1)}KB`);
-      
-      // Load image
-      const img = await loadImage(blob);
-      console.log(`Image loaded: ${img.naturalWidth}x${img.naturalHeight}`);
-      
-      console.log('Starting background removal with Transformers.js...');
-      
-      // Remove background
-      const resultBlob = await removeBackground(img);
-      
-      // Convert blob to data URL for immediate display
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setRemovedBgImageUrl(dataUrl);
+      // Call our edge function for background removal
+      const { data, error } = await supabase.functions.invoke('remove-background-hf', {
+        body: { imageUrl }
+      });
+
+      if (error) throw error;
+
+      if (data?.imageUrl) {
+        setRemovedBgImageUrl(data.imageUrl);
         toast.success("Background removed successfully!");
-      };
-      reader.onerror = () => {
-        throw new Error('Failed to read result blob');
-      };
-      reader.readAsDataURL(resultBlob);
+      } else {
+        throw new Error('No processed image returned');
+      }
       
     } catch (error) {
       console.error("Background removal error:", error);
