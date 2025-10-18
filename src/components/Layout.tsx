@@ -67,6 +67,23 @@ export default function Layout() {
     if (user) loadWeather();
   }, [user]);
 
+  // Compute and expose bottom offset for toasts based on actual nav height
+  useEffect(() => {
+    const updateBottomOffset = () => {
+      const nav = document.querySelector('[data-app-bottom-nav]') as HTMLElement | null;
+      const h = nav?.offsetHeight ?? 0;
+      const gap = 24; // extra breathing room above the nav
+      document.documentElement.style.setProperty('--app-bottom-offset', `${h + gap}px`);
+    };
+    updateBottomOffset();
+    window.addEventListener('resize', updateBottomOffset);
+    window.addEventListener('orientationchange', updateBottomOffset);
+    return () => {
+      window.removeEventListener('resize', updateBottomOffset);
+      window.removeEventListener('orientationchange', updateBottomOffset);
+    };
+  }, []);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -145,7 +162,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation - Farfetch ultra minimal */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
+      <nav data-app-bottom-nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
         <div className="mx-auto px-4 sm:px-6 max-w-[1600px]">
           <div className="flex justify-around items-center h-16 sm:h-18">
             {/* First nav item: OOTD */}
