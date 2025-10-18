@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays, Sparkles, Loader2, Heart, Shirt, Sun, Cloud, CloudRain, RefreshCw } from "lucide-react";
+import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,13 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, addDays, subDays, addWeeks, subWeeks } from "date-fns";
 import ProductCard from "@/components/ProductCard";
-import OutfitCard from "@/components/OutfitCard";
-import OutfitRecommendationCard from "@/components/OutfitRecommendationCard";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
 import { cn } from "@/lib/utils";
 import {
@@ -50,22 +46,7 @@ interface OOTDRecord {
   location: string;
   weather: string;
   notes: string;
-  products?: any;
-}
-
-interface WeatherData {
-  location: string;
-  current: {
-    temperature: number;
-    humidity: number;
-    weatherDescription: string;
-    uvIndex: number;
-  };
-  daily: {
-    temperatureMax: number;
-    temperatureMin: number;
-    uvIndexMax: number;
-  };
+  products?: any; // JSON field from database
 }
 
 export default function OOTDDiary() {
@@ -94,26 +75,9 @@ export default function OOTDDiary() {
   const [planningMode, setPlanningMode] = useState<'closet-only' | 'with-wishlist' | 'any-items'>('closet-only');
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [ootdPlan, setOotdPlan] = useState<any>(null);
-  
-  // Today's Pick states from Home page
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [outfits, setOutfits] = useState<any[]>([]);
-  const [recommendationLoading, setRecommendationLoading] = useState(false);
-  const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
-  const [showOutfitDialog, setShowOutfitDialog] = useState(false);
-  const [outfitImageUrl, setOutfitImageUrl] = useState<string>("");
-  const [generatingImage, setGeneratingImage] = useState(false);
-  const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
-  const [trendLoading, setTrendLoading] = useState(false);
-  const [selectedTrendOutfit, setSelectedTrendOutfit] = useState<any>(null);
-  const [showTrendDialog, setShowTrendDialog] = useState(false);
-  const [todaysPickId, setTodaysPickId] = useState<string | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
-  const [addedToOOTD, setAddedToOOTD] = useState(false);
 
   useEffect(() => {
     loadRecords();
-    loadWeatherAndRecommendation();
   }, []);
 
   const loadRecords = async () => {
@@ -130,239 +94,6 @@ export default function OOTDDiary() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Load weather and Today's Pick (from Home page)
-  const loadWeatherAndRecommendation = async (forceRefresh: boolean = false) => {
-    try {
-      setRecommendationLoading(true);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const today = new Date().toISOString().split('T')[0];
-
-      if (!forceRefresh) {
-        const { data: existingPick } = await supabase
-          .from('todays_picks')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('date', today)
-          .maybeSingle();
-
-        if (existingPick) {
-          setWeather(existingPick.weather as any);
-          setOutfits([{
-            title: existingPick.title,
-            summary: existingPick.summary,
-            hairstyle: existingPick.hairstyle,
-            items: existingPick.items
-          }]);
-          setOutfitImageUrl(existingPick.image_url || "");
-          setTodaysPickId(existingPick.id);
-          setIsLiked(existingPick.is_liked);
-          setAddedToOOTD(existingPick.added_to_ootd);
-          
-          const { data: garments } = await supabase
-            .from('garments')
-            .select('id, type, color, material, brand, image_url');
-          await loadTrendOutfits(existingPick.weather as any, garments || []);
-          
-          setRecommendationLoading(false);
-          return;
-        }
-      }
-      
-      // Get location
-      let latitude = 35.6764225;
-      let longitude = 139.650027;
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 300000
-          });
-        });
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
-      } catch (geoError) {
-        console.warn('Using default location');
-      }
-
-      const { data: weatherData } = await supabase.functions.invoke('get-weather', {
-        body: { lat: latitude, lng: longitude }
-      });
-
-      setWeather(weatherData);
-
-      const { data: garments } = await supabase
-        .from('garments')
-        .select('id, type, color, material, brand, image_url');
-      
-      await loadTrendOutfits(weatherData, garments);
-
-      const { data: recommendationData } = await supabase.functions.invoke('generate-outfit-recommendation', {
-        body: {
-          temperature: weatherData.current.temperature,
-          weatherDescription: weatherData.current.weatherDescription,
-          uvIndex: weatherData.current.uvIndex,
-          garments: garments || []
-        }
-      });
-
-      const outfitsData = recommendationData.outfits || [];
-      setOutfits(outfitsData);
-
-      if (outfitsData[0]) {
-        const outfit = outfitsData[0];
-        
-        if (forceRefresh) {
-          await supabase
-            .from('todays_picks')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('date', today);
-        }
-
-        const { data: savedPick } = await supabase
-          .from('todays_picks')
-          .insert({
-            user_id: user.id,
-            date: today,
-            title: outfit.title,
-            summary: outfit.summary,
-            hairstyle: outfit.hairstyle,
-            items: outfit.items,
-            weather: weatherData
-          })
-          .select()
-          .single();
-
-        if (savedPick) {
-          setTodaysPickId(savedPick.id);
-          setIsLiked(false);
-          setAddedToOOTD(false);
-        }
-
-        generateOutfitImage(outfit);
-      }
-
-    } catch (error) {
-      console.error('Error loading weather and recommendation:', error);
-    } finally {
-      setRecommendationLoading(false);
-    }
-  };
-
-  const loadTrendOutfits = async (weatherData?: any, garments?: any[]) => {
-    try {
-      setTrendLoading(true);
-      const currentWeather = weatherData || weather;
-      if (!currentWeather) {
-        setTrendLoading(false);
-        return;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const today = new Date().toISOString().split('T')[0];
-
-      const { data: existingTrends } = await supabase
-        .from('trends')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (existingTrends && existingTrends.length > 0) {
-        setTrendOutfits(existingTrends.map(trend => ({
-          title: trend.title,
-          summary: trend.summary || trend.description,
-          hairstyle: trend.hairstyle,
-          imageUrl: trend.image_url,
-          items: trend.items || []
-        })));
-        setTrendLoading(false);
-        return;
-      }
-
-      const { data: trendsData } = await supabase.functions.invoke('save-fashion-trends', {
-        body: {
-          temperature: currentWeather.current.temperature,
-          weatherDescription: currentWeather.current.weatherDescription,
-          currentWeather: currentWeather
-        }
-      });
-
-      if (trendsData?.trends) {
-        setTrendOutfits(trendsData.trends.map((trend: any) => ({
-          title: trend.title,
-          summary: trend.summary || trend.description,
-          hairstyle: trend.hairstyle,
-          imageUrl: trend.image_url,
-          items: trend.items || []
-        })));
-      }
-    } catch (error) {
-      console.error('Error loading trends:', error);
-    } finally {
-      setTrendLoading(false);
-    }
-  };
-
-  const generateOutfitImage = async (outfit: any) => {
-    try {
-      setGeneratingImage(true);
-      
-      const { data } = await supabase.functions.invoke('generate-outfit-image', {
-        body: {
-          items: outfit.items || [],
-          weather: weather?.current,
-          hairstyle: outfit.hairstyle
-        }
-      });
-
-      if (data?.imageUrl) {
-        setOutfitImageUrl(data.imageUrl);
-
-        if (todaysPickId) {
-          await supabase
-            .from('todays_picks')
-            .update({ image_url: data.imageUrl })
-            .eq('id', todaysPickId);
-        }
-      }
-    } catch (error) {
-      console.error('Error generating outfit image:', error);
-    } finally {
-      setGeneratingImage(false);
-    }
-  };
-
-  const handleRefreshOutfit = async () => {
-    setOutfits([]);
-    setOutfitImageUrl("");
-    setTodaysPickId(null);
-    setIsLiked(false);
-    setAddedToOOTD(false);
-    await loadWeatherAndRecommendation(true);
-  };
-
-  const getWeatherIcon = (description: string) => {
-    const lower = description.toLowerCase();
-    if (lower.includes('rain')) return <CloudRain className="w-5 h-5" />;
-    if (lower.includes('cloud')) return <Cloud className="w-5 h-5" />;
-    return <Sun className="w-5 h-5" />;
-  };
-
-  const getUVColor = (uvIndex: number): string => {
-    if (uvIndex < 3) return "text-green-600";
-    if (uvIndex < 6) return "text-yellow-600";
-    if (uvIndex < 8) return "text-orange-600";
-    return "text-red-600";
   };
 
   const getLocationAndWeather = async () => {
@@ -731,126 +462,6 @@ export default function OOTDDiary() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {viewMode === 'day' && (
-        <>
-          {/* Fashion Trends Section */}
-          <div className="space-y-3">
-            <h2 className="text-lg sm:text-xl font-bold">Fashion Trends</h2>
-            {trendLoading ? (
-              <Carousel className="w-full">
-                <CarouselContent className="-ml-2 md:-ml-4">
-                  {[1, 2, 3].map((i) => (
-                    <CarouselItem key={i} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
-                      <Skeleton className="aspect-[16/10] w-full" />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-              </Carousel>
-            ) : trendOutfits.length > 0 ? (
-              <Carousel className="w-full">
-                <CarouselContent className="-ml-2 md:-ml-4">
-                  {trendOutfits.map((outfit, index) => (
-                    <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
-                      <Card className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden">
-                        <div className="relative aspect-[16/10] bg-muted">
-                          {outfit.imageUrl && (
-                            <img src={outfit.imageUrl} alt={outfit.title} className="w-full h-full object-cover" />
-                          )}
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                            <p className="text-white font-medium text-xs">{outfit.title}</p>
-                          </div>
-                        </div>
-                      </Card>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            ) : null}
-          </div>
-
-          {/* Today's Pick Section */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-accent" />
-                Today's Pick
-              </h2>
-              {outfits.length > 0 && (
-                <Button variant="ghost" size="icon" onClick={handleRefreshOutfit} disabled={recommendationLoading}>
-                  {recommendationLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                </Button>
-              )}
-            </div>
-
-            {weather && (
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                {getWeatherIcon(weather.current.weatherDescription)}
-                <span className="font-medium">
-                  {Math.round(weather.daily.temperatureMax)}° / {Math.round(weather.daily.temperatureMin)}°
-                </span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs">UV</span>
-                  <span className={`text-sm font-medium ${getUVColor(weather.current.uvIndex)}`}>
-                    {weather.current.uvIndex.toFixed(1)}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {recommendationLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="w-8 h-8 animate-spin text-accent" />
-              </div>
-            ) : outfits.length > 0 ? (
-              <Card className="shadow-medium">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex gap-3">
-                    <div className="w-1/3 space-y-2">
-                      <h4 className="text-xs font-medium text-muted-foreground">Items</h4>
-                      {outfits[0].items?.slice(0, 4).map((item: any, index: number) => (
-                        <div key={index} className="aspect-square rounded-lg bg-muted">
-                          {item.imageUrl && (
-                            <img src={item.imageUrl} alt={item.type} className="w-full h-full object-cover rounded-lg" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="w-2/3 space-y-2">
-                      <h3 className="font-semibold">{outfits[0].title}</h3>
-                      <div className="relative aspect-square rounded-lg bg-muted overflow-hidden">
-                        {generatingImage ? (
-                          <div className="flex items-center justify-center h-full">
-                            <Loader2 className="w-8 h-8 animate-spin" />
-                          </div>
-                        ) : outfitImageUrl ? (
-                          <img src={outfitImageUrl} alt="Outfit" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <Sparkles className="w-12 h-12 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{outfits[0].summary}</p>
-                      <div className="flex gap-2">
-                        <Button size="sm" className="flex-1">
-                          <CalendarIcon className="w-3 h-3 mr-1" />
-                          Log
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Heart className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : null}
-          </div>
-        </>
-      )}
-
       {/* Hidden dialog for Log OOTD functionality - accessible via navigation */}
       <div className="hidden">
         <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
