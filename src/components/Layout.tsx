@@ -7,20 +7,12 @@ import { Home, Shirt, Calendar, Settings as SettingsIcon, Sun, CloudRain, Plus, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AIAssistant from "./AIAssistant";
-
-interface WeatherData {
-  location: string;
-  current: {
-    temperature: number;
-    weatherDescription: string;
-    uvIndex: number;
-  };
-}
+import { useWeather } from "@/hooks/useWeather";
 
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const { weather, fetchWeather } = useWeather();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -43,28 +35,11 @@ export default function Layout() {
   }, [navigate]);
 
   useEffect(() => {
-    const loadWeather = async () => {
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000
-          });
-        });
-
-        const { latitude, longitude } = position.coords;
-        const { data: weatherData } = await supabase.functions.invoke('get-weather', {
-          body: { lat: latitude, lng: longitude }
-        });
-
-        if (weatherData) setWeather(weatherData);
-      } catch (error) {
+    if (user) {
+      fetchWeather().catch(error => {
         console.error('Failed to load weather:', error);
-      }
-    };
-
-    if (user) loadWeather();
+      });
+    }
   }, [user]);
 
   // Compute and expose bottom offset for toasts based on actual nav height
