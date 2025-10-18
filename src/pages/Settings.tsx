@@ -30,6 +30,8 @@ export default function Settings() {
   const [shoeSize, setShoeSize] = useState<string>("");
   const [eyeColor, setEyeColor] = useState<string>("");
   const [hairColor, setHairColor] = useState<string>("");
+  const [gender, setGender] = useState<string>("");
+  const [dateOfBirth, setDateOfBirth] = useState<string>("");
   
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export default function Settings() {
       // Load profile data
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("style_preference, geo_location, height_cm, weight_kg, bust_cm, waist_cm, hip_cm, bra_cup, shoe_size, eye_color, hair_color")
+        .select("style_preference, geo_location, height_cm, weight_kg, bust_cm, waist_cm, hip_cm, bra_cup, shoe_size, eye_color, hair_color, gender, date_of_birth")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -80,6 +82,8 @@ export default function Settings() {
         setShoeSize(profileData.shoe_size?.toString() || "");
         setEyeColor(profileData.eye_color || "");
         setHairColor(profileData.hair_color || "");
+        setGender(profileData.gender || "");
+        setDateOfBirth(profileData.date_of_birth || "");
       }
     } catch (error: any) {
       console.error("Error loading settings:", error);
@@ -194,6 +198,8 @@ export default function Settings() {
           shoe_size: shoeSize ? parseFloat(shoeSize) : null,
           eye_color: eyeColor || null,
           hair_color: hairColor || null,
+          gender: gender || null,
+          date_of_birth: dateOfBirth || null,
         })
         .eq("id", user.id);
 
@@ -473,6 +479,66 @@ export default function Settings() {
                   <span className="text-sm">{userEmail}</span>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="non-binary">Non-binary</SelectItem>
+                      <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date-of-birth">Date of Birth</Label>
+                  <Input
+                    id="date-of-birth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="residence">Residence</Label>
+                <div className="relative">
+                  <Input
+                    id="residence"
+                    placeholder="Search for a city..."
+                    value={locationSearch}
+                    onChange={(e) => handleLocationSearch(e.target.value)}
+                    onFocus={() => locationSuggestions.length > 0 && setShowLocationSuggestions(true)}
+                  />
+                  {showLocationSuggestions && locationSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {locationSuggestions.map((location) => (
+                        <button
+                          key={location}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                          onClick={() => selectLocation(location)}
+                        >
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your primary living location
+                </p>
+              </div>
+
+              <Button onClick={handleUpdateProfile} className="w-full">
+                Save Account Settings
+              </Button>
 
               <div className="pt-4 border-t">
                 <Button

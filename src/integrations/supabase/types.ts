@@ -178,9 +178,11 @@ export type Database = {
           bust_cm: number | null
           clothing_size: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string | null
           eye_color: string | null
           full_name: string | null
+          gender: string | null
           geo_location: string | null
           hair_color: string | null
           height_cm: number | null
@@ -198,9 +200,11 @@ export type Database = {
           bust_cm?: number | null
           clothing_size?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           eye_color?: string | null
           full_name?: string | null
+          gender?: string | null
           geo_location?: string | null
           hair_color?: string | null
           height_cm?: number | null
@@ -218,9 +222,11 @@ export type Database = {
           bust_cm?: number | null
           clothing_size?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string | null
           eye_color?: string | null
           full_name?: string | null
+          gender?: string | null
           geo_location?: string | null
           hair_color?: string | null
           height_cm?: number | null
