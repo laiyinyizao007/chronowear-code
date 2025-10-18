@@ -125,19 +125,6 @@ export default function OOTDDiary() {
     }
   }, [viewMode]);
 
-  // Set background image for the entire app
-  useEffect(() => {
-    if (viewMode === 'day' && outfitImageUrl) {
-      document.documentElement.style.setProperty('--outfit-bg-image', `url(${outfitImageUrl})`);
-    } else {
-      document.documentElement.style.setProperty('--outfit-bg-image', 'none');
-    }
-    
-    return () => {
-      document.documentElement.style.setProperty('--outfit-bg-image', 'none');
-    };
-  }, [viewMode, outfitImageUrl]);
-
   const loadRecords = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1121,8 +1108,8 @@ export default function OOTDDiary() {
 
           {/* Today's Pick Section - Only in Day View */}
           {viewMode === 'day' && (
-            <div className="space-y-4 mb-6">
-              {/* Today's Pick - Floating UI Elements */}
+            <div className="space-y-4 mb-6 relative">
+              {/* Today's Pick */}
               {todayPickLoading || recommendationLoading ? (
                 <Card className="overflow-hidden shadow-elegant">
                   <CardHeader className="pb-4">
@@ -1139,16 +1126,36 @@ export default function OOTDDiary() {
                 </Card>
               ) : outfits.length > 0 && (
                 <>
-                  {/* Floating UI Elements over background */}
-                  <div className="relative z-10">
+                  {/* Background Image Container */}
+                  <div className="fixed inset-0 z-0 pointer-events-none">
+                    {generatingImage ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
+                        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                      </div>
+                    ) : outfitImageUrl ? (
+                      <>
+                        <img
+                          src={outfitImageUrl}
+                          alt={outfits[0]?.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 bg-secondary/10" />
+                    )}
+                  </div>
+
+                  {/* Floating UI Elements */}
+                  <div className="relative z-10 space-y-4">
                     {/* Top Controls */}
-                    <div className="flex justify-end gap-2 mb-4">
+                    <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleRefreshOutfit}
                         disabled={recommendationLoading}
-                        className="h-10 w-10 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                        className="h-10 w-10 bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-medium"
                       >
                         {recommendationLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1160,7 +1167,7 @@ export default function OOTDDiary() {
                         variant="ghost"
                         size="icon"
                         onClick={toggleLikeStatus}
-                        className="h-10 w-10 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                        className="h-10 w-10 bg-background/80 backdrop-blur-sm hover:bg-background/90 shadow-medium"
                       >
                         <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                       </Button>
@@ -1168,8 +1175,8 @@ export default function OOTDDiary() {
 
                     {/* Items List */}
                     {outfits[0]?.items && outfits[0].items.length > 0 && (
-                      <div className="mb-4">
-                        <div className="text-[10px] font-medium text-white uppercase tracking-wide px-2 py-1 mb-2 bg-black/50 backdrop-blur-sm rounded inline-block">
+                      <div>
+                        <div className="text-[10px] font-medium text-foreground uppercase tracking-wide px-2 py-1 mb-2 bg-muted/80 backdrop-blur-sm rounded inline-block">
                           Items
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -1177,8 +1184,8 @@ export default function OOTDDiary() {
                             <div 
                               key={idx} 
                               className={cn(
-                                "relative w-20 aspect-square rounded overflow-hidden bg-background/90 backdrop-blur-sm transition-opacity group cursor-pointer flex-shrink-0",
-                                !item.fromCloset && "opacity-20"
+                                "relative w-20 aspect-square rounded overflow-hidden bg-background/90 backdrop-blur-sm transition-opacity group cursor-pointer flex-shrink-0 shadow-medium",
+                                !item.fromCloset && "opacity-40"
                               )}
                               onClick={() => {
                                 setSelectedItem(item);
@@ -1198,7 +1205,6 @@ export default function OOTDDiary() {
                                   </span>
                                 </div>
                               )}
-                              {/* Overlay on hover */}
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
                                 <span className="text-[8px] text-white text-center leading-tight">
                                   {item.name}
@@ -1211,8 +1217,8 @@ export default function OOTDDiary() {
                     )}
 
                     {/* Outfit Info Card */}
-                    <Card className="bg-background/80 backdrop-blur-sm border-border/50">
-                      <CardContent className="p-4">
+                    <Card className="bg-background/90 backdrop-blur-md border-border/50 shadow-large">
+                      <CardContent className="p-6">
                         <h3 className="font-bold text-lg uppercase tracking-wide mb-2">
                           {outfits[0]?.title}
                         </h3>
@@ -1221,7 +1227,8 @@ export default function OOTDDiary() {
                         </p>
                         <Button
                           variant="default"
-                          className="w-full"
+                          size="lg"
+                          className="w-full font-semibold"
                           onClick={() => {
                             setSelectedDateForLog(currentDate);
                             setIsAddDialogOpen(true);
@@ -1238,7 +1245,7 @@ export default function OOTDDiary() {
 
                   {/* Weather Section */}
                   {weather && (
-                    <Card className="bg-background/80 backdrop-blur-sm border-border/50">
+                    <Card className="relative z-10 bg-background/90 backdrop-blur-md border-border/50 shadow-large">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">

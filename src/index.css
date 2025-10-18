@@ -118,16 +118,6 @@ All colors MUST be HSL.
     letter-spacing: 0.02em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image: var(--outfit-bg-image, none);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-  }
-  
-  main {
-    position: relative;
-    z-index: 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
