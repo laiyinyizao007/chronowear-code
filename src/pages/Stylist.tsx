@@ -237,112 +237,53 @@ export default function Stylist() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="virtual-tryon" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Your Model */}
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-accent" />
-                  Your Model
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative">
-                  {processingBg ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                      <div className="text-center space-y-2">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                        <p className="text-sm text-muted-foreground">Removing background...</p>
-                      </div>
+        <TabsContent value="virtual-tryon" className="space-y-4 mt-6">
+          <div className="flex gap-3 h-[calc(100vh-16rem)]">
+            {/* Left: Model Display (70% width) */}
+            <div className="w-[70%] relative">
+              <div className="h-full bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
+                {processingBg ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                    <div className="text-center space-y-3">
+                      <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+                      <p className="text-sm text-muted-foreground">Processing image...</p>
                     </div>
-                  ) : tryOnResultUrl ? (
-                    <img
-                      src={tryOnResultUrl}
-                      alt="Virtual try-on result"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : removedBgImageUrl ? (
-                    <img
-                      src={removedBgImageUrl}
-                      alt="Your photo with background removed"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <img
-                      src={fullBodyPhotoUrl}
-                      alt="Your full body photo"
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Garment Selection */}
-            <Card className="shadow-medium">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Wand2 className="w-5 h-5 text-accent" />
-                  Select Garment
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {garments.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p className="mb-4">No garments in your closet yet</p>
-                    <Button onClick={() => window.location.href = "/closet"}>
-                      Add Garments
-                    </Button>
                   </div>
+                ) : tryOnResultUrl ? (
+                  <img
+                    src={tryOnResultUrl}
+                    alt="Virtual try-on result"
+                    className="w-full h-full object-contain p-4"
+                  />
+                ) : removedBgImageUrl ? (
+                  <img
+                    src={removedBgImageUrl}
+                    alt="Your photo"
+                    className="w-full h-full object-contain p-4"
+                  />
                 ) : (
-                  <>
-                    <div className="grid grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
-                      {garments.map((garment) => (
-                        <div
-                          key={garment.id}
-                          onClick={() => setSelectedGarment(garment)}
-                          className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                            selectedGarment?.id === garment.id
-                              ? "border-primary shadow-lg scale-105"
-                              : "border-transparent hover:border-muted-foreground/30"
-                          }`}
-                        >
-                          <img
-                            src={garment.image_url}
-                            alt={`${garment.brand} ${garment.type}`}
-                            className="w-full h-full object-cover"
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute bottom-1 right-1 h-7 w-7 sm:h-8 sm:w-8 bg-background/80 hover:bg-background"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleLikeGarment(garment.id, garment.liked || false);
-                            }}
-                          >
-                            <Heart 
-                              className={`w-4 h-4 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
-                            />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-
-                    {selectedGarment && (
-                      <div className="space-y-2 p-4 bg-muted rounded-lg">
-                        <p className="font-medium">{selectedGarment.brand}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedGarment.type} • {selectedGarment.color}
-                        </p>
-                      </div>
-                    )}
-
+                  <img
+                    src={fullBodyPhotoUrl}
+                    alt="Your photo"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                
+                {/* Bottom action bar */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent">
+                  <div className="flex gap-2 justify-center">
                     <Button
+                      size="lg"
+                      variant="secondary"
+                      className="rounded-full px-6"
+                    >
+                      Save Look
+                    </Button>
+                    <Button
+                      size="lg"
+                      className="rounded-full px-6"
                       onClick={handleGenerateTryOn}
                       disabled={!selectedGarment || generating || processingBg}
-                      className="w-full"
                     >
                       {generating ? (
                         <>
@@ -352,14 +293,79 @@ export default function Stylist() {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Try On This Garment
+                          Try On
                         </>
                       )}
                     </Button>
-                  </>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Garment Selection (30% width) */}
+            <div className="w-[30%] flex flex-col">
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                {garments.length === 0 ? (
+                  <Card className="h-full flex items-center justify-center">
+                    <CardContent className="text-center py-8">
+                      <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">No garments yet</p>
+                      <Button size="sm" onClick={() => window.location.href = "/closet"}>
+                        Add Garments
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  garments.map((garment) => (
+                    <div
+                      key={garment.id}
+                      onClick={() => setSelectedGarment(garment)}
+                      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
+                        selectedGarment?.id === garment.id
+                          ? "border-primary shadow-lg ring-2 ring-primary/20"
+                          : "border-border/50 hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="aspect-square bg-muted">
+                        <img
+                          src={garment.image_url}
+                          alt={`${garment.brand} ${garment.type}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* Garment info overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-3">
+                        <p className="text-white text-sm font-medium truncate">{garment.brand}</p>
+                        <p className="text-white/80 text-xs truncate">{garment.type}</p>
+                      </div>
+
+                      {/* Like button */}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-2 right-2 h-8 w-8 bg-background/80 hover:bg-background rounded-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLikeGarment(garment.id, garment.liked || false);
+                        }}
+                      >
+                        <Heart 
+                          className={`w-4 h-4 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
+                        />
+                      </Button>
+
+                      {/* Selected indicator */}
+                      {selectedGarment?.id === garment.id && (
+                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">
+                          Selected
+                        </div>
+                      )}
+                    </div>
+                  ))
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
