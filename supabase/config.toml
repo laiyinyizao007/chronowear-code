@@ -29,3 +29,6 @@ verify_jwt = true
 
 [functions.generate-outfit-suggestion]
 verify_jwt = true
+
+[functions.generate-ootd-plan]
+verify_jwt = true

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays } from "lucide-react";
+import { Plus, Camera, X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarDays, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -71,6 +71,10 @@ export default function OOTDDiary() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateForLog, setSelectedDateForLog] = useState<Date | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [planningMode, setPlanningMode] = useState<'closet-only' | 'with-wishlist' | 'any-items'>('closet-only');
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [ootdPlan, setOotdPlan] = useState<any>(null);
 
   useEffect(() => {
     loadRecords();
@@ -366,6 +370,88 @@ export default function OOTDDiary() {
     });
   };
 
+  const generateOOTDPlan = async () => {
+    try {
+      setGeneratingPlan(true);
+      
+      // Get user's garments
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: garments } = await supabase
+        .from('garments')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!garments || garments.length === 0) {
+        toast.error("You need items in your closet to generate a plan");
+        return;
+      }
+
+      // Get 7-day weather forecast
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          const weatherPromises = [];
+          for (let i = 0; i < 7; i++) {
+            weatherPromises.push(
+              supabase.functions.invoke("get-weather", {
+                body: { latitude, longitude }
+              })
+            );
+          }
+
+          const weatherResults = await Promise.all(weatherPromises);
+          const weatherForecast = weatherResults.map((result, idx) => ({
+            day: idx + 1,
+            temp: result.data?.current?.temperature || 70,
+            weather: result.data?.current?.weatherDescription || 'Clear',
+            uvIndex: result.data?.current?.uvIndex || 3
+          }));
+
+          // Get wishlist items if needed
+          let wishlistItems = [];
+          if (planningMode === 'with-wishlist') {
+            const { data: savedOutfits } = await supabase
+              .from('saved_outfits')
+              .select('items')
+              .eq('user_id', user.id)
+              .eq('liked', true);
+            
+            wishlistItems = savedOutfits?.flatMap(outfit => 
+              JSON.parse(outfit.items as any || '[]')
+            ) || [];
+          }
+
+          // Call AI to generate plan
+          const { data: planData, error: planError } = await supabase.functions.invoke('generate-ootd-plan', {
+            body: {
+              garments,
+              weatherForecast,
+              planningMode,
+              wishlistItems
+            }
+          });
+
+          if (planError) throw planError;
+
+          setOotdPlan(planData);
+          toast.success(`Generated ${planData.totalDays}-day outfit plan!`);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast.error("Failed to get location for weather forecast");
+        }
+      );
+    } catch (error: any) {
+      console.error('Error generating OOTD plan:', error);
+      toast.error("Failed to generate plan");
+    } finally {
+      setGeneratingPlan(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -570,6 +656,17 @@ export default function OOTDDiary() {
               </Button>
             </div>
 
+            {/* Plan Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPlanDialog(true)}
+              className="gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Plan
+            </Button>
+
             {/* Date Navigation */}
             <div className="flex items-center justify-center gap-2">
               <Button
@@ -690,9 +787,9 @@ export default function OOTDDiary() {
                 })()}
               </div>
             ) : (
-              <div className="space-y-4 px-2">
+              <div className="space-y-4 px-2 max-w-5xl mx-auto">
                 {/* First row - 4 items (Mon-Thu) */}
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2 justify-items-center">
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
                     const firstRowDays = [0, 1, 2, 3].map(i => addDays(weekStart, i));
@@ -762,7 +859,7 @@ export default function OOTDDiary() {
                 </div>
 
                 {/* Second row - 3 items centered (Fri-Sun) */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-2 justify-items-center">
                   <div className="col-span-1" />
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -919,6 +1016,137 @@ export default function OOTDDiary() {
           </div>
         </div>
       )}
+
+      {/* AI Plan Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI Outfit Planning</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Planning Mode Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Planning Mode</Label>
+              <div className="grid gap-2">
+                <Button
+                  variant={planningMode === 'closet-only' ? 'default' : 'outline'}
+                  onClick={() => setPlanningMode('closet-only')}
+                  className="justify-start text-left h-auto py-3 px-4"
+                >
+                  <div>
+                    <div className="font-medium">Closet Only</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Use only items you already own
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant={planningMode === 'with-wishlist' ? 'default' : 'outline'}
+                  onClick={() => setPlanningMode('with-wishlist')}
+                  className="justify-start text-left h-auto py-3 px-4"
+                >
+                  <div>
+                    <div className="font-medium">Include Wishlist</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Add items from your saved/liked outfits
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button
+                  variant={planningMode === 'any-items' ? 'default' : 'outline'}
+                  onClick={() => setPlanningMode('any-items')}
+                  className="justify-start text-left h-auto py-3 px-4"
+                >
+                  <div>
+                    <div className="font-medium">Any Market Items</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Suggest any available items from brands
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </div>
+
+            {/* Generate Button */}
+            <Button 
+              onClick={generateOOTDPlan} 
+              disabled={generatingPlan}
+              className="w-full"
+              size="lg"
+            >
+              {generatingPlan ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  Generating Plan...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Plan
+                </>
+              )}
+            </Button>
+
+            {/* Display Plan Results */}
+            {ootdPlan && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">
+                    {ootdPlan.totalDays}-Day Outfit Plan
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    No item repetition
+                  </span>
+                </div>
+                
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {ootdPlan.plan?.map((dayPlan: any, index: number) => (
+                    <Card key={index} className="overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center justify-between">
+                          <span>Day {dayPlan.day} - {dayPlan.outfit.title}</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {dayPlan.weather}
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-2">
+                        <div className="text-xs text-muted-foreground">
+                          {dayPlan.outfit.notes}
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {dayPlan.outfit.items.map((item: any, idx: number) => (
+                            <span 
+                              key={idx}
+                              className={cn(
+                                "text-xs px-2 py-1 rounded",
+                                item.fromCloset 
+                                  ? "bg-primary/10 text-primary" 
+                                  : "bg-secondary text-secondary-foreground"
+                              )}
+                            >
+                              {item.name}
+                            </span>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                {ootdPlan.remainingItems && ootdPlan.remainingItems.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    {ootdPlan.remainingItems.length} items remaining unused
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
