@@ -108,8 +108,6 @@ export default function OOTDDiary() {
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [outfitImageUrl, setOutfitImageUrl] = useState<string>("");
   const [generatingImage, setGeneratingImage] = useState(false);
-  const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
-  const [trendLoading, setTrendLoading] = useState(false);
   const [todaysPickId, setTodaysPickId] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [addedToOOTD, setAddedToOOTD] = useState(false);
@@ -129,14 +127,22 @@ export default function OOTDDiary() {
 
   const loadRecords = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("ootd_records")
         .select("*")
+        .eq("user_id", user.id)
         .order("date", { ascending: false });
 
       if (error) throw error;
       setRecords((data || []) as OOTDRecord[]);
     } catch (error: any) {
+      console.error("Failed to load OOTD records:", error);
       toast.error("Failed to load OOTD records");
     } finally {
       setLoading(false);
@@ -527,11 +533,6 @@ export default function OOTDDiary() {
           setIsLiked(existingPick.is_liked);
           setAddedToOOTD(existingPick.added_to_ootd);
 
-          const { data: garments } = await supabase
-            .from('garments')
-            .select('id, type, color, material, brand, image_url');
-          await loadTrendOutfits(pickedWeather as WeatherData, garments || []);
-
           setTodayPickLoading(false);
           return;
         }
@@ -555,8 +556,6 @@ export default function OOTDDiary() {
       const { data: garments } = await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url');
-      
-      await loadTrendOutfits(weatherData, garments);
 
       // Generate AI recommendation
       setRecommendationLoading(true);
@@ -659,68 +658,6 @@ export default function OOTDDiary() {
     } finally {
       setTodayPickLoading(false);
       setRecommendationLoading(false);
-    }
-  };
-
-  const loadTrendOutfits = async (weatherData?: any, garments?: any[]) => {
-    try {
-      setTrendLoading(true);
-      const currentWeather = weatherData || weather;
-      if (!currentWeather) {
-        setTrendLoading(false);
-        return;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const today = new Date().toISOString().split('T')[0];
-
-      const { data: existingTrends } = await supabase
-        .from('trends')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (existingTrends && existingTrends.length > 0) {
-        setTrendOutfits(existingTrends.map(trend => ({
-          title: trend.title,
-          summary: trend.summary || trend.description,
-          hairstyle: trend.hairstyle,
-          imageUrl: trend.image_url,
-          items: trend.items || []
-        })));
-        setTrendLoading(false);
-        return;
-      }
-
-      const { data: trendsData, error: trendsError } = await supabase.functions.invoke('save-fashion-trends', {
-        body: {
-          temperature: currentWeather.current.temperature,
-          weatherDescription: currentWeather.current.weatherDescription,
-          currentWeather: currentWeather
-        }
-      });
-
-      if (trendsError) throw trendsError;
-
-      if (trendsData?.trends) {
-        const formattedTrends = trendsData.trends.map((trend: any) => ({
-          title: trend.title,
-          summary: trend.summary || trend.description,
-          hairstyle: trend.hairstyle,
-          imageUrl: trend.image_url,
-          items: trend.items || []
-        }));
-        
-        setTrendOutfits(formattedTrends);
-      }
-    } catch (error) {
-      console.error('Error loading trend outfits:', error);
-    } finally {
-      setTrendLoading(false);
     }
   };
 
@@ -1356,49 +1293,6 @@ export default function OOTDDiary() {
                 </Card>
               )}
 
-              {/* Fashion Trends Carousel */}
-              {trendOutfits.length > 0 && (
-                <Card className="overflow-hidden shadow-elegant">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-primary" />
-                      Fashion Trends
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Carousel className="w-full">
-                      <CarouselContent className="-ml-2 md:-ml-4">
-                        {trendOutfits.map((trend, index) => (
-                          <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                            <Card className="overflow-hidden hover:shadow-medium transition-shadow cursor-pointer">
-                              <div className="aspect-[3/4] relative overflow-hidden">
-                                {trend.imageUrl ? (
-                                  <img
-                                    src={trend.imageUrl}
-                                    alt={trend.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                                    <Sparkles className="w-12 h-12 text-primary/40" />
-                                  </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                                  <h3 className="font-semibold mb-1">{trend.title}</h3>
-                                  <p className="text-xs opacity-90 line-clamp-2">{trend.summary}</p>
-                                </div>
-                              </div>
-                            </Card>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious className="left-2" />
-                      <CarouselNext className="right-2" />
-                    </Carousel>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           )}
 

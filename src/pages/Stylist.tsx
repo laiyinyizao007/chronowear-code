@@ -46,8 +46,11 @@ export default function Stylist() {
   const [generatingAI, setGeneratingAI] = useState(false);
   const [swapDrawerOpen, setSwapDrawerOpen] = useState(false);
   const [swapCategory, setSwapCategory] = useState<string>("");
+  const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
 
   const categories = [
+    { id: "trends", label: "Fashion Trends", icon: Sparkles },
     { id: "stylebook", label: "Stylebook", icon: Book },
     { id: "top", label: "Tops", icon: ShirtIcon },
     { id: "bottom", label: "Bottoms", icon: UtensilsCrossed },
@@ -61,6 +64,11 @@ export default function Stylist() {
     : garments.filter(g => g.type.toLowerCase().includes(selectedCategory));
 
   const handleCategoryClick = (categoryId: string) => {
+    if (categoryId === "trends") {
+      setActiveTab("trends");
+      loadTrendOutfits();
+      return;
+    }
     if (categoryId === "stylebook") {
       setActiveTab("stylebook");
       return;
@@ -272,6 +280,83 @@ export default function Stylist() {
       loadSavedOutfits();
     } catch (error: any) {
       toast.error("Failed to update Stylebook");
+    }
+  };
+
+  const loadTrendOutfits = async () => {
+    try {
+      setTrendLoading(true);
+      
+      // Get current weather
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
+            'get-weather',
+            { body: { latitude, longitude } }
+          );
+
+          if (weatherError) throw weatherError;
+
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error("Not authenticated");
+
+          const today = new Date().toISOString().split('T')[0];
+
+          const { data: existingTrends } = await supabase
+            .from('trends')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          if (existingTrends && existingTrends.length > 0) {
+            setTrendOutfits(existingTrends.map(trend => ({
+              title: trend.title,
+              summary: trend.summary || trend.description,
+              hairstyle: trend.hairstyle,
+              imageUrl: trend.image_url,
+              items: trend.items || []
+            })));
+            setTrendLoading(false);
+            return;
+          }
+
+          const { data: trendsData, error: trendsError } = await supabase.functions.invoke('save-fashion-trends', {
+            body: {
+              temperature: weatherData.current.temperature,
+              weatherDescription: weatherData.current.weatherDescription,
+              currentWeather: weatherData
+            }
+          });
+
+          if (trendsError) throw trendsError;
+
+          if (trendsData?.trends) {
+            const formattedTrends = trendsData.trends.map((trend: any) => ({
+              title: trend.title,
+              summary: trend.summary || trend.description,
+              hairstyle: trend.hairstyle,
+              imageUrl: trend.image_url,
+              items: trend.items || []
+            }));
+            
+            setTrendOutfits(formattedTrends);
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast.error("Failed to get location for trends");
+          setTrendLoading(false);
+        }
+      );
+    } catch (error) {
+      console.error('Error loading trend outfits:', error);
+      toast.error("Failed to load fashion trends");
+    } finally {
+      setTrendLoading(false);
     }
   };
 
@@ -632,6 +717,78 @@ export default function Stylist() {
                         {outfit.summary}
                       </p>
                     </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="trends" className="space-y-6 mt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Fashion Trends</h2>
+                <p className="text-muted-foreground text-sm">
+                  Discover the latest fashion trends
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={loadTrendOutfits}
+                disabled={trendLoading}
+              >
+                {trendLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+
+            {trendLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="aspect-[3/4] bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : trendOutfits.length === 0 ? (
+              <Card className="shadow-medium">
+                <CardContent className="py-12 text-center">
+                  <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No Trends Yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Load fashion trends based on current weather
+                  </p>
+                  <Button onClick={loadTrendOutfits}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Load Trends
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {trendOutfits.map((trend, index) => (
+                  <Card key={index} className="overflow-hidden hover:shadow-medium transition-shadow cursor-pointer">
+                    <div className="aspect-[3/4] relative overflow-hidden">
+                      {trend.imageUrl ? (
+                        <img
+                          src={trend.imageUrl}
+                          alt={trend.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                          <Sparkles className="w-12 h-12 text-primary/40" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                        <h3 className="font-semibold mb-1">{trend.title}</h3>
+                        <p className="text-xs opacity-90 line-clamp-2">{trend.summary}</p>
+                      </div>
+                    </div>
                   </Card>
                 ))}
               </div>
