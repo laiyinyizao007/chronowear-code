@@ -1030,23 +1030,23 @@ export default function OOTDDiary() {
         <div className="space-y-4 sm:space-y-6">
           {/* Navigation Controls - Mobile Optimized */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            {/* View Mode Tabs */}
-            <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg w-full sm:w-auto">
+            {/* View Mode Toggle - Calendar Icons */}
+            <div className="flex gap-2">
               <Button
-                variant={viewMode === 'day' ? 'default' : 'ghost'}
-                size="sm"
+                variant={viewMode === 'day' ? 'default' : 'outline'}
+                size="icon"
                 onClick={() => setViewMode('day')}
-                className="flex-1 sm:flex-none text-xs sm:px-6"
+                className="h-10 w-10"
               >
-                Day
+                <CalendarDays className="w-4 h-4" />
               </Button>
               <Button
-                variant={viewMode === 'week' ? 'default' : 'ghost'}
-                size="sm"
+                variant={viewMode === 'week' ? 'default' : 'outline'}
+                size="icon"
                 onClick={() => setViewMode('week')}
-                className="flex-1 sm:flex-none text-xs sm:px-6"
+                className="h-10 w-10"
               >
-                Week
+                <CalendarIcon className="w-4 h-4" />
               </Button>
             </div>
 
@@ -1302,6 +1302,33 @@ export default function OOTDDiary() {
               <div className="max-w-lg mx-auto p-4">
                 {(() => {
                   const day = currentDate;
+                  const isToday = isSameDay(day, new Date());
+                  
+                  // Hide today's record in day view
+                  if (isToday) {
+                    return (
+                      <Card className="overflow-hidden cursor-pointer transition-all hover:shadow-medium"
+                        onClick={() => {
+                          setSelectedDateForLog(day);
+                          setIsAddDialogOpen(true);
+                        }}
+                      >
+                        <div className="relative aspect-[3/4]">
+                          <div className="flex flex-col items-center justify-center h-full bg-secondary">
+                            <Plus className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                            <span className="text-sm text-muted-foreground">Log Today's Outfit</span>
+                          </div>
+                          <div className="absolute bottom-4 left-4 right-4 text-center">
+                            <div className="text-3xl font-light text-muted-foreground mb-1">
+                              {format(day, "d")}
+                            </div>
+                            <div className="text-sm text-muted-foreground">{format(day, "EEEE")}</div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  }
+
                   const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
                   const hasRecord = dayRecords.length > 0;
 
@@ -1325,9 +1352,9 @@ export default function OOTDDiary() {
                               alt={`OOTD ${format(day, "d")}`}
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                            <div className="absolute bottom-4 left-4 right-4 text-white">
-                              <div className="text-4xl font-light mb-1">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            <div className="absolute bottom-4 left-4 right-4 text-white text-center">
+                              <div className="text-3xl font-light mb-1">
                                 {format(day, "d")}
                               </div>
                               <div className="text-sm opacity-90">{format(day, "EEEE")}</div>
@@ -1346,11 +1373,13 @@ export default function OOTDDiary() {
                           </>
                         ) : (
                           <div className="flex flex-col items-center justify-center h-full bg-secondary">
-                            <span className="text-6xl font-light text-muted-foreground mb-2">
-                              {format(day, "d")}
-                            </span>
-                            <span className="text-base text-muted-foreground">{format(day, "EEEE")}</span>
-                            <Plus className="w-8 h-8 text-muted-foreground/40 mt-6" />
+                            <Plus className="w-8 h-8 text-muted-foreground/40 mb-4" />
+                            <div className="absolute bottom-4 left-4 right-4 text-center">
+                              <span className="text-3xl font-light text-muted-foreground block mb-1">
+                                {format(day, "d")}
+                              </span>
+                              <span className="text-sm text-muted-foreground">{format(day, "EEEE")}</span>
+                            </div>
                           </div>
                         )}
                       </div>
