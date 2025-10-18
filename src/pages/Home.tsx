@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, MessageSquare } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, MessageSquare, Cloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -512,6 +512,45 @@ export default function Home() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {/* Weather Info Card */}
+      {weather && (
+        <Card className="shadow-medium">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <Cloud className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold">Today's Weather</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Temperature</p>
+                    <p className="text-lg font-bold">
+                      {weather.daily.temperatureMax}°F
+                      <span className="text-sm text-muted-foreground font-normal"> / {weather.daily.temperatureMin}°F</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Condition</p>
+                    <p className="text-sm font-medium">{weather.current.weatherDescription}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">UV Index</p>
+                    <p className={`text-sm font-medium ${getUVLevel(weather.current.uvIndex).color}`}>
+                      {weather.current.uvIndex} - {getUVLevel(weather.current.uvIndex).level}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Humidity</p>
+                    <p className="text-sm font-medium">{weather.current.humidity}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* AI Search Bar - Minimal Farfetch style */}
       <div className="w-full max-w-3xl mx-auto">
         <div className="relative">
