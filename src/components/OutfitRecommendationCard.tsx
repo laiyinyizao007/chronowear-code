@@ -35,8 +35,14 @@ export default function OutfitRecommendationCard({
       setLoadingImages(true);
       const updatedItems = await Promise.all(
         items.map(async (item) => {
-          // Skip if already has image or missing brand/model
-          if (item.imageUrl || !item.brand || !item.model) {
+          // Skip if already has image
+          if (item.imageUrl) {
+            return item;
+          }
+
+          // If missing brand or model info, skip search but return item
+          if (!item.brand || !item.model) {
+            console.log(`OutfitRecommendationCard: Skipping ${item.type} - missing brand/model`);
             return item;
           }
 

@@ -322,8 +322,14 @@ export default function Home() {
           }
         }
         
-        // If already has image or missing info, return as is
-        if (item.imageUrl || !item.brand || !item.model) return item;
+        // If already has image, return as is
+        if (item.imageUrl) return item;
+        
+        // If missing brand or model info, skip search but return item
+        if (!item.brand || !item.model) {
+          console.log(`Skipping image search for ${item.type} - missing brand/model`);
+          return item;
+        }
         
         // Otherwise fetch from search API
         try {
