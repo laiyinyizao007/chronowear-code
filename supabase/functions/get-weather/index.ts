@@ -26,24 +26,32 @@ serve(async (req) => {
 
     const weatherData = await weatherResponse.json();
     
-    // Get location name using reverse geocoding with Google Maps API
-    const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    // Get location name using free BigDataCloud reverse geocoding API (no API key required)
     let locationName = 'Unknown Location';
     
-    if (GOOGLE_MAPS_API_KEY) {
-      const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
+    try {
+      const geocodeUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
       const geocodeResponse = await fetch(geocodeUrl);
       
       if (geocodeResponse.ok) {
         const geocodeData = await geocodeResponse.json();
-        if (geocodeData.results && geocodeData.results.length > 0) {
-          // Get city and country from address components
-          const addressComponents = geocodeData.results[0].address_components;
-          const city = addressComponents.find((c: any) => c.types.includes('locality'))?.long_name;
-          const country = addressComponents.find((c: any) => c.types.includes('country'))?.short_name;
-          locationName = city ? `${city}, ${country}` : geocodeData.results[0].formatted_address;
+        console.log('Geocoding data:', geocodeData);
+        
+        // Build location name from city and country
+        const city = geocodeData.city || geocodeData.locality || geocodeData.principalSubdivision;
+        const country = geocodeData.countryCode;
+        
+        if (city && country) {
+          locationName = `${city}, ${country}`;
+        } else if (city) {
+          locationName = city;
+        } else if (geocodeData.countryName) {
+          locationName = geocodeData.countryName;
         }
       }
+    } catch (geocodeError) {
+      console.error('Geocoding error (non-fatal):', geocodeError);
+      // Continue with Unknown Location if geocoding fails
     }
 
     // Map weather codes to descriptions
