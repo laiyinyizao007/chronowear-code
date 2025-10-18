@@ -51,86 +51,81 @@ export default function Home() {
   }, []);
 
   const loadWeatherAndRecommendation = async () => {
-    setLoading(true);
-    setLoadError(false);
-
     try {
-      // 1) Get user's location
+      setLoading(true);
+      setLoadError(false);
+      
+      // Get user's location
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 300000, // Cache for 5 minutes
+          maximumAge: 300000 // Cache for 5 minutes
         });
       });
 
       const { latitude, longitude } = position.coords;
 
-      // 2) Fetch weather data (critical)
+      // Fetch weather data
       const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
         'get-weather',
-        { body: { lat: latitude, lng: longitude } }
+        {
+          body: { lat: latitude, lng: longitude }
+        }
       );
+
       if (weatherError) throw weatherError;
       setWeather(weatherData);
 
-      // 3) Fetch user's garments (non-critical)
+      // Fetch user's garments
       const { data: garments } = await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url');
 
-      // 4) Generate AI recommendation (non-critical). If it fails, do NOT blank the page.
-      try {
-        setRecommendationLoading(true);
-        const { data: recommendationData, error: recError } = await supabase.functions.invoke(
-          'generate-outfit-recommendation',
-          {
-            body: {
-              temperature: weatherData.current.temperature,
-              weatherDescription: weatherData.current.weatherDescription,
-              uvIndex: weatherData.current.uvIndex,
-              garments: garments || [],
-            },
-          }
-        );
-
-        if (recError) {
-          console.error('Recommendation error:', recError);
-          toast({
-            title: 'AI 服务暂时不可用',
-            description: '穿搭推荐稍后再试。',
-            variant: 'destructive',
-          });
-        } else {
-          setOutfits(recommendationData.outfits || []);
-          if (recommendationData.outfits?.[0]) {
-            generateOutfitImage(recommendationData.outfits[0]);
+      // Generate AI recommendation
+      setRecommendationLoading(true);
+      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+        'generate-outfit-recommendation',
+        {
+          body: {
+            temperature: weatherData.current.temperature,
+            weatherDescription: weatherData.current.weatherDescription,
+            uvIndex: weatherData.current.uvIndex,
+            garments: garments || []
           }
         }
-      } finally {
-        setRecommendationLoading(false);
+      );
+
+      if (recError) throw recError;
+      setOutfits(recommendationData.outfits || []);
+
+      // Generate outfit image for the first outfit
+      if (recommendationData.outfits?.[0]) {
+        generateOutfitImage(recommendationData.outfits[0]);
       }
 
-      // 5) Load trend outfits (already handles its own errors)
+      // Load trend outfits
       loadTrendOutfits(weatherData, garments || []);
+
     } catch (error: any) {
-      console.error('Error loading critical data:', error);
+      console.error('Error loading data:', error);
       setLoadError(true);
-      if (error?.code === 1) {
+      if (error.code === 1) {
         toast({
-          title: '需要定位权限',
-          description: '请允许定位以获取天气和穿搭推荐。',
-          variant: 'destructive',
+          title: "Location Access Denied",
+          description: "Please enable location access to get weather and outfit recommendations.",
+          variant: "destructive",
         });
       } else {
         toast({
-          title: '加载失败',
-          description: '无法加载定位或天气数据，请重试。',
-          variant: 'destructive',
+          title: "Error",
+          description: "Failed to load data. Please try again.",
+          variant: "destructive",
         });
       }
     } finally {
       setLoading(false);
+      setRecommendationLoading(false);
     }
   };
 
@@ -156,10 +151,7 @@ export default function Home() {
         }
       );
 
-      if (error) {
-        console.error('Trend recommendation error:', error);
-        throw new Error('Unable to generate trend recommendations at this time');
-      }
+      if (error) throw error;
       
       // Generate images for trend outfits
       const outfitsWithImages = await Promise.all(
@@ -182,12 +174,6 @@ export default function Home() {
       setTrendOutfits(outfitsWithImages);
     } catch (error) {
       console.error('Error loading trend outfits:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load trend outfits';
-      toast({
-        title: "Trend Loading Issue",
-        description: errorMessage,
-        variant: "destructive",
-      });
     } finally {
       setTrendLoading(false);
     }
@@ -204,17 +190,12 @@ export default function Home() {
         }
       });
 
-      if (error) {
-        console.error('Error generating outfit image:', error);
-        // Don't show toast for image generation errors - it's non-critical
-        return;
-      }
+      if (error) throw error;
       if (data?.imageUrl) {
         setOutfitImageUrl(data.imageUrl);
       }
     } catch (error) {
       console.error('Error generating outfit image:', error);
-      // Non-critical error, just log it
     } finally {
       setGeneratingImage(false);
     }
@@ -294,32 +275,23 @@ export default function Home() {
         }
       );
 
-      if (recError) {
-        console.error('More outfits error:', recError);
-        toast({
-          title: "AI 服务暂时不可用",
-          description: "无法生成更多穿搭推荐，请稍后再试",
-          variant: "destructive",
-        });
-        return;
-      }
-      
+      if (recError) throw recError;
       setOutfits(recommendationData.outfits || []);
       
-      // Generate outfit image for the first outfit (non-critical)
+      // Generate outfit image for the first outfit
       if (recommendationData.outfits?.[0]) {
         generateOutfitImage(recommendationData.outfits[0]);
       }
       
       toast({
-        title: "新推荐已生成",
-        description: "根据当前天气为您推荐新穿搭！",
+        title: "New Outfits Generated",
+        description: "Fresh outfit recommendations based on current weather!",
       });
     } catch (error: any) {
       console.error('Error generating new outfits:', error);
       toast({
-        title: "加载失败",
-        description: "无法生成新穿搭推荐",
+        title: "Error",
+        description: "Failed to generate new outfits",
         variant: "destructive",
       });
     } finally {

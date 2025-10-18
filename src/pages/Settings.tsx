@@ -5,22 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Upload, Loader2, Image as ImageIcon, LogOut, Ruler } from "lucide-react";
+import { User, Upload, Loader2, Image as ImageIcon, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { LocationCombobox } from "@/components/LocationCombobox";
 
 export default function Settings() {
   const navigate = useNavigate();
   const [fullBodyPhotoUrl, setFullBodyPhotoUrl] = useState<string>("");
   const [stylePreference, setStylePreference] = useState<string>("");
   const [geoLocation, setGeoLocation] = useState<string>("");
-  const [height, setHeight] = useState<string>("");
-  const [weight, setWeight] = useState<string>("");
-  const [bust, setBust] = useState<string>("");
-  const [waist, setWaist] = useState<string>("");
-  const [hip, setHip] = useState<string>("");
-  const [clothingSize, setClothingSize] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +42,7 @@ export default function Settings() {
       // Load profile data
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("style_preference, geo_location, height_cm, weight_kg, bust_cm, waist_cm, hip_cm, clothing_size")
+        .select("style_preference, geo_location")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -58,12 +51,6 @@ export default function Settings() {
       if (profileData) {
         setStylePreference(profileData.style_preference || "");
         setGeoLocation(profileData.geo_location || "");
-        setHeight(profileData.height_cm?.toString() || "");
-        setWeight(profileData.weight_kg?.toString() || "");
-        setBust(profileData.bust_cm?.toString() || "");
-        setWaist(profileData.waist_cm?.toString() || "");
-        setHip(profileData.hip_cm?.toString() || "");
-        setClothingSize(profileData.clothing_size || "");
       }
     } catch (error: any) {
       console.error("Error loading settings:", error);
@@ -141,12 +128,6 @@ export default function Settings() {
         .update({
           style_preference: stylePreference,
           geo_location: geoLocation,
-          height_cm: height ? parseFloat(height) : null,
-          weight_kg: weight ? parseFloat(weight) : null,
-          bust_cm: bust ? parseFloat(bust) : null,
-          waist_cm: waist ? parseFloat(waist) : null,
-          hip_cm: hip ? parseFloat(hip) : null,
-          clothing_size: clothingSize || null,
         })
         .eq("id", user.id);
 
@@ -213,116 +194,16 @@ export default function Settings() {
 
           <div className="space-y-2">
             <Label htmlFor="geo-location">Preferred Location</Label>
-            <LocationCombobox value={geoLocation} onChange={setGeoLocation} />
+            <Input
+              id="geo-location"
+              placeholder="e.g., New York, London"
+              value={geoLocation}
+              onChange={(e) => setGeoLocation(e.target.value)}
+            />
           </div>
 
           <Button onClick={handleUpdateProfile} className="w-full">
             Save Preferences
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Ruler className="w-5 h-5" />
-            Body Measurements
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Add your measurements for more accurate outfit recommendations
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="height">Height (cm)</Label>
-              <Input
-                id="height"
-                type="number"
-                placeholder="170"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                min="0"
-                step="0.1"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (kg)</Label>
-              <Input
-                id="weight"
-                type="number"
-                placeholder="60"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                min="0"
-                step="0.1"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="clothing-size">Clothing Size</Label>
-            <Select value={clothingSize} onValueChange={setClothingSize}>
-              <SelectTrigger id="clothing-size">
-                <SelectValue placeholder="Select your size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="xxs">XXS</SelectItem>
-                <SelectItem value="xs">XS</SelectItem>
-                <SelectItem value="s">S</SelectItem>
-                <SelectItem value="m">M</SelectItem>
-                <SelectItem value="l">L</SelectItem>
-                <SelectItem value="xl">XL</SelectItem>
-                <SelectItem value="xxl">XXL</SelectItem>
-                <SelectItem value="xxxl">XXXL</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Body Measurements (cm)</Label>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="bust" className="text-xs text-muted-foreground">Bust</Label>
-                <Input
-                  id="bust"
-                  type="number"
-                  placeholder="85"
-                  value={bust}
-                  onChange={(e) => setBust(e.target.value)}
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="waist" className="text-xs text-muted-foreground">Waist</Label>
-                <Input
-                  id="waist"
-                  type="number"
-                  placeholder="65"
-                  value={waist}
-                  onChange={(e) => setWaist(e.target.value)}
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hip" className="text-xs text-muted-foreground">Hip</Label>
-                <Input
-                  id="hip"
-                  type="number"
-                  placeholder="90"
-                  value={hip}
-                  onChange={(e) => setHip(e.target.value)}
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={handleUpdateProfile} className="w-full">
-            Save Measurements
           </Button>
         </CardContent>
       </Card>
