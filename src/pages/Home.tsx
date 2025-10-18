@@ -82,32 +82,30 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url');
 
-      // AI功能暂时不可用，使用mock数据
+      // Generate AI recommendation
       setRecommendationLoading(true);
-      
-      // Mock outfit data
-      const mockOutfits = [
+      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+        'generate-outfit-recommendation',
         {
-          title: "Casual Comfort",
-          summary: "Perfect for the current weather",
-          hairstyle: "Natural",
-          items: garments?.slice(0, 3).map(g => ({
-            type: g.type,
-            brand: g.brand,
-            color: g.color,
-            material: g.material,
-            imageUrl: g.image_url,
-            fromCloset: true,
-            garmentId: g.id
-          })) || []
+          body: {
+            temperature: weatherData.current.temperature,
+            weatherDescription: weatherData.current.weatherDescription,
+            uvIndex: weatherData.current.uvIndex,
+            garments: garments || []
+          }
         }
-      ];
-      
-      setOutfits(mockOutfits);
-      setRecommendationLoading(false);
-      
-      // 暂时不加载trend outfits，避免API错误
-      setTrendOutfits([]);
+      );
+
+      if (recError) throw recError;
+      setOutfits(recommendationData.outfits || []);
+
+      // Generate outfit image for the first outfit
+      if (recommendationData.outfits?.[0]) {
+        generateOutfitImage(recommendationData.outfits[0]);
+      }
+
+      // Load trend outfits
+      loadTrendOutfits(weatherData, garments || []);
 
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -259,11 +257,35 @@ export default function Home() {
     try {
       setMoreOutfitsLoading(true);
       
-      // AI功能暂时不可用
+      // Fetch user's garments
+      const { data: garments } = await supabase
+        .from('garments')
+        .select('id, type, color, material, brand, image_url');
+
+      // Generate new AI recommendation
+      const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+        'generate-outfit-recommendation',
+        {
+          body: {
+            temperature: weather.current.temperature,
+            weatherDescription: weather.current.weatherDescription,
+            uvIndex: weather.current.uvIndex,
+            garments: garments || []
+          }
+        }
+      );
+
+      if (recError) throw recError;
+      setOutfits(recommendationData.outfits || []);
+      
+      // Generate outfit image for the first outfit
+      if (recommendationData.outfits?.[0]) {
+        generateOutfitImage(recommendationData.outfits[0]);
+      }
+      
       toast({
-        title: "Feature Unavailable",
-        description: "AI recommendations are temporarily unavailable. Please try again later.",
-        variant: "destructive",
+        title: "New Outfits Generated",
+        description: "Fresh outfit recommendations based on current weather!",
       });
     } catch (error: any) {
       console.error('Error generating new outfits:', error);
