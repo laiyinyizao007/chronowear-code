@@ -71,26 +71,3 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
-
-## Important: Image Generation API Policy
-
-**⚠️ CRITICAL: DO NOT USE LOVABLE AI FOR IMAGE GENERATION IN THIS PROJECT**
-
-This project uses alternative image generation APIs (such as Replicate, Hugging Face, or other third-party services) for all outfit image generation needs.
-
-**Reasons:**
-- Lovable AI credits are limited and should be preserved
-- Project already has integration with other image generation services
-- Cost efficiency and sustainability
-
-**Implementation:**
-- Use Replicate API for outfit image generation
-- Use Hugging Face API as fallback option
-- Never call `https://ai.gateway.lovable.dev` for image generation
-- Keep the `generate-outfit-image` edge function using non-Lovable AI services
-
-**If you need to modify image generation:**
-1. Check `supabase/functions/generate-outfit-image/index.ts`
-2. Ensure it uses Replicate or Hugging Face APIs
-3. Do NOT revert to Lovable AI
-4. Test thoroughly before deploying
