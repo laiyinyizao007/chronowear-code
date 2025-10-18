@@ -79,6 +79,7 @@ export default function Layout() {
     { to: "/closet", icon: Shirt, label: "Closet" },
     { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
+    { to: "/settings", icon: SettingsIcon, label: "Settings" },
   ];
 
   return (
@@ -127,12 +128,12 @@ export default function Layout() {
               </DialogContent>
             </Dialog>
             
-            {/* Settings */}
+            {/* Settings - Desktop only now since it's in mobile nav */}
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/settings")}
-              className="hidden sm:flex hover:bg-muted/30 h-8 w-8"
+              className="hidden lg:flex hover:bg-muted/30 h-8 w-8"
               aria-label="Settings"
             >
               <SettingsIcon className="w-3.5 h-3.5" />
@@ -148,7 +149,7 @@ export default function Layout() {
 
       {/* Bottom Navigation - Farfetch ultra minimal */}
       <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
-        <div className="mx-auto px-6 sm:px-10 max-w-[1600px]">
+        <div className="mx-auto px-4 sm:px-6 max-w-[1600px]">
           <div className="flex justify-around items-center h-16 sm:h-18">
             {/* First two nav items: Home, Closet */}
             {navItems.slice(0, 2).map((item) => (
@@ -157,7 +158,7 @@ export default function Layout() {
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-300 relative ${
+                  `flex flex-col items-center gap-1 px-2 sm:px-3 py-2 transition-all duration-300 relative ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
@@ -169,7 +170,7 @@ export default function Layout() {
                     {isActive && (
                       <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary animate-fade-in" />
                     )}
-                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
+                    <item.icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
                     <span className={`text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase transition-all duration-300 ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
                   </>
                 )}
@@ -204,18 +205,18 @@ export default function Layout() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Last two nav items: Stylist, OOTD */}
+            {/* Last three nav items: Stylist, OOTD, Settings */}
             {navItems.slice(2).map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === "/"}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1.5 px-3 sm:px-4 py-2.5 transition-all duration-300 relative ${
+                  `flex flex-col items-center gap-1 px-2 sm:px-3 py-2 transition-all duration-300 relative lg:hidden ${
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
-                  }`
+                  } ${item.to === "/settings" ? "flex" : ""}`
                 }
               >
                 {({ isActive }) => (
@@ -223,12 +224,40 @@ export default function Layout() {
                     {isActive && (
                       <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary animate-fade-in" />
                     )}
-                    <item.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
+                    <item.icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
                     <span className={`text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase transition-all duration-300 ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
                   </>
                 )}
               </NavLink>
             ))}
+            
+            {/* Stylist and OOTD for desktop (hidden on mobile because Settings takes the spot) */}
+            <div className="hidden lg:flex">
+              {navItems.slice(2, 4).map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/"}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center gap-1 px-2 sm:px-3 py-2 transition-all duration-300 relative ${
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary animate-fade-in" />
+                      )}
+                      <item.icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} strokeWidth={isActive ? 2 : 1.5} />
+                      <span className={`text-[8px] sm:text-[9px] font-light tracking-[0.15em] uppercase transition-all duration-300 ${isActive ? 'font-medium' : ''}`}>{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
           </div>
         </div>
       </nav>
