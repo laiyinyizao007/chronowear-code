@@ -40,6 +40,7 @@ interface Garment {
   care_instructions: string | null;
   official_price: number | null;
   acquired_date: string | null;
+  liked?: boolean;
 }
 
 interface ProductInfo {
@@ -60,7 +61,6 @@ interface ProductInfo {
 
 export default function Closet() {
   const [garments, setGarments] = useState<Garment[]>([]);
-  const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -147,7 +147,6 @@ export default function Closet() {
 
   useEffect(() => {
     loadGarments();
-    loadSavedOutfits();
   }, []);
 
   const loadGarments = async () => {
@@ -166,32 +165,19 @@ export default function Closet() {
     }
   };
 
-  const loadSavedOutfits = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("saved_outfits")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setSavedOutfits(data || []);
-    } catch (error: any) {
-      toast.error("Failed to load saved outfits");
-    }
-  };
-
-  const handleDeleteOutfit = async (id: string) => {
+  const toggleLikeGarment = async (garmentId: string, currentLiked: boolean) => {
     try {
       const { error } = await supabase
-        .from("saved_outfits")
-        .delete()
-        .eq("id", id);
+        .from("garments")
+        .update({ liked: !currentLiked })
+        .eq("id", garmentId);
 
       if (error) throw error;
-      toast.success("Outfit deleted");
-      loadSavedOutfits();
+      
+      toast.success(currentLiked ? "Removed from favorites" : "Added to favorites");
+      loadGarments();
     } catch (error: any) {
-      toast.error("Failed to delete outfit");
+      toast.error("Failed to update favorite");
     }
   };
 
@@ -872,7 +858,7 @@ export default function Closet() {
         )}
       </div>
 
-      {garments.length === 0 && savedOutfits.length === 0 ? (
+      {garments.length === 0 ? (
         <Card className="shadow-medium">
           <CardContent className="py-12 text-center space-y-4">
             <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground" />
@@ -889,119 +875,62 @@ export default function Closet() {
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="items" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="items" className="flex items-center gap-2">
-              <Shirt className="w-4 h-4" />
-              Items ({filteredGarments.length})
-            </TabsTrigger>
-            <TabsTrigger value="outfits" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Outfits ({savedOutfits.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="items" className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredGarments.map((garment) => (
-                <Card 
-                  key={garment.id} 
-                  className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
-                  onClick={() => setSelectedGarment(garment)}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredGarments.map((garment) => (
+            <Card 
+              key={garment.id} 
+              className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow cursor-pointer group"
+              onClick={() => setSelectedGarment(garment)}
+            >
+              <div className="aspect-square relative bg-muted">
+                <img
+                  src={garment.image_url}
+                  alt={garment.type}
+                  className="w-full h-full object-cover"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteGarmentId(garment.id);
+                  }}
                 >
-                  <div className="aspect-square relative bg-muted">
-                    <img
-                      src={garment.image_url}
-                      alt={garment.type}
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteGarmentId(garment.id);
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <CardContent className="p-3 space-y-1">
-                    <h3 className="font-semibold text-sm">{garment.type}</h3>
-                    <div className="flex gap-2 text-xs text-muted-foreground">
-                      {garment.color && <span>{garment.color}</span>}
-                      {garment.season && <span>• {garment.season}</span>}
-                    </div>
-                    {garment.brand && (
-                      <p className="text-xs text-muted-foreground">{garment.brand}</p>
-                    )}
-                    {garment.usage_count > 0 && (
-                      <Badge variant="outline" className="text-xs mt-1">
-                        Worn {garment.usage_count}x
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="outfits" className="space-y-4">
-            {savedOutfits.length === 0 ? (
-              <Card className="shadow-soft">
-                <CardContent className="py-12 text-center space-y-4">
-                  <Heart className="w-12 h-12 mx-auto text-muted-foreground" />
-                  <div>
-                    <h3 className="font-semibold mb-2">No saved outfits yet</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Save outfits from Today's Pick to build your collection
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {savedOutfits.map((outfit) => (
-                  <Card key={outfit.id} className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow">
-                    <div className="aspect-[3/4] relative bg-muted">
-                      {outfit.image_url ? (
-                        <img
-                          src={outfit.image_url}
-                          alt={outfit.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Sparkles className="w-12 h-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-                        onClick={() => handleDeleteOutfit(outfit.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <CardContent className="p-3 space-y-1">
-                      <h3 className="font-semibold text-sm">{outfit.title}</h3>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {outfit.summary}
-                      </p>
-                      {outfit.items && (
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {JSON.parse(outfit.items || '[]').length} items
-                        </Badge>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                  <X className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute bottom-2 right-2 bg-background/80 hover:bg-background"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLikeGarment(garment.id, garment.liked || false);
+                  }}
+                >
+                  <Heart 
+                    className={`w-4 h-4 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
+                  />
+                </Button>
               </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              <CardContent className="p-3 space-y-1">
+                <h3 className="font-semibold text-sm">{garment.type}</h3>
+                <div className="flex gap-2 text-xs text-muted-foreground">
+                  {garment.color && <span>{garment.color}</span>}
+                  {garment.season && <span>• {garment.season}</span>}
+                </div>
+                {garment.brand && (
+                  <p className="text-xs text-muted-foreground">{garment.brand}</p>
+                )}
+                {garment.usage_count > 0 && (
+                  <Badge variant="outline" className="text-xs mt-1">
+                    Worn {garment.usage_count}x
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
         <AlertDialog open={!!deleteGarmentId} onOpenChange={(open) => !open && setDeleteGarmentId(null)}>

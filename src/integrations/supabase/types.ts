@@ -24,6 +24,7 @@ export type Database = {
           id: string
           image_url: string
           last_worn_date: string | null
+          liked: boolean | null
           material: string | null
           official_price: number | null
           season: string | null
@@ -42,6 +43,7 @@ export type Database = {
           id?: string
           image_url: string
           last_worn_date?: string | null
+          liked?: boolean | null
           material?: string | null
           official_price?: number | null
           season?: string | null
@@ -60,6 +62,7 @@ export type Database = {
           id?: string
           image_url?: string
           last_worn_date?: string | null
+          liked?: boolean | null
           material?: string | null
           official_price?: number | null
           season?: string | null
@@ -113,33 +116,51 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bust_cm: number | null
+          clothing_size: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           geo_location: string | null
+          height_cm: number | null
+          hip_cm: number | null
           id: string
           style_preference: string | null
           updated_at: string | null
+          waist_cm: number | null
+          weight_kg: number | null
         }
         Insert: {
           avatar_url?: string | null
+          bust_cm?: number | null
+          clothing_size?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           geo_location?: string | null
+          height_cm?: number | null
+          hip_cm?: number | null
           id: string
           style_preference?: string | null
           updated_at?: string | null
+          waist_cm?: number | null
+          weight_kg?: number | null
         }
         Update: {
           avatar_url?: string | null
+          bust_cm?: number | null
+          clothing_size?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           geo_location?: string | null
+          height_cm?: number | null
+          hip_cm?: number | null
           id?: string
           style_preference?: string | null
           updated_at?: string | null
+          waist_cm?: number | null
+          weight_kg?: number | null
         }
         Relationships: []
       }
@@ -150,6 +171,7 @@ export type Database = {
           id: string
           image_url: string | null
           items: Json
+          liked: boolean | null
           summary: string | null
           title: string
           updated_at: string
@@ -161,6 +183,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           items?: Json
+          liked?: boolean | null
           summary?: string | null
           title: string
           updated_at?: string
@@ -172,6 +195,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           items?: Json
+          liked?: boolean | null
           summary?: string | null
           title?: string
           updated_at?: string

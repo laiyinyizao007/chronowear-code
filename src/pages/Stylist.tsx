@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Wand2, Loader2, Upload } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { loadImage, removeBackground } from "@/lib/backgroundRemoval";
@@ -12,9 +13,11 @@ interface Garment {
   type: string;
   brand: string;
   color: string;
+  liked?: boolean;
 }
 
 export default function Stylist() {
+  const [activeTab, setActiveTab] = useState("virtual-tryon");
   const [fullBodyPhotoUrl, setFullBodyPhotoUrl] = useState<string>("");
   const [removedBgImageUrl, setRemovedBgImageUrl] = useState<string>("");
   const [garments, setGarments] = useState<Garment[]>([]);
@@ -23,9 +26,11 @@ export default function Stylist() {
   const [processingBg, setProcessingBg] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tryOnResultUrl, setTryOnResultUrl] = useState<string>("");
+  const [savedOutfits, setSavedOutfits] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
+    loadSavedOutfits();
   }, []);
 
   const loadData = async () => {
@@ -60,6 +65,21 @@ export default function Stylist() {
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSavedOutfits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("saved_outfits")
+        .select("*")
+        .eq("liked", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSavedOutfits(data || []);
+    } catch (error: any) {
+      console.error("Error loading saved outfits:", error);
     }
   };
 
@@ -122,6 +142,38 @@ export default function Stylist() {
     }
   };
 
+  const toggleLikeGarment = async (garmentId: string, currentLiked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("garments")
+        .update({ liked: !currentLiked })
+        .eq("id", garmentId);
+
+      if (error) throw error;
+      
+      toast.success(currentLiked ? "Removed from favorites" : "Added to favorites");
+      loadData();
+    } catch (error: any) {
+      toast.error("Failed to update favorite");
+    }
+  };
+
+  const toggleLikeOutfit = async (outfitId: string, currentLiked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("saved_outfits")
+        .update({ liked: !currentLiked })
+        .eq("id", outfitId);
+
+      if (error) throw error;
+      
+      toast.success(currentLiked ? "Removed from Stylebook" : "Added to Stylebook");
+      loadSavedOutfits();
+    } catch (error: any) {
+      toast.error("Failed to update Stylebook");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -160,119 +212,206 @@ export default function Stylist() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">AI Stylist</h1>
-        <p className="text-muted-foreground">Virtual try-on & styling magic</p>
+        <p className="text-muted-foreground">Virtual try-on & your style collection</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Your Model */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-accent" />
-              Your Model
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative">
-              {processingBg ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                  <div className="text-center space-y-2">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                    <p className="text-sm text-muted-foreground">Removing background...</p>
-                  </div>
-                </div>
-              ) : tryOnResultUrl ? (
-                <img
-                  src={tryOnResultUrl}
-                  alt="Virtual try-on result"
-                  className="w-full h-full object-contain"
-                />
-              ) : removedBgImageUrl ? (
-                <img
-                  src={removedBgImageUrl}
-                  alt="Your photo with background removed"
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <img
-                  src={fullBodyPhotoUrl}
-                  alt="Your full body photo"
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="virtual-tryon">
+            <Wand2 className="w-4 h-4 mr-2" />
+            Virtual Try-On
+          </TabsTrigger>
+          <TabsTrigger value="stylebook">
+            <BookHeart className="w-4 h-4 mr-2" />
+            Stylebook
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Garment Selection */}
-        <Card className="shadow-medium">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wand2 className="w-5 h-5 text-accent" />
-              Select Garment
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {garments.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">No garments in your closet yet</p>
-                <Button onClick={() => window.location.href = "/closet"}>
-                  Add Garments
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
-                  {garments.map((garment) => (
-                    <div
-                      key={garment.id}
-                      onClick={() => setSelectedGarment(garment)}
-                      className={`aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                        selectedGarment?.id === garment.id
-                          ? "border-primary shadow-lg scale-105"
-                          : "border-transparent hover:border-muted-foreground/30"
-                      }`}
-                    >
-                      <img
-                        src={garment.image_url}
-                        alt={`${garment.brand} ${garment.type}`}
-                        className="w-full h-full object-cover"
-                      />
+        <TabsContent value="virtual-tryon" className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Your Model */}
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-accent" />
+                  Your Model
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden relative">
+                  {processingBg ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                      <div className="text-center space-y-2">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                        <p className="text-sm text-muted-foreground">Removing background...</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-
-                {selectedGarment && (
-                  <div className="space-y-2 p-4 bg-muted rounded-lg">
-                    <p className="font-medium">{selectedGarment.brand}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedGarment.type} • {selectedGarment.color}
-                    </p>
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleGenerateTryOn}
-                  disabled={!selectedGarment || generating || processingBg}
-                  className="w-full"
-                >
-                  {generating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
+                  ) : tryOnResultUrl ? (
+                    <img
+                      src={tryOnResultUrl}
+                      alt="Virtual try-on result"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : removedBgImageUrl ? (
+                    <img
+                      src={removedBgImageUrl}
+                      alt="Your photo with background removed"
+                      className="w-full h-full object-contain"
+                    />
                   ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Try On This Garment
-                    </>
+                    <img
+                      src={fullBodyPhotoUrl}
+                      alt="Your full body photo"
+                      className="w-full h-full object-cover"
+                    />
                   )}
-                </Button>
-              </>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Garment Selection */}
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wand2 className="w-5 h-5 text-accent" />
+                  Select Garment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {garments.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="mb-4">No garments in your closet yet</p>
+                    <Button onClick={() => window.location.href = "/closet"}>
+                      Add Garments
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
+                      {garments.map((garment) => (
+                        <div
+                          key={garment.id}
+                          onClick={() => setSelectedGarment(garment)}
+                          className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                            selectedGarment?.id === garment.id
+                              ? "border-primary shadow-lg scale-105"
+                              : "border-transparent hover:border-muted-foreground/30"
+                          }`}
+                        >
+                          <img
+                            src={garment.image_url}
+                            alt={`${garment.brand} ${garment.type}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="absolute bottom-1 right-1 h-8 w-8 bg-background/80 hover:bg-background"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLikeGarment(garment.id, garment.liked || false);
+                            }}
+                          >
+                            <Heart 
+                              className={`w-4 h-4 ${garment.liked ? 'fill-red-500 text-red-500' : ''}`}
+                            />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {selectedGarment && (
+                      <div className="space-y-2 p-4 bg-muted rounded-lg">
+                        <p className="font-medium">{selectedGarment.brand}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedGarment.type} • {selectedGarment.color}
+                        </p>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleGenerateTryOn}
+                      disabled={!selectedGarment || generating || processingBg}
+                      className="w-full"
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Try On This Garment
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="stylebook" className="space-y-6 mt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground">
+                {savedOutfits.length} saved outfit{savedOutfits.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {savedOutfits.length === 0 ? (
+              <Card className="shadow-medium">
+                <CardContent className="py-12 text-center">
+                  <BookHeart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No Saved Outfits</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Save your favorite outfits to your Stylebook
+                  </p>
+                  <Button onClick={() => window.location.href = "/"}>
+                    Explore Outfits
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {savedOutfits.map((outfit) => (
+                  <Card key={outfit.id} className="shadow-medium overflow-hidden group">
+                    <div className="relative aspect-[3/4] bg-muted">
+                      {outfit.image_url ? (
+                        <img
+                          src={outfit.image_url}
+                          alt={outfit.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Sparkles className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute bottom-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                        onClick={() => toggleLikeOutfit(outfit.id, outfit.liked)}
+                      >
+                        <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                      </Button>
+                    </div>
+                    <CardContent className="p-3">
+                      <p className="font-medium text-sm truncate">{outfit.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {outfit.summary}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
