@@ -84,6 +84,7 @@ export type Database = {
           notes: string | null
           photo_url: string
           products: Json | null
+          saved_outfit_id: string | null
           user_id: string
           weather: string | null
         }
@@ -96,6 +97,7 @@ export type Database = {
           notes?: string | null
           photo_url: string
           products?: Json | null
+          saved_outfit_id?: string | null
           user_id: string
           weather?: string | null
         }
@@ -108,10 +110,19 @@ export type Database = {
           notes?: string | null
           photo_url?: string
           products?: Json | null
+          saved_outfit_id?: string | null
           user_id?: string
           weather?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ootd_records_saved_outfit_id_fkey"
+            columns: ["saved_outfit_id"]
+            isOneToOne: false
+            referencedRelation: "saved_outfits"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -175,6 +186,7 @@ export type Database = {
           summary: string | null
           title: string
           updated_at: string
+          usage_count: number
           user_id: string
         }
         Insert: {
@@ -187,6 +199,7 @@ export type Database = {
           summary?: string | null
           title: string
           updated_at?: string
+          usage_count?: number
           user_id: string
         }
         Update: {
@@ -199,6 +212,7 @@ export type Database = {
           summary?: string | null
           title?: string
           updated_at?: string
+          usage_count?: number
           user_id?: string
         }
         Relationships: []
