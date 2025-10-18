@@ -1244,13 +1244,13 @@ export default function OOTDDiary() {
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="flex h-full">
-                      {/* Left sidebar - Items list */}
+                      {/* Left sidebar - Items list + Log button */}
                       {outfits[0]?.items && outfits[0].items.length > 0 && (
-                        <div className="w-20 bg-secondary/20 p-2 space-y-2 overflow-y-auto flex-shrink-0">
-                          <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1">
+                        <div className="w-20 bg-secondary/20 p-2 flex flex-col flex-shrink-0">
+                          <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">
                             Items
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 flex-1">
                             {outfits[0].items.map((item: any, idx: number) => (
                               <div 
                                 key={idx} 
@@ -1285,6 +1285,21 @@ export default function OOTDDiary() {
                               </div>
                             ))}
                           </div>
+                          {/* Log button below items */}
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full mt-2 text-[10px] h-8"
+                            onClick={() => {
+                              setSelectedDateForLog(currentDate);
+                              setIsAddDialogOpen(true);
+                              markAddedToOOTD();
+                            }}
+                            disabled={addedToOOTD}
+                          >
+                            <CalendarDays className="w-3 h-3 mr-1" />
+                            Log
+                          </Button>
                         </div>
                       )}
 
@@ -1295,8 +1310,8 @@ export default function OOTDDiary() {
                           <h3 className="font-bold text-lg uppercase tracking-wide">{outfits[0]?.title}</h3>
                         </div>
 
-                        {/* Outfit Image - taller to align with items */}
-                        <div className="relative flex-1 rounded-lg overflow-hidden bg-secondary/20 mb-3">
+                        {/* Outfit Image - aligned with left items */}
+                        <div className="relative flex-1 rounded-lg overflow-hidden bg-secondary/20">
                           {generatingImage ? (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -1319,30 +1334,15 @@ export default function OOTDDiary() {
                               {outfits[0]?.summary}
                             </p>
                           </div>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex flex-col gap-2">
+                          
+                          {/* Heart button */}
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={toggleLikeStatus}
-                            className="self-end"
+                            className="absolute top-2 right-2 bg-background/80 hover:bg-background"
                           >
                             <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                          </Button>
-                          <Button
-                            variant="default"
-                            className="w-full"
-                            onClick={() => {
-                              setSelectedDateForLog(currentDate);
-                              setIsAddDialogOpen(true);
-                              markAddedToOOTD();
-                            }}
-                            disabled={addedToOOTD}
-                          >
-                            <CalendarDays className="w-4 h-4 mr-2" />
-                            {addedToOOTD ? 'Added to OOTD' : 'Log'}
                           </Button>
                         </div>
                       </div>
