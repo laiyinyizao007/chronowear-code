@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, addDays, subDays, addWeeks, subWeeks } from "date-fns";
 import ProductCard from "@/components/ProductCard";
 import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -534,32 +535,28 @@ export default function OOTDDiary() {
       </div>
 
       {records.length === 0 ? (
-        <Card className="shadow-medium">
-          <CardContent className="py-12 text-center space-y-4">
-            <Camera className="w-16 h-16 mx-auto text-muted-foreground" />
-            <div>
-              <h3 className="text-xl font-semibold mb-2">No outfits logged yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Start documenting your daily style journey
-              </p>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Log Your First OOTD
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Camera className="w-16 h-16 text-muted-foreground mb-6" />
+          <h3 className="text-xl font-medium mb-2">No outfits yet</h3>
+          <p className="text-sm text-muted-foreground mb-6">
+            Start your style journey today
+          </p>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Log OOTD
+          </Button>
+        </div>
       ) : (
-        <div className="space-y-6">
-          {/* Navigation Controls */}
-          <div className="flex items-center justify-between gap-4 mb-6 px-4">
+        <div className="space-y-4 sm:space-y-6">
+          {/* Navigation Controls - Mobile Optimized */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* View Mode Tabs */}
-            <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+            <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg w-full sm:w-auto">
               <Button
                 variant={viewMode === 'day' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('day')}
-                className="text-xs px-3"
+                className="flex-1 sm:flex-none text-xs sm:px-4"
               >
                 Day
               </Button>
@@ -567,7 +564,7 @@ export default function OOTDDiary() {
                 variant={viewMode === '3day' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('3day')}
-                className="text-xs px-3"
+                className="flex-1 sm:flex-none text-xs sm:px-4"
               >
                 3 Days
               </Button>
@@ -575,18 +572,18 @@ export default function OOTDDiary() {
                 variant={viewMode === 'week' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('week')}
-                className="text-xs px-3"
+                className="flex-1 sm:flex-none text-xs sm:px-4"
               >
                 Week
               </Button>
             </div>
 
-            {/* Month Navigation */}
-            <div className="flex items-center gap-2">
+            {/* Date Navigation */}
+            <div className="flex items-center justify-center gap-2">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-9 w-9"
+                className="h-10 w-10"
                 onClick={() => {
                   if (viewMode === 'day') setCurrentDate(subDays(currentDate, 1));
                   else if (viewMode === '3day') setCurrentDate(subDays(currentDate, 3));
@@ -597,9 +594,9 @@ export default function OOTDDiary() {
               </Button>
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 min-w-[140px]">
-                    <CalendarDays className="w-4 h-4" />
-                    {format(currentDate, 'MMM yyyy')}
+                  <Button variant="ghost" size="sm" className="gap-2 min-w-[140px]">
+                    <CalendarIcon className="w-4 h-4" />
+                    <span className="text-sm">{format(currentDate, 'MMM yyyy')}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="center">
@@ -617,9 +614,9 @@ export default function OOTDDiary() {
                 </PopoverContent>
               </Popover>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-9 w-9"
+                className="h-10 w-10"
                 onClick={() => {
                   if (viewMode === 'day') setCurrentDate(addDays(currentDate, 1));
                   else if (viewMode === '3day') setCurrentDate(addDays(currentDate, 3));
@@ -631,27 +628,25 @@ export default function OOTDDiary() {
             </div>
           </div>
 
-          {/* Giant Month Title */}
-          <div className="relative my-8">
-            <div className="text-center">
-              <div className="text-7xl sm:text-9xl md:text-[12rem] font-black text-primary/10 leading-none tracking-tighter select-none">
-                {format(currentDate, 'MMM').toUpperCase()}
-              </div>
-            </div>
+          {/* Month Display - Cleaner */}
+          <div className="text-center py-4">
+            <h2 className="text-4xl sm:text-6xl font-light tracking-wide text-muted-foreground/40">
+              {format(currentDate, 'MMMM').toUpperCase()}
+            </h2>
           </div>
 
-          {/* Calendar Grid - Responsive based on view mode */}
-          <div className="bg-card rounded-lg border-2 border-dashed border-primary/30 p-4 sm:p-6">
+          {/* Calendar Grid - Minimal, No Dashed Borders */}
+          <div className="bg-card rounded-lg overflow-hidden">
             {viewMode === 'day' ? (
-              <div className="max-w-md mx-auto">
+              <div className="max-w-lg mx-auto p-4">
                 {(() => {
                   const day = currentDate;
                   const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
                   const hasRecord = dayRecords.length > 0;
 
                   return (
-                    <div
-                      className="aspect-square border-2 border-dashed rounded-lg border-primary/40 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
+                    <Card 
+                      className="overflow-hidden cursor-pointer transition-all hover:shadow-medium"
                       onClick={() => {
                         if (hasRecord) {
                           setSelectedRecord(dayRecords[0]);
@@ -661,25 +656,25 @@ export default function OOTDDiary() {
                         }
                       }}
                     >
-                      <div className="relative w-full h-full p-4">
+                      <div className="relative aspect-[3/4]">
                         {hasRecord ? (
                           <>
                             <img
                               src={dayRecords[0].photo_url}
                               alt={`OOTD ${format(day, "d")}`}
-                              className="w-full h-full object-cover rounded"
+                              className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                             <div className="absolute bottom-4 left-4 right-4 text-white">
-                              <div className="text-5xl font-bold leading-none mb-2">
+                              <div className="text-4xl font-light mb-1">
                                 {format(day, "d")}
                               </div>
-                              <div className="text-sm opacity-80">{format(day, "EEEE")}</div>
+                              <div className="text-sm opacity-90">{format(day, "EEEE")}</div>
                             </div>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="absolute top-2 right-2 h-8 w-8 bg-black/40 hover:bg-black/60 text-white"
+                              className="absolute top-3 right-3 h-10 w-10 bg-background/10 hover:bg-background/20 text-white backdrop-blur-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setDeleteRecordId(dayRecords[0].id);
@@ -689,30 +684,30 @@ export default function OOTDDiary() {
                             </Button>
                           </>
                         ) : (
-                          <div className="flex flex-col items-center justify-center h-full">
-                            <span className="text-6xl font-black text-primary mb-2">
+                          <div className="flex flex-col items-center justify-center h-full bg-secondary">
+                            <span className="text-6xl font-light text-muted-foreground mb-2">
                               {format(day, "d")}
                             </span>
-                            <span className="text-lg text-muted-foreground">{format(day, "EEEE")}</span>
-                            <div className="mt-4 w-3 h-3 rounded-full bg-primary/40" />
+                            <span className="text-base text-muted-foreground">{format(day, "EEEE")}</span>
+                            <Plus className="w-8 h-8 text-muted-foreground/40 mt-6" />
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Card>
                   );
                 })()}
               </div>
             ) : viewMode === '3day' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4">
                 {[0, 1, 2].map((offset) => {
                   const day = addDays(currentDate, offset);
                   const dayRecords = records.filter((r) => isSameDay(new Date(r.date), day));
                   const hasRecord = dayRecords.length > 0;
 
                   return (
-                    <div
+                    <Card
                       key={offset}
-                      className="aspect-square border-2 border-dashed rounded-lg border-primary/40 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
+                      className="overflow-hidden cursor-pointer transition-all hover:shadow-medium"
                       onClick={() => {
                         if (hasRecord) {
                           setSelectedRecord(dayRecords[0]);
@@ -722,25 +717,25 @@ export default function OOTDDiary() {
                         }
                       }}
                     >
-                      <div className="relative w-full h-full p-2 sm:p-4">
+                      <div className="relative aspect-[3/4]">
                         {hasRecord ? (
                           <>
                             <img
                               src={dayRecords[0].photo_url}
                               alt={`OOTD ${format(day, "d")}`}
-                              className="w-full h-full object-cover rounded"
+                              className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded" />
-                            <div className="absolute bottom-2 left-2 right-2 text-white">
-                              <div className="text-3xl sm:text-4xl font-bold leading-none">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                            <div className="absolute bottom-3 left-3 text-white">
+                              <div className="text-3xl font-light">
                                 {format(day, "d")}
                               </div>
-                              <div className="text-xs opacity-80">{format(day, "EEE")}</div>
+                              <div className="text-xs opacity-90">{format(day, "EEE")}</div>
                             </div>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="absolute top-1 right-1 h-6 w-6 bg-black/40 hover:bg-black/60 text-white"
+                              className="absolute top-2 right-2 h-8 w-8 bg-background/10 hover:bg-background/20 text-white backdrop-blur-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setDeleteRecordId(dayRecords[0].id);
@@ -750,21 +745,21 @@ export default function OOTDDiary() {
                             </Button>
                           </>
                         ) : (
-                          <div className="flex flex-col items-center justify-center h-full">
-                            <span className="text-4xl sm:text-5xl font-black text-primary">
+                          <div className="flex flex-col items-center justify-center h-full bg-secondary">
+                            <span className="text-4xl font-light text-muted-foreground">
                               {format(day, "d")}
                             </span>
                             <span className="text-xs text-muted-foreground mt-1">{format(day, "EEE")}</span>
-                            <div className="mt-2 w-2 h-2 rounded-full bg-primary/40" />
+                            <Plus className="w-6 h-6 text-muted-foreground/40 mt-4" />
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 p-4">
                 {(() => {
                   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
                   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -776,11 +771,12 @@ export default function OOTDDiary() {
                     const isToday = isSameDay(day, new Date());
 
                     return (
-                      <div
+                      <Card
                         key={day.toISOString()}
-                        className={`group relative bg-card rounded-lg overflow-hidden border transition-all cursor-pointer hover:shadow-lg ${
-                          isToday ? "ring-2 ring-primary" : "border-border hover:border-primary"
-                        }`}
+                        className={cn(
+                          "group overflow-hidden cursor-pointer transition-all hover:shadow-medium",
+                          isToday && "ring-2 ring-primary"
+                        )}
                         onClick={() => {
                           if (hasRecord) {
                             setSelectedRecord(dayRecords[0]);
@@ -790,58 +786,53 @@ export default function OOTDDiary() {
                           }
                         }}
                       >
-                        {/* Date label at top */}
-                        <div className="absolute top-0 left-0 right-0 z-10 bg-background/90 backdrop-blur-sm px-3 py-2 border-b border-border">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-lg font-bold">{format(day, "d")}</span>
-                            <span className="text-xs text-muted-foreground uppercase tracking-wide">{format(day, "EEE")}</span>
+                        <div className="relative">
+                          {/* Date Header */}
+                          <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur-sm px-2 py-1.5 border-b">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-base font-medium">{format(day, "d")}</span>
+                              <span className="text-xs text-muted-foreground">{format(day, "EEE")}</span>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Image container with 3:4 aspect ratio */}
-                        <div className="aspect-[3/4] w-full">
-                          {hasRecord ? (
-                            <>
-                              <img
-                                src={dayRecords[0].photo_url}
-                                alt={`OOTD ${format(day, "MMM d")}`}
-                                className="w-full h-full object-cover object-top"
-                              />
-                              {/* Delete button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-12 right-2 h-8 w-8 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeleteRecordId(dayRecords[0].id);
-                                }}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-full bg-muted/30">
-                              <Plus className="w-8 h-8 text-muted-foreground/40 mb-2" />
-                              <span className="text-xs text-muted-foreground">Add OOTD</span>
+                          {/* Image */}
+                          <div className="aspect-[3/4]">
+                            {hasRecord ? (
+                              <>
+                                <img
+                                  src={dayRecords[0].photo_url}
+                                  alt={`OOTD ${format(day, "MMM d")}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute top-10 right-2 h-8 w-8 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteRecordId(dayRecords[0].id);
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="flex items-center justify-center h-full bg-secondary">
+                                <Plus className="w-6 h-6 text-muted-foreground/40" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Hover Info */}
+                          {hasRecord && dayRecords[0].location && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <p className="text-xs text-white/90 truncate">
+                                {dayRecords[0].location}
+                              </p>
                             </div>
                           )}
                         </div>
-
-                        {/* Weather/Location info overlay (optional, shown on hover if exists) */}
-                        {hasRecord && dayRecords[0].location && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <p className="text-xs text-white/90 truncate">
-                              📍 {dayRecords[0].location}
-                            </p>
-                            {dayRecords[0].weather && (
-                              <p className="text-xs text-white/70 truncate">
-                                {dayRecords[0].weather}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      </Card>
                     );
                   });
                 })()}
