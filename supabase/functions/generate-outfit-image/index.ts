@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,68 +15,52 @@ serve(async (req) => {
   try {
     const { items, weather, hairstyle } = await req.json();
     
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    console.log('Generating outfit image for items:', items);
+    
+    const hfToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+    if (!hfToken) {
+      throw new Error('HUGGING_FACE_ACCESS_TOKEN is not configured');
     }
 
-    // Build outfit description
-    const itemDescriptions = items.map((item: any) => 
-      `${item.color || ''} ${item.type || ''} ${item.brand ? `by ${item.brand}` : ''}`.trim()
-    ).join(', ');
+    // Build descriptive prompt from outfit items
+    const itemDescriptions = items
+      .filter((item: any) => item.type !== 'Hairstyle')
+      .map((item: any) => `${item.color || ''} ${item.type} ${item.brand ? `by ${item.brand}` : ''}`.trim())
+      .join(', ');
 
-    const prompt = `Fashion editorial photo of a complete outfit laid flat on a clean white background. 
-The outfit includes: ${itemDescriptions}. 
-Style: ${hairstyle || 'modern'}, Weather: ${weather?.weatherDescription || 'pleasant'} at ${weather?.temperature || 70}°F.
-Ultra high resolution, professional fashion photography, minimalist aesthetic, centered composition, soft natural lighting.`;
+    const weatherContext = weather 
+      ? `in ${weather.weatherDescription} weather, ${weather.temperature}°F`
+      : '';
 
-    console.log('Generating outfit image with prompt:', prompt);
+    const prompt = `Fashion photography, full body shot of person wearing ${itemDescriptions}, ${hairstyle || 'styled hair'}, ${weatherContext}, professional studio lighting, clean background, high quality, 8k`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
-        }
-      }),
+    console.log('Image generation prompt:', prompt);
+
+    const hf = new HfInference(hfToken);
+
+    const image = await hf.textToImage({
+      inputs: prompt,
+      model: 'black-forest-labs/FLUX.1-schnell',
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
-    }
+    // Convert to base64
+    const arrayBuffer = await image.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const imageUrl = `data:image/png;base64,${base64}`;
 
-    const data = await response.json();
-    
-    // Note: Gemini 2.0 Flash doesn't support image generation
-    // This is a text-only model, so we'll return a placeholder
-    // For actual image generation, you would need to use a different service
-    console.log('Note: Gemini 2.0 Flash does not support image generation');
-    console.log('Consider using OpenAI gpt-image-1 or other image generation services');
+    console.log('Image generated successfully');
 
     return new Response(
-      JSON.stringify({ 
-        imageUrl: null,
-        note: 'Image generation requires a different AI service. Gemini 2.0 Flash is text-only.',
-        description: data.candidates?.[0]?.content?.parts?.[0]?.text
-      }),
+      JSON.stringify({ imageUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
-    console.error('Error generating outfit image:', error);
+    console.error('Error in generate-outfit-image function:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        imageUrl: null 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -15,9 +16,9 @@ serve(async (req) => {
     
     console.log('Generating outfit recommendation for:', { temperature, weatherDescription, uvIndex });
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OPENAI_API_KEY is not configured');
     }
 
     // Build garment inventory with IDs for matching
@@ -104,35 +105,34 @@ CRITICAL:
 3. Include the "garmentId" field ONLY when "fromCloset" is true
 4. Suggest a hairstyle that complements the outfit's style and is weather-appropriate (e.g., updos for windy weather, protective styles for rain)`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${systemPrompt}\n\n${userPrompt}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-        }
+        model: 'gpt-5-mini-2025-08-07',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_completion_tokens: 4000,
+        response_format: { type: "json_object" }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      throw new Error('Gemini API error');
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error('OpenAI API error');
     }
 
     const data = await response.json();
-    let recommendation = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    let recommendation = data.choices[0].message.content;
 
     if (!recommendation) {
-      throw new Error('No content in Gemini response');
+      throw new Error('No content in OpenAI response');
     }
 
     // Extract JSON from markdown code blocks if present

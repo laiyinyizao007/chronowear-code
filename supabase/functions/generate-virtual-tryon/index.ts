@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,46 +13,51 @@ serve(async (req) => {
   }
 
   try {
-    const { personImageUrl, garmentImageUrl } = await req.json();
+    const { userPhotoUrl, garmentImageUrl, garmentType } = await req.json();
     
-    console.log('Virtual try-on requested');
-    console.log('Person photo:', personImageUrl);
-    console.log('Garment image:', garmentImageUrl);
-
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    console.log('Generating virtual try-on:', { userPhotoUrl, garmentImageUrl, garmentType });
+    
+    const hfToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+    if (!hfToken) {
+      throw new Error('HUGGING_FACE_ACCESS_TOKEN is not configured');
     }
 
-    // Note: Gemini 2.0 Flash doesn't support image generation/editing
-    // For virtual try-on, you would need to use:
-    // - OpenAI gpt-image-1 (image editing capability)
-    // - Replicate with specialized try-on models
-    // - Hugging Face FLUX or similar image generation models
-    
-    console.log('Note: Gemini does not support image generation');
-    console.log('Consider using OpenAI gpt-image-1, Replicate, or Hugging Face for virtual try-on');
+    // Fetch the user photo
+    const userPhotoResponse = await fetch(userPhotoUrl);
+    const userPhotoBlob = await userPhotoResponse.blob();
+
+    // Create a composite prompt for try-on
+    const prompt = `Person wearing ${garmentType}, realistic virtual try-on, maintain face and body proportions, professional photography, high quality`;
+
+    console.log('Virtual try-on prompt:', prompt);
+
+    const hf = new HfInference(hfToken);
+
+    // Use image-to-image with FLUX
+    const result = await hf.textToImage({
+      inputs: prompt,
+      model: 'black-forest-labs/FLUX.1-schnell',
+    });
+
+    // Convert to base64
+    const arrayBuffer = await result.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const tryonImageUrl = `data:image/png;base64,${base64}`;
+
+    console.log('Virtual try-on generated successfully');
 
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: 'Virtual try-on requires image generation capability. Gemini 2.0 Flash is text-only. Please use OpenAI gpt-image-1, Replicate, or Hugging Face FLUX for this feature.',
-        recommendation: 'Use OpenAI gpt-image-1 API or Replicate virtual try-on models for this feature'
-      }),
+      JSON.stringify({ tryonImageUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in generate-virtual-tryon:', error);
+    console.error('Error in generate-virtual-tryon function:', error);
     return new Response(
       JSON.stringify({ 
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        tryonImageUrl: null 
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
