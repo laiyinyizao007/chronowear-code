@@ -618,12 +618,14 @@ export default function OOTDDiary() {
             </div>
           </div>
 
-          {/* Month Display - Cleaner */}
-          <div className="text-center py-4">
-            <h2 className="text-4xl sm:text-6xl font-light tracking-wide text-muted-foreground/40">
-              {format(currentDate, 'MMMM').toUpperCase()}
-            </h2>
-          </div>
+          {/* Month Display - Only show in day view */}
+          {viewMode === 'day' && (
+            <div className="text-center py-4">
+              <h2 className="text-4xl sm:text-6xl font-light tracking-wide text-muted-foreground/40">
+                {format(currentDate, 'MMMM').toUpperCase()}
+              </h2>
+            </div>
+          )}
 
           {/* Calendar Grid - Minimal, No Dashed Borders */}
           <div className="bg-card rounded-lg overflow-hidden">
@@ -688,9 +690,9 @@ export default function OOTDDiary() {
                 })()}
               </div>
             ) : (
-              <div className="space-y-3 p-4">
+              <div className="space-y-4 p-6">
                 {/* First row - 4 items (Mon-Thu) */}
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-3">
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
                     const firstRowDays = [0, 1, 2, 3].map(i => addDays(weekStart, i));
@@ -760,7 +762,7 @@ export default function OOTDDiary() {
                 </div>
 
                 {/* Second row - 3 items centered (Fri-Sun) */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-3">
                   <div className="col-span-1" />
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
