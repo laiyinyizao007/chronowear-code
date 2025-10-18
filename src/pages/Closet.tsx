@@ -44,6 +44,8 @@ interface Garment {
   official_price: number | null;
   acquired_date: string | null;
   liked?: boolean;
+  notes?: string | null;
+  currency?: string;
 }
 
 interface ProductInfo {
@@ -167,7 +169,41 @@ export default function Closet() {
 
   useEffect(() => {
     loadGarments();
+    loadUserProfile();
   }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("geo_location")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      // Set default currency based on geo_location
+      if (profile?.geo_location) {
+        const location = profile.geo_location.toLowerCase();
+        if (location.includes('china') || location.includes('中国')) {
+          setCurrency('CNY');
+        } else if (location.includes('europe') || location.includes('eu') || location.includes('欧洲')) {
+          setCurrency('EUR');
+        } else if (location.includes('uk') || location.includes('britain') || location.includes('英国')) {
+          setCurrency('GBP');
+        } else if (location.includes('japan') || location.includes('日本')) {
+          setCurrency('JPY');
+        } else {
+          setCurrency('USD');
+        }
+      }
+    } catch (error: any) {
+      console.error("Failed to load user profile:", error);
+    }
+  };
 
   // Auto-trigger garment identification when imageUrl is in URL
   useEffect(() => {
@@ -287,7 +323,13 @@ export default function Closet() {
       
       // Fetch detailed product info for each identified garment
       const productPromises = garments.map(async (garment: any) => {
-        const productData = await searchProductInfo(garment.brand, garment.model);
+        const productData = await searchProductInfo(
+          garment.brand, 
+          garment.model,
+          garment.type,
+          garment.material,
+          garment.color
+        );
         
         return {
           brand: garment.brand,
@@ -842,6 +884,8 @@ export default function Closet() {
                               material: selectedProductData.material || "",
                               washing_frequency: washingFrequency,
                               care_instructions: careInstructions,
+                              official_price: selectedProductData.official_price || null,
+                              currency: currency,
                               usage_count: 0,
                             });
 
@@ -1091,7 +1135,23 @@ export default function Closet() {
                   <div className="sm:col-span-2">
                     <Label className="text-xs font-medium text-muted-foreground">Official Price</Label>
                     <div className="flex gap-2 mt-1">
-                      <Select value={currency} onValueChange={setCurrency}>
+                      <Select 
+                        value={selectedGarment.currency || currency} 
+                        onValueChange={async (value) => {
+                          try {
+                            const { error } = await supabase
+                              .from("garments")
+                              .update({ currency: value })
+                              .eq("id", selectedGarment.id);
+                            if (error) throw error;
+                            setSelectedGarment({ ...selectedGarment, currency: value });
+                            toast.success("Currency updated");
+                            loadGarments();
+                          } catch (error) {
+                            toast.error("Failed to update currency");
+                          }
+                        }}
+                      >
                         <SelectTrigger className="w-20 h-9">
                           <SelectValue />
                         </SelectTrigger>
@@ -1196,27 +1256,38 @@ export default function Closet() {
                     </Select>
                   </div>
 
-                  {/* Care Instructions - Editable */}
+                  {/* Care Instructions - Read Only */}
                   <div className="sm:col-span-2">
                     <Label className="text-xs font-medium text-muted-foreground mb-1.5">Care Instructions</Label>
                     <Textarea
                       value={selectedGarment.care_instructions || ""}
-                      onChange={(e) => setSelectedGarment({ ...selectedGarment, care_instructions: e.target.value })}
+                      disabled
+                      className="mt-1 min-h-[80px] text-sm bg-muted cursor-not-allowed"
+                      placeholder="AI-generated care instructions..."
+                    />
+                  </div>
+
+                  {/* Notes - Editable */}
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs font-medium text-muted-foreground mb-1.5">Notes</Label>
+                    <Textarea
+                      value={selectedGarment.notes || ""}
+                      onChange={(e) => setSelectedGarment({ ...selectedGarment, notes: e.target.value })}
                       onBlur={async () => {
                         try {
                           const { error } = await supabase
                             .from("garments")
-                            .update({ care_instructions: selectedGarment.care_instructions })
+                            .update({ notes: selectedGarment.notes })
                             .eq("id", selectedGarment.id);
                           if (error) throw error;
-                          toast.success("Care instructions updated");
+                          toast.success("Notes updated");
                           loadGarments();
                         } catch (error) {
-                          toast.error("Failed to update care instructions");
+                          toast.error("Failed to update notes");
                         }
                       }}
                       className="mt-1 min-h-[80px] text-sm"
-                      placeholder="Enter care instructions..."
+                      placeholder="Add your personal notes about this garment..."
                     />
                   </div>
                   

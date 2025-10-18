@@ -6,11 +6,14 @@ import { Outfit, WeatherData, OutfitItem } from "@/types";
  */
 export const searchProductInfo = async (
   brand: string,
-  model: string
+  model: string,
+  type?: string,
+  material?: string,
+  color?: string
 ): Promise<any | null> => {
   try {
     const { data, error } = await supabase.functions.invoke('search-product-info', {
-      body: { brand, model }
+      body: { brand, model, type, material, color }
     });
     
     if (error) throw error;

@@ -68,11 +68,13 @@ export type Database = {
           care_instructions: string | null
           color: string | null
           created_at: string | null
+          currency: string | null
           id: string
           image_url: string
           last_worn_date: string | null
           liked: boolean | null
           material: string | null
+          notes: string | null
           official_price: number | null
           season: string | null
           type: string
@@ -87,11 +89,13 @@ export type Database = {
           care_instructions?: string | null
           color?: string | null
           created_at?: string | null
+          currency?: string | null
           id?: string
           image_url: string
           last_worn_date?: string | null
           liked?: boolean | null
           material?: string | null
+          notes?: string | null
           official_price?: number | null
           season?: string | null
           type: string
@@ -106,11 +110,13 @@ export type Database = {
           care_instructions?: string | null
           color?: string | null
           created_at?: string | null
+          currency?: string | null
           id?: string
           image_url?: string
           last_worn_date?: string | null
           liked?: boolean | null
           material?: string | null
+          notes?: string | null
           official_price?: number | null
           season?: string | null
           type?: string
