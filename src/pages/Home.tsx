@@ -285,7 +285,7 @@ export default function Home() {
       setTrendLoading(true);
       const currentWeather = weatherData || weather;
       if (!currentWeather) {
-        console.log('No weather data available for trends');
+        console.log('❌ No weather data available for trends');
         setTrendLoading(false);
         return;
       }
@@ -293,6 +293,12 @@ export default function Home() {
       const currentGarments = garments || (await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
+
+      console.log('🎨 Calling generate-fashion-trends API...', {
+        temperature: currentWeather.current.temperature,
+        weatherDescription: currentWeather.current.weatherDescription,
+        garmentCount: currentGarments.length
+      });
 
       // Call AI to generate fashion trends
       const { data: trendsData, error: trendsError } = await supabase.functions.invoke('generate-fashion-trends', {
@@ -304,9 +310,11 @@ export default function Home() {
       });
 
       if (trendsError) {
-        console.error('Error calling generate-fashion-trends:', trendsError);
+        console.error('❌ Error calling generate-fashion-trends:', trendsError);
         throw trendsError;
       }
+
+      console.log('✅ Gemini API response received:', trendsData);
 
       if (trendsData?.trends) {
         // Transform AI response to match expected format
@@ -318,12 +326,14 @@ export default function Home() {
           items: trend.items
         }));
         
+        console.log('✅ Fashion trends formatted:', formattedTrends.length, 'trends');
         setTrendOutfits(formattedTrends);
       } else {
+        console.warn('⚠️ No trends data in response');
         throw new Error('No trends data in response');
       }
     } catch (error) {
-      console.error('Error loading trend outfits:', error);
+      console.error('❌ Error loading trend outfits:', error);
       // Fallback to basic trends on error
       setTrendOutfits([
         {
@@ -334,6 +344,11 @@ export default function Home() {
           items: []
         }
       ]);
+      
+      toast({
+        title: "Fashion Trends",
+        description: "Using fallback trends - AI service may be unavailable",
+      });
     } finally {
       setTrendLoading(false);
     }
