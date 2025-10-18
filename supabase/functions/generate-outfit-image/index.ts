@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Replicate from "https://esm.sh/replicate@0.25.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,10 +17,12 @@ serve(async (req) => {
     console.log('Generating outfit image with user photo:', userPhotoUrl);
     console.log('Items:', items);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const REPLICATE_API_KEY = Deno.env.get('REPLICATE_API_KEY');
+    if (!REPLICATE_API_KEY) {
+      throw new Error('REPLICATE_API_KEY not configured');
     }
+
+    const replicate = new Replicate({ auth: REPLICATE_API_KEY });
 
     // Build outfit description from items
     const itemDescriptions = items
@@ -38,102 +41,88 @@ serve(async (req) => {
       ? `suitable for ${weather.weatherDescription} weather at ${weather.temperature}°C`
       : '';
 
-    // If user photo is provided, use image editing to dress the user
-    if (userPhotoUrl) {
-      const editPrompt = `Dress this person in the following outfit: ${itemDescriptions}. ${hairstyle ? `Hairstyle: ${hairstyle.name || hairstyle}. ` : ''}${weatherContext}. Keep the person's face and body features unchanged. Professional fashion photography style, studio lighting, clean white background.`;
-      
-      console.log('Edit prompt:', editPrompt);
+    // If user photo is provided, use IDM-VTON for virtual try-on
+    if (userPhotoUrl && items.length > 0) {
+      // Get the first garment image (top/outerwear preferred)
+      const garmentItem = items.find((item: any) => 
+        item.type === 'top' || item.type === 'outerwear'
+      ) || items[0];
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: editPrompt
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: userPhotoUrl
-                  }
-                }
-              ]
-            }
-          ],
-          modalities: ["image", "text"]
-        })
+      if (!garmentItem?.imageUrl) {
+        throw new Error('No garment image found for virtual try-on');
+      }
+
+      const garmentDescription = `${garmentItem.brand || ''} ${garmentItem.model || ''} ${garmentItem.color || ''}`.trim();
+      
+      console.log('Using IDM-VTON with:', {
+        userPhoto: userPhotoUrl,
+        garmentImage: garmentItem.imageUrl,
+        description: garmentDescription
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Lovable AI error:', response.status, errorText);
-        throw new Error(`Lovable AI error: ${response.status}`);
+      const output = await replicate.run(
+        "cuuupid/idm-vton:c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4",
+        {
+          input: {
+            human_img: userPhotoUrl,
+            garm_img: garmentItem.imageUrl,
+            garment_des: garmentDescription,
+            is_checked: true,
+            is_checked_crop: false,
+            denoise_steps: 30,
+            seed: 42
+          }
+        }
+      );
+
+      console.log('IDM-VTON output:', output);
+
+      // The output is typically a URL or array of URLs
+      const imageUrl = Array.isArray(output) ? output[0] : output;
+
+      if (!imageUrl) {
+        throw new Error('No image generated from IDM-VTON');
       }
 
-      const data = await response.json();
-      const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-      if (!generatedImageUrl) {
-        throw new Error('No image generated');
-      }
-
-      console.log('Image edited successfully with user photo');
+      console.log('Virtual try-on completed successfully');
 
       return new Response(
-        JSON.stringify({ imageUrl: generatedImageUrl }),
+        JSON.stringify({ imageUrl }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fallback: Generate new image without user photo
+    // Fallback: Generate outfit collage without user photo
     const generatePrompt = `Full body portrait of a fashion model wearing: ${itemDescriptions}. ${hairstyle ? `Hairstyle: ${hairstyle.name || hairstyle}. ` : ''}${weatherContext}. Professional fashion photography, studio lighting, clean white background, isolated person, centered composition, high quality.`;
     
-    console.log('Generate prompt:', generatePrompt);
+    console.log('Fallback: generating without user photo');
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: generatePrompt
-          }
-        ],
-        modalities: ["image", "text"]
-      })
-    });
+    const output = await replicate.run(
+      "black-forest-labs/flux-schnell",
+      {
+        input: {
+          prompt: generatePrompt,
+          go_fast: true,
+          megapixels: "1",
+          num_outputs: 1,
+          aspect_ratio: "9:16",
+          output_format: "webp",
+          output_quality: 80,
+          num_inference_steps: 4
+        }
+      }
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      throw new Error(`Lovable AI error: ${response.status}`);
-    }
+    const imageUrl = Array.isArray(output) ? output[0] : output;
 
-    const data = await response.json();
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    if (!generatedImageUrl) {
+    if (!imageUrl) {
       throw new Error('No image generated');
     }
 
-    console.log('Image generated successfully');
+    console.log('Fallback image generated successfully');
 
     return new Response(
-      JSON.stringify({ imageUrl: generatedImageUrl }),
+      JSON.stringify({ imageUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
