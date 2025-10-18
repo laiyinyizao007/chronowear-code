@@ -56,7 +56,6 @@ export default function Home() {
 
   useEffect(() => {
     loadWeatherAndRecommendation();
-    loadTrendOutfits();
   }, []);
 
   const loadWeatherAndRecommendation = async (forceRefresh: boolean = false) => {
@@ -128,6 +127,9 @@ export default function Home() {
       const { data: garments } = await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url');
+      
+      // Load trend outfits after weather data is available
+      loadTrendOutfits(weatherData, garments);
 
       // Generate AI recommendation with fallback
       setRecommendationLoading(true);
@@ -282,7 +284,11 @@ export default function Home() {
     try {
       setTrendLoading(true);
       const currentWeather = weatherData || weather;
-      if (!currentWeather) return;
+      if (!currentWeather) {
+        console.log('No weather data available for trends');
+        setTrendLoading(false);
+        return;
+      }
 
       const currentGarments = garments || (await supabase
         .from('garments')
@@ -765,27 +771,31 @@ export default function Home() {
           </div>
         ) : outfits.length > 0 ? (
           <Card 
-            className="shadow-medium overflow-hidden cursor-pointer transition-all hover:shadow-lg"
-            onClick={async () => {
-              setSelectedOutfit(outfits[0]);
-              setShowOutfitDialog(true);
-              const { data: garments } = await supabase
-                .from('garments')
-                .select('id, type, color, material, brand, image_url');
-              const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
-              setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
-            }}
+            className="shadow-medium overflow-hidden"
           >
             <CardContent className="p-4 sm:p-6">
               {/* Mobile Layout */}
               <div className="md:hidden">
                 <div className="flex gap-2">
-                  {/* Left: Item List (1/3 width) */}
+                  {/* Left: Item List (1/3 width) - clickable items */}
                   <div className="w-1/3 space-y-1.5">
                     <h4 className="font-medium text-[10px] text-muted-foreground mb-2">Items</h4>
                     <div className="space-y-1.5">
                       {outfits[0].items?.map((item: any, index: number) => (
-                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50">
+                        <div 
+                          key={index} 
+                          className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setSelectedOutfit({ ...outfits[0], mainDisplayIndex: index });
+                            setShowOutfitDialog(true);
+                            const { data: garments } = await supabase
+                              .from('garments')
+                              .select('id, type, color, material, brand, image_url');
+                            const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                            setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems, mainDisplayIndex: index }));
+                          }}
+                        >
                           {item.imageUrl ? (
                             <img
                               src={item.imageUrl}
@@ -968,7 +978,20 @@ export default function Home() {
                     <h4 className="font-medium text-sm text-muted-foreground">Items</h4>
                     <div className="grid grid-cols-1 gap-2 flex-1">
                       {outfits[0].items?.map((item: any, index: number) => (
-                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors">
+                        <div 
+                          key={index} 
+                          className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors cursor-pointer"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setSelectedOutfit({ ...outfits[0], mainDisplayIndex: index });
+                            setShowOutfitDialog(true);
+                            const { data: garments } = await supabase
+                              .from('garments')
+                              .select('id, type, color, material, brand, image_url');
+                            const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                            setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems, mainDisplayIndex: index }));
+                          }}
+                        >
                           {item.imageUrl ? (
                             <img
                               src={item.imageUrl}
