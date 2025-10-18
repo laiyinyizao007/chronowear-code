@@ -90,6 +90,13 @@ export default function Home() {
           setTodaysPickId(existingPick.id);
           setIsLiked(existingPick.is_liked);
           setAddedToOOTD(existingPick.added_to_ootd);
+          
+          // Load Fashion Trends even when Today's Pick exists
+          const { data: garments } = await supabase
+            .from('garments')
+            .select('id, type, color, material, brand, image_url');
+          await loadTrendOutfits(existingPick.weather as any as WeatherData, garments || []);
+          
           setLoading(false);
           return;
         }
@@ -129,7 +136,7 @@ export default function Home() {
         .select('id, type, color, material, brand, image_url');
       
       // Load trend outfits after weather data is available
-      loadTrendOutfits(weatherData, garments);
+      await loadTrendOutfits(weatherData, garments);
 
       // Generate AI recommendation with fallback
       setRecommendationLoading(true);
