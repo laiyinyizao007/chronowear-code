@@ -96,7 +96,10 @@ export default function Home() {
         }
       );
 
-      if (recError) throw recError;
+      if (recError) {
+        console.error('Recommendation error:', recError);
+        throw new Error('Unable to generate outfit recommendations at this time');
+      }
       setOutfits(recommendationData.outfits || []);
 
       // Generate outfit image for the first outfit
@@ -151,7 +154,10 @@ export default function Home() {
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Trend recommendation error:', error);
+        throw new Error('Unable to generate trend recommendations at this time');
+      }
       
       // Generate images for trend outfits
       const outfitsWithImages = await Promise.all(
@@ -174,6 +180,12 @@ export default function Home() {
       setTrendOutfits(outfitsWithImages);
     } catch (error) {
       console.error('Error loading trend outfits:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load trend outfits';
+      toast({
+        title: "Trend Loading Issue",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setTrendLoading(false);
     }
@@ -275,7 +287,10 @@ export default function Home() {
         }
       );
 
-      if (recError) throw recError;
+      if (recError) {
+        console.error('More outfits error:', recError);
+        throw new Error('Unable to generate more outfits at this time');
+      }
       setOutfits(recommendationData.outfits || []);
       
       // Generate outfit image for the first outfit
