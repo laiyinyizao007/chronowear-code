@@ -12,36 +12,37 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WeatherData } from "@/types";
-import { useWeather } from "@/hooks/useWeather";
-import { useTodaysPick } from "@/hooks/useTodaysPick";
-import { getRandomFashionImage } from "@/services/imageService";
-import { enrichItemsWithImages } from "@/services/outfitService";
+
+
+interface WeatherData {
+  location: string;
+  current: {
+    temperature: number;
+    humidity: number;
+    weatherDescription: string;
+    uvIndex: number;
+  };
+  daily: {
+    temperatureMax: number;
+    temperatureMin: number;
+    uvIndexMax: number;
+  };
+}
 
 export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  // Use custom hooks
-  const { weather, fetchWeather } = useWeather();
-  const {
-    todaysPick,
-    outfit,
-    imageUrl: outfitImageUrl,
-    loading: todaysPickLoading,
-    generatingImage,
-    loadTodaysPick,
-    generateAndSaveImage,
-    toggleLike,
-    markAddedToOOTD: markPickAddedToOOTD,
-  } = useTodaysPick();
-  
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [outfits, setOutfits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [moreOutfitsLoading, setMoreOutfitsLoading] = useState(false);
   const [selectedOutfit, setSelectedOutfit] = useState<any>(null);
   const [showOutfitDialog, setShowOutfitDialog] = useState(false);
   const [dialogLoadingImages, setDialogLoadingImages] = useState(false);
   const [addingToCloset, setAddingToCloset] = useState<{ [key: number]: boolean }>({});
+  const [outfitImageUrl, setOutfitImageUrl] = useState<string>("");
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [selectedTrendOutfit, setSelectedTrendOutfit] = useState<any>(null);
@@ -49,6 +50,9 @@ export default function Home() {
   const [loadError, setLoadError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [todaysPickId, setTodaysPickId] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState(false);
+  const [addedToOOTD, setAddedToOOTD] = useState(false);
 
   useEffect(() => {
     loadWeatherAndRecommendation();
@@ -59,18 +63,209 @@ export default function Home() {
       setLoading(true);
       setLoadError(false);
 
-      // Fetch weather
-      const weatherData = await fetchWeather();
-      if (!weatherData) throw new Error("Failed to fetch weather");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-      // Load Today's Pick using the hook
-      await loadTodaysPick(weatherData, forceRefresh);
+      const today = new Date().toISOString().split('T')[0];
 
-      // Load Fashion Trends
+      // Check database for existing Today's Pick (unless forced refresh)
+      if (!forceRefresh) {
+        const { data: existingPick } = await supabase
+          .from('todays_picks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .maybeSingle();
+
+        if (existingPick) {
+          console.log('Loaded today\'s pick from database');
+          setWeather(existingPick.weather as any as WeatherData);
+          setOutfits([{
+            title: existingPick.title,
+            summary: existingPick.summary,
+            hairstyle: existingPick.hairstyle,
+            items: existingPick.items
+          }]);
+          const itemsArr = (existingPick.items as any[]) || [];
+          const fallbackHero = itemsArr.find((it: any) => it?.imageUrl)?.imageUrl || "";
+          setOutfitImageUrl(existingPick.image_url || fallbackHero);
+          setTodaysPickId(existingPick.id);
+          setIsLiked(existingPick.is_liked);
+          setAddedToOOTD(existingPick.added_to_ootd);
+          
+          // Load Fashion Trends even when Today's Pick exists
+          const { data: garments } = await supabase
+            .from('garments')
+            .select('id, type, color, material, brand, image_url');
+          await loadTrendOutfits(existingPick.weather as any as WeatherData, garments || []);
+          
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Get user's location with graceful fallback
+      let latitude = 35.6764225; // Default: Tokyo
+      let longitude = 139.650027;
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 300000
+          });
+        });
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+      } catch (geoError: any) {
+        console.warn('Geolocation failed, using default coords:', geoError);
+      }
+
+      // Fetch weather data
+      const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
+        'get-weather',
+        {
+          body: { lat: latitude, lng: longitude }
+        }
+      );
+
+      if (weatherError) throw weatherError;
+      setWeather(weatherData);
+
+      // Fetch user's garments
       const { data: garments } = await supabase
         .from('garments')
         .select('id, type, color, material, brand, image_url');
-      await loadTrendOutfits(weatherData, garments || []);
+      
+      // Load trend outfits after weather data is available
+      await loadTrendOutfits(weatherData, garments);
+
+      // Generate AI recommendation with fallback
+      setRecommendationLoading(true);
+      try {
+        const { data: recommendationData, error: recError } = await supabase.functions.invoke(
+          'generate-outfit-recommendation',
+          {
+            body: {
+              temperature: weatherData.current.temperature,
+              weatherDescription: weatherData.current.weatherDescription,
+              uvIndex: weatherData.current.uvIndex,
+              garments: garments || []
+            }
+          }
+        );
+
+        if (recError) throw recError;
+        
+        const outfitsData = recommendationData.outfits || [];
+        setOutfits(outfitsData);
+
+        // Save to database (replace if exists for today)
+        if (outfitsData[0]) {
+          const outfit = outfitsData[0];
+          
+          // If force refresh, delete old Today's Pick for today
+          if (forceRefresh) {
+            await supabase
+              .from('todays_picks')
+              .delete()
+              .eq('user_id', user.id)
+              .eq('date', today);
+          }
+
+          const { data: savedPick, error: saveError } = await supabase
+            .from('todays_picks')
+            .insert({
+              user_id: user.id,
+              date: today,
+              title: outfit.title,
+              summary: outfit.summary,
+              hairstyle: outfit.hairstyle,
+              items: outfit.items,
+              weather: weatherData
+            })
+            .select()
+            .single();
+
+          if (!saveError && savedPick) {
+            setTodaysPickId(savedPick.id);
+            setIsLiked(false);
+            setAddedToOOTD(false);
+            console.log('Saved new today\'s pick to database');
+          }
+
+          // Generate outfit image and persist image_url to DB for this pick
+          await generateOutfitImage(outfit, savedPick?.id);
+        }
+      } catch (aiError) {
+        console.error('AI service unavailable:', aiError);
+        // Use complete mock data when AI is unavailable
+        const basicOutfits = [
+          {
+            title: "Casual Chic",
+            summary: "Perfect casual outfit for today's weather with complete accessories",
+            hairstyle: "Natural wavy hair",
+            items: [
+              { type: "Hairstyle", name: "Natural Waves", description: "Soft, natural wavy hairstyle", fromCloset: false },
+              { type: "Top", name: "White T-Shirt", brand: "Uniqlo", model: "Basic Tee", color: "White", material: "Cotton", fromCloset: false },
+              { type: "Bottom", name: "Blue Jeans", brand: "Levi's", model: "501", color: "Blue", material: "Denim", fromCloset: false },
+              { type: "Shoes", name: "White Sneakers", brand: "Adidas", model: "Stan Smith", color: "White", material: "Leather", fromCloset: false },
+              { type: "Bag", name: "Tote Bag", brand: "Canvas", model: "Classic", color: "Beige", material: "Canvas", fromCloset: false },
+              { type: "Accessories", name: "Watch", brand: "Casio", model: "Simple", color: "Silver", material: "Metal", fromCloset: false }
+            ]
+          }
+        ];
+
+        const enrichedOutfits = await Promise.all(
+          basicOutfits.map(async (outfit) => {
+            const enrichedItems = await enrichItemsWithImages(outfit.items, garments || []);
+            return { ...outfit, items: enrichedItems };
+          })
+        );
+        
+        setOutfits(enrichedOutfits);
+
+        // Save fallback to database
+        if (enrichedOutfits[0]) {
+          if (forceRefresh) {
+            await supabase
+              .from('todays_picks')
+              .delete()
+              .eq('user_id', user.id)
+              .eq('date', today);
+          }
+
+          const { data: savedPick } = await supabase
+            .from('todays_picks')
+            .insert({
+              user_id: user.id,
+              date: today,
+              title: enrichedOutfits[0].title,
+              summary: enrichedOutfits[0].summary,
+              hairstyle: enrichedOutfits[0].hairstyle,
+              items: enrichedOutfits[0].items,
+              weather: weatherData
+            })
+            .select()
+            .single();
+
+          if (savedPick) {
+            setTodaysPickId(savedPick.id);
+            setIsLiked(false);
+            setAddedToOOTD(false);
+          }
+        }
+        
+        const msg = (aiError as any)?.message || JSON.stringify(aiError || {});
+        const isCreditOrRateLimit = /402|payment_required|Not enough credits|429|rate limit/i.test(msg);
+        if (!isCreditOrRateLimit) {
+          toast({
+            title: "AI Service Unavailable",
+            description: "Showing basic recommendations. AI features are temporarily disabled.",
+          });
+        }
+
+      }
 
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -90,6 +285,7 @@ export default function Home() {
       }
     } finally {
       setLoading(false);
+      setRecommendationLoading(false);
     }
   };
 
