@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,7 @@ import OutfitCard from "@/components/OutfitCard";
 import OutfitRecommendationCard from "@/components/OutfitRecommendationCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface WeatherData {
   location: string;
@@ -45,6 +46,8 @@ export default function Home() {
   const [selectedTrendOutfit, setSelectedTrendOutfit] = useState<any>(null);
   const [showTrendDialog, setShowTrendDialog] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
 
   useEffect(() => {
     loadWeatherAndRecommendation();
@@ -597,11 +600,13 @@ export default function Home() {
         ) : outfits.length > 0 ? (
           <Card className="shadow-medium overflow-hidden">
             <CardContent className="p-4 sm:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {/* Left: AI Generated Outfit Image */}
-                <div className="space-y-2 sm:space-y-3">
-                  <h3 className="text-base sm:text-lg font-semibold">{outfits[0].title}</h3>
-                  <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+              {/* Mobile Layout */}
+              <div className="md:hidden">
+                <h3 className="text-base font-semibold mb-3">{outfits[0].title}</h3>
+                <div className="flex gap-3">
+                  {/* Left: Outfit Image */}
+                  <div className="w-1/2 space-y-2">
+                    <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Loader2 className="w-8 h-8 animate-spin text-accent" />
@@ -617,13 +622,65 @@ export default function Home() {
                         <Sparkles className="w-12 h-12" />
                       </div>
                     )}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-3">{outfits[0].summary}</p>
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">{outfits[0].summary}</p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button 
-                      className="flex-1" 
-                      variant="outline"
-                       onClick={async () => {
+
+                  {/* Right: Item List */}
+                  <div className="w-1/2 space-y-2">
+                    <h4 className="font-medium text-xs text-muted-foreground">Items</h4>
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {outfits[0].items?.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center gap-2 p-2 rounded-lg border bg-card">
+                          <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={`${item.brand || ''} ${item.model || item.name}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    target.style.display = 'none';
+                                    parent.innerHTML = `
+                                      <div class="w-full h-full flex items-center justify-center bg-muted">
+                                        <svg class="w-5 h-5 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                        </svg>
+                                      </div>
+                                    `;
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-muted">
+                                <Shirt className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-xs truncate">{item.name || item.type}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {item.color}
+                            </p>
+                          </div>
+                          {item.fromCloset && (
+                            <Badge variant="secondary" className="text-[9px] px-1 py-0">IN</Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons for mobile */}
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    className="flex-1" 
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
                          console.log("View Details clicked, testing search-product-info...");
                          
                          // Test search-product-info function
@@ -644,14 +701,15 @@ export default function Home() {
                          console.log("Before enrichItemsWithImages, items:", outfits[0].items);
                          const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
                          console.log("After enrichItemsWithImages, items:", updatedItems);
-                         setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
-                       }}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={async () => {
+                      setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                    }}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={async () => {
                         try {
                           const { data: { user } } = await supabase.auth.getUser();
                           if (!user) throw new Error("Not authenticated");
@@ -700,13 +758,13 @@ export default function Home() {
                         }
                       }}
                     >
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Add to OOTD
+                      <Calendar className="w-3 h-3 mr-1" />
+                      OOTD
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={async () => {
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
                         try {
                           const { data: { user } } = await supabase.auth.getUser();
                           if (!user) throw new Error("Not authenticated");
@@ -736,13 +794,144 @@ export default function Home() {
                         }
                       }}
                     >
-                      <Heart className="w-4 h-4" />
+                      <Heart className="w-3 h-3" />
                     </Button>
-                  </div>
                 </div>
+              </div>
 
-                {/* Right: Item List */}
-                <div className="space-y-3">
+              {/* Desktop Layout */}
+              <div className="hidden md:block">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Left: AI Generated Outfit Image */}
+                  <div className="space-y-2 sm:space-y-3">
+                    <h3 className="text-base sm:text-lg font-semibold">{outfits[0].title}</h3>
+                    <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                      {generatingImage ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                        </div>
+                      ) : outfitImageUrl ? (
+                        <img 
+                          src={outfitImageUrl} 
+                          alt="Today's outfit"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          <Sparkles className="w-12 h-12" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{outfits[0].summary}</p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button 
+                        className="flex-1" 
+                        variant="outline"
+                        onClick={async () => {
+                          setSelectedOutfit(outfits[0]);
+                          setShowOutfitDialog(true);
+                          const { data: garments } = await supabase
+                            .from('garments')
+                            .select('id, type, color, material, brand, image_url');
+                          const updatedItems = await enrichItemsWithImages(outfits[0].items || [], garments || []);
+                          setSelectedOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                        }}
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        variant="default"
+                        onClick={async () => {
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) throw new Error("Not authenticated");
+
+                            const { data: garments } = await supabase
+                              .from('garments')
+                              .select('id, type, brand')
+                              .eq('user_id', user.id);
+
+                            const garmentIds = outfits[0].items
+                              ?.filter((item: any) => item.fromCloset)
+                              .map((item: any) => {
+                                const match = garments?.find(g => 
+                                  g.type?.toLowerCase() === item.type?.toLowerCase() &&
+                                  g.brand?.toLowerCase() === item.brand?.toLowerCase()
+                                );
+                                return match?.id;
+                              })
+                              .filter(Boolean) || [];
+
+                            const { error } = await supabase
+                              .from('ootd_records')
+                              .insert({
+                                user_id: user.id,
+                                date: new Date().toISOString().split('T')[0],
+                                photo_url: outfitImageUrl || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&q=80',
+                                garment_ids: garmentIds,
+                                weather: weather?.current.weatherDescription || '',
+                                location: weather?.location || '',
+                                notes: `${outfits[0].title} - ${outfits[0].summary}`,
+                                products: outfits[0].items || []
+                              });
+
+                            if (error) throw error;
+                            toast({
+                              title: "Added to OOTD!",
+                              description: "Today's outfit has been saved to your diary.",
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to add to OOTD",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Add to OOTD
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) throw new Error("Not authenticated");
+
+                            const { error } = await supabase
+                              .from('saved_outfits')
+                              .insert({
+                                user_id: user.id,
+                                title: outfits[0].title,
+                                items: outfits[0].items || [],
+                                hairstyle: outfits[0].hairstyle,
+                                summary: outfits[0].summary,
+                                image_url: outfitImageUrl
+                              });
+
+                            if (error) throw error;
+                            toast({
+                              title: "Success",
+                              description: "Outfit saved to your closet!",
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to save outfit",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Heart className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Right: Item List */}
+                  <div className="space-y-3">
                   <h4 className="font-medium text-sm text-muted-foreground">Items Needed</h4>
                   <div className="space-y-2">
                     {outfits[0].items?.map((item: any, index: number) => (
@@ -791,7 +980,8 @@ export default function Home() {
                       <p className="text-sm font-medium mb-1">Hairstyle Suggestion</p>
                       <p className="text-xs text-muted-foreground">{outfits[0].hairstyle}</p>
                     </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -799,38 +989,27 @@ export default function Home() {
         ) : null}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card
-          className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
-          onClick={() => navigate("/closet")}
-        >
-          <CardContent className="pt-6 text-center space-y-3">
-            <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-              <Plus className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Add Garment</h3>
-              <p className="text-xs text-muted-foreground">Build your wardrobe</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="shadow-soft hover:shadow-medium transition-shadow cursor-pointer"
-          onClick={() => navigate("/diary")}
-        >
-          <CardContent className="pt-6 text-center space-y-3">
-            <div className="w-12 h-12 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
-              <Camera className="w-6 h-6 text-accent" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Log OOTD</h3>
-              <p className="text-xs text-muted-foreground">Save today's outfit</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Floating Action Button */}
+      <DropdownMenu open={fabOpen} onOpenChange={setFabOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="lg"
+            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 md:hidden"
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48 mb-2">
+          <DropdownMenuItem onClick={() => { navigate("/closet"); setFabOpen(false); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Garment
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { navigate("/diary"); setFabOpen(false); }}>
+            <Camera className="w-4 h-4 mr-2" />
+            Log OOTD
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Today's Pick Outfit Details Dialog - Mobile-First Design */}
       <Dialog open={showOutfitDialog} onOpenChange={setShowOutfitDialog}>
