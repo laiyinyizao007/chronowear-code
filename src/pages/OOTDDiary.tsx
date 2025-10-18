@@ -1027,16 +1027,13 @@ export default function OOTDDiary() {
           </Button>
         </div>
       ) : (
-        <div className={cn(
-          "relative min-h-screen",
-          viewMode === 'day' && outfitImageUrl && "pb-20" // Add padding when background is present
-        )}>
+        <>
           {/* Background Image for Day View */}
           {viewMode === 'day' && outfitImageUrl && (
             <>
               {/* Background image layer */}
               <div 
-                className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
+                className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0"
                 style={{ 
                   backgroundImage: `url(${outfitImageUrl})`,
                   filter: 'blur(8px)',
@@ -1044,9 +1041,14 @@ export default function OOTDDiary() {
                 }}
               />
               {/* Semi-transparent overlay for better readability */}
-              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm -z-10" />
+              <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-0" />
             </>
           )}
+
+          <div className={cn(
+            "relative z-10 min-h-screen",
+            viewMode === 'day' && outfitImageUrl && "pb-20" // Add padding when background is present
+          )}>
 
           <div className="space-y-4 sm:space-y-6 relative z-10">
           {/* Navigation Controls - Compact */}
@@ -1607,7 +1609,8 @@ export default function OOTDDiary() {
             </AlertDialogContent>
           </AlertDialog>
           </div>
-        </div>
+          </div>
+        </>
       )}
       
       {isProcessing && (
