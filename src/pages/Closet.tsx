@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import ProductCard from "@/components/ProductCard";
 import GarmentFilterSheet from "@/components/GarmentFilterSheet";
+import { searchProductInfo } from "@/services/outfitService";
 
 interface Garment {
   id: string;
@@ -266,38 +267,23 @@ export default function Closet() {
       
       // Fetch detailed product info for each result
       const productPromises = results.map(async (result: any) => {
-        try {
-          const { data: productData } = await supabase.functions.invoke(
-            'search-product-info',
-            { body: { brand: result.brand, model: result.model } }
-          );
-          
-          return {
-            brand: result.brand,
-            model: result.model,
-            price: result.price,
-            style: result.style,
-            features: result.features || [],
-            imageUrl: productData?.imageUrl,
-            material: productData?.material,
-            color: productData?.color,
-            availability: productData?.availability,
-            official_price: productData?.official_price,
-            washing_frequency: productData?.washing_frequency,
-            care_instructions: productData?.care_instructions,
-            type: productData?.type || result.type,
-          };
-        } catch (error) {
-          console.error('Error fetching product info:', error);
-          return {
-            brand: result.brand,
-            model: result.model,
-            price: result.price,
-            style: result.style,
-            features: result.features || [],
-            type: result.type,
-          };
-        }
+        const productData = await searchProductInfo(result.brand, result.model);
+        
+        return {
+          brand: result.brand,
+          model: result.model,
+          price: result.price,
+          style: result.style,
+          features: result.features || [],
+          imageUrl: productData?.imageUrl,
+          material: productData?.material,
+          color: productData?.color,
+          availability: productData?.availability,
+          official_price: productData?.official_price,
+          washing_frequency: productData?.washing_frequency,
+          care_instructions: productData?.care_instructions,
+          type: productData?.type || result.type,
+        };
       });
 
       const products = await Promise.all(productPromises);

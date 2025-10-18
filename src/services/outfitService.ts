@@ -2,6 +2,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { Outfit, WeatherData, OutfitItem } from "@/types";
 
 /**
+ * Search product information including image
+ */
+export const searchProductInfo = async (
+  brand: string,
+  model: string
+): Promise<any | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('search-product-info', {
+      body: { brand, model }
+    });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Failed to search product info:', error);
+    return null;
+  }
+};
+
+/**
  * Generate outfit recommendation using AI
  */
 export const generateOutfitRecommendation = async (
@@ -62,19 +82,12 @@ export const enrichItemsWithProductImages = async (
       
       // For items with brand and model, search for product image
       if (!item.fromCloset && item.brand && item.model) {
-        try {
-          const { data: productData } = await supabase.functions.invoke('search-product-info', {
-            body: { brand: item.brand, model: item.model }
-          });
-          
-          return {
-            ...item,
-            imageUrl: productData?.imageUrl || item.imageUrl
-          };
-        } catch (error) {
-          console.error('Failed to fetch product image:', error);
-          return item;
-        }
+        const productData = await searchProductInfo(item.brand, item.model);
+        
+        return {
+          ...item,
+          imageUrl: productData?.imageUrl || item.imageUrl
+        };
       }
       
       return item;
