@@ -432,24 +432,61 @@ export default function OOTDDiary() {
           .maybeSingle();
 
         if (existingPick) {
-          setWeather(existingPick.weather as any as WeatherData);
-          setOutfits([{
-            title: existingPick.title,
-            summary: existingPick.summary,
-            hairstyle: existingPick.hairstyle,
-            items: existingPick.items
-          }]);
+          let pickedWeather: any = (existingPick as any).weather || null;
+
+          // If saved weather has unknown/missing location, refresh it now and update DB
+          if (!pickedWeather?.location || /unknown/i.test(pickedWeather.location)) {
+            try {
+              let latitude = 35.6764225; // Default fallback
+              let longitude = 139.650027;
+              try {
+                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                  navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                    maximumAge: 300000,
+                  });
+                });
+                latitude = position.coords.latitude;
+                longitude = position.coords.longitude;
+              } catch {}
+
+              const { data: freshWeather } = await supabase.functions.invoke('get-weather', {
+                body: { lat: latitude, lng: longitude },
+              });
+
+              if (freshWeather) {
+                pickedWeather = freshWeather;
+                await supabase
+                  .from('todays_picks')
+                  .update({ weather: freshWeather })
+                  .eq('id', existingPick.id);
+              }
+            } catch (wErr) {
+              console.warn('Failed to refresh weather for existing pick', wErr);
+            }
+          }
+
+          setWeather(pickedWeather as WeatherData);
+          setOutfits([
+            {
+              title: existingPick.title,
+              summary: existingPick.summary,
+              hairstyle: existingPick.hairstyle,
+              items: existingPick.items,
+            },
+          ]);
           setOutfitImageUrl(existingPick.image_url || "");
           setTodaysPickId(existingPick.id);
           setIsLiked(existingPick.is_liked);
           setAddedToOOTD(existingPick.added_to_ootd);
-          
+
           // Load Fashion Trends
           const { data: garments } = await supabase
             .from('garments')
             .select('id, type, color, material, brand, image_url');
-          await loadTrendOutfits(existingPick.weather as any as WeatherData, garments || []);
-          
+          await loadTrendOutfits(pickedWeather as WeatherData, garments || []);
+
           setTodayPickLoading(false);
           return;
         }
