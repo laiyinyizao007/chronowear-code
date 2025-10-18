@@ -47,6 +47,44 @@ export const enrichItemsWithImages = async (
 };
 
 /**
+ * Enrich outfit items with product images from online search
+ */
+export const enrichItemsWithProductImages = async (
+  items: OutfitItem[],
+  garments: any[]
+): Promise<OutfitItem[]> => {
+  const enrichedItems = await Promise.all(
+    items.map(async (item) => {
+      // If item is from closet, use garment image
+      if (item.fromCloset && item.imageUrl) {
+        return item;
+      }
+      
+      // For items with brand and model, search for product image
+      if (!item.fromCloset && item.brand && item.model) {
+        try {
+          const { data: productData } = await supabase.functions.invoke('search-product-info', {
+            body: { brand: item.brand, model: item.model }
+          });
+          
+          return {
+            ...item,
+            imageUrl: productData?.imageUrl || item.imageUrl
+          };
+        } catch (error) {
+          console.error('Failed to fetch product image:', error);
+          return item;
+        }
+      }
+      
+      return item;
+    })
+  );
+  
+  return enrichedItems;
+};
+
+/**
  * Create fallback outfit when AI is unavailable
  */
 export const createFallbackOutfit = async (

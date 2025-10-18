@@ -6,6 +6,7 @@ import {
   saveTodaysPick,
   deleteTodaysPick,
   createFallbackOutfit,
+  enrichItemsWithProductImages,
 } from "@/services/outfitService";
 import {
   generateOutfitImage,
@@ -93,6 +94,15 @@ export const useTodaysPick = () => {
       let outfits: Outfit[];
       try {
         outfits = await generateOutfitRecommendation(weather, garments || []);
+        
+        // Enrich items with product images
+        if (outfits[0]?.items) {
+          const enrichedItems = await enrichItemsWithProductImages(
+            outfits[0].items,
+            garments || []
+          );
+          outfits[0].items = enrichedItems;
+        }
       } catch (error) {
         console.error("AI service unavailable, using fallback:", error);
         outfits = await createFallbackOutfit(garments || []);
