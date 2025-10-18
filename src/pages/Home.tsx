@@ -882,7 +882,7 @@ export default function Home() {
                       {outfits[0].items?.map((item: any, index: number) => (
                         <div 
                           key={index} 
-                          className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 cursor-pointer hover:ring-2 hover:ring-primary transition-all ${!item.fromCloset ? 'opacity-50' : ''}`}
                           onClick={async (e) => {
                             e.stopPropagation();
                             setSelectedOutfit({ ...outfits[0], mainDisplayIndex: index });
@@ -1078,7 +1078,7 @@ export default function Home() {
                       {outfits[0].items?.map((item: any, index: number) => (
                         <div 
                           key={index} 
-                          className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors cursor-pointer"
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-muted border border-border/50 hover:border-primary/50 transition-colors cursor-pointer ${!item.fromCloset ? 'opacity-50' : ''}`}
                           onClick={async (e) => {
                             e.stopPropagation();
                             setSelectedOutfit({ ...outfits[0], mainDisplayIndex: index });
