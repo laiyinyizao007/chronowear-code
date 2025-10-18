@@ -77,7 +77,9 @@ IMPORTANT:
 - Use real, searchable brand names and products
 - Make each outfit distinct in style (mix casual, formal, sporty, elegant, bohemian)
 - Ensure weather appropriateness
-- Include hairstyle as both a field and an item in the items array`;
+- ALWAYS include one item with type "Hairstyle" in the items array
+- For hairstyle items, use descriptive names like "Messy Low Bun", "Sleek High Ponytail", "Beach Waves", etc.
+- The hairstyle field should contain the same value as the hairstyle item's name`;
 
     console.log('Calling Gemini API for fashion trends');
     

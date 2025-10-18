@@ -1234,22 +1234,6 @@ export default function Home() {
                       </Button>
                     </div>
 
-                    {outfits[0].hairstyle && (
-                      <div className="mt-4 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4 text-accent" />
-                          <p className="text-sm font-medium">Hairstyle Suggestion</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">{outfits[0].hairstyle}</p>
-                        <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
-                          <img 
-                            src={`https://images.unsplash.com/photo-1560869713-7d0a29430803?w=400&h=300&fit=crop`}
-                            alt="Hairstyle suggestion"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
