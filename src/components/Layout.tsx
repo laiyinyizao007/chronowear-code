@@ -139,9 +139,16 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content with Context */}
       <main className="mx-auto py-8 sm:py-12 pb-28 sm:pb-32 max-w-[1600px] px-6 sm:px-10">
-        <Outlet />
+        <Outlet context={{ setBackgroundImage: (url: string) => {
+          const rootElement = document.documentElement;
+          if (url) {
+            rootElement.style.setProperty('--outfit-bg-image', `url(${url})`);
+          } else {
+            rootElement.style.removeProperty('--outfit-bg-image');
+          }
+        }}} />
       </main>
 
       {/* Bottom Navigation - Farfetch ultra minimal */}
