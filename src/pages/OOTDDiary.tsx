@@ -1199,8 +1199,8 @@ export default function OOTDDiary() {
                     <div className="flex h-full">
                       {/* Left sidebar - Items list */}
                       {outfits[0]?.items && outfits[0].items.length > 0 && (
-                        <div className="w-28 bg-secondary/20 p-2 space-y-2 overflow-y-auto">
-                          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">
+                        <div className="w-20 bg-secondary/20 p-2 space-y-2 overflow-y-auto flex-shrink-0">
+                          <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1">
                             Items
                           </div>
                           <div className="space-y-2">
@@ -1220,14 +1220,14 @@ export default function OOTDDiary() {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center bg-secondary/50">
-                                    <span className="text-[10px] text-muted-foreground text-center p-1">
+                                    <span className="text-[9px] text-muted-foreground text-center p-1 leading-tight">
                                       {item.type}
                                     </span>
                                   </div>
                                 )}
                                 {/* Overlay on hover */}
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
-                                  <span className="text-[9px] text-white text-center leading-tight">
+                                  <span className="text-[8px] text-white text-center leading-tight">
                                     {item.name}
                                   </span>
                                 </div>
@@ -1238,14 +1238,14 @@ export default function OOTDDiary() {
                       )}
 
                       {/* Right side - Main content */}
-                      <div className="flex-1 p-4 space-y-3">
+                      <div className="flex-1 p-4 flex flex-col">
                         {/* Title */}
-                        <div className="text-center">
+                        <div className="text-center mb-3">
                           <h3 className="font-bold text-lg uppercase tracking-wide">{outfits[0]?.title}</h3>
                         </div>
 
-                        {/* Outfit Image */}
-                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-secondary/20">
+                        {/* Outfit Image - taller to align with items */}
+                        <div className="relative flex-1 rounded-lg overflow-hidden bg-secondary/20 mb-3">
                           {generatingImage ? (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -1263,8 +1263,8 @@ export default function OOTDDiary() {
                           )}
                           
                           {/* Overlay text at bottom */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                            <p className="text-white text-sm">
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                            <p className="text-white text-xs leading-relaxed">
                               {outfits[0]?.summary}
                             </p>
                           </div>
