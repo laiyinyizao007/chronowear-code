@@ -25,15 +25,15 @@ serve(async (req) => {
       ? `in ${weather.weatherDescription} weather, ${weather.temperature}°F`
       : '';
 
-    const prompt = `Fashion photography, full body shot of person wearing ${itemDescriptions}, ${hairstyle || 'styled hair'}, ${weatherContext}, professional studio lighting, clean background, high quality, 8k`;
+    // 专门为去背人物设计的提示词
+    const prompt = `full body portrait of a fashion model wearing ${itemDescriptions}, ${hairstyle || 'styled hair'}, ${weatherContext}, pure white background, isolated person, no background, professional fashion photography, studio lighting, clean cutout, PNG style, centered composition, high quality`;
 
     console.log('Image generation prompt:', prompt);
 
     // 使用Pollinations.ai - 完全免费，无需API密钥
-    // 右侧卡片是 w-2/3，aspect-[3/4] (宽:高 = 3:4)
-    // 使用768x1024的尺寸来匹配3:4比例，确保图片填充整个frame
+    // 添加noBackground参数和更高质量设置来生成去背图片
     const encodedPrompt = encodeURIComponent(prompt);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1024&model=flux&nologo=true&enhance=true&seed=${Date.now()}`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1024&model=flux&nologo=true&enhance=true&noBackground=true&private=true&seed=${Date.now()}`;
 
     console.log('Image generated with Pollinations.ai');
 

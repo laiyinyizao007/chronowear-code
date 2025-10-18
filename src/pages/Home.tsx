@@ -306,6 +306,14 @@ export default function Home() {
     }
   };
 
+  // Auto-generate outfit image when outfits are loaded
+  useEffect(() => {
+    if (outfits.length > 0 && !outfitImageUrl && !generatingImage) {
+      console.log('Auto-generating outfit image for first outfit');
+      generateOutfitImage(outfits[0]);
+    }
+  }, [outfits]);
+
   const enrichItemsWithImages = async (items: any[], garments: any[]) => {
     setDialogLoadingImages(true);
     const updated = await Promise.all(
@@ -698,28 +706,7 @@ export default function Home() {
 
                   {/* Right: Outfit Image (2/3 width) */}
                   <div className="w-2/3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => generateOutfitImage(outfits[0])}
-                        disabled={generatingImage}
-                        className="h-7 text-xs"
-                      >
-                        {generatingImage ? (
-                          <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            生成中...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            生成图片
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
                     <div className="relative h-[420px] rounded-lg overflow-hidden bg-background">
                     {generatingImage ? (
                       <div className="absolute inset-0 flex items-center justify-center">
