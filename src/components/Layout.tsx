@@ -91,6 +91,23 @@ export default function Layout() {
               <Shirt className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
             </div>
             <h1 className="text-sm sm:text-base font-display font-light tracking-[0.2em] uppercase">ChronoWear</h1>
+          </div>
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Weather - Ultra minimal */}
+            {weather && (
+              <div className="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
+                <div className="flex items-center gap-2">
+                  {weather.current.weatherDescription.toLowerCase().includes('rain') ? (
+                    <CloudRain className="w-3 h-3" />
+                  ) : (
+                    <Sun className="w-3 h-3" />
+                  )}
+                  <span className="font-light">{weather.current.temperature}°</span>
+                </div>
+              </div>
+            )}
+            
+            {/* AI Assistant */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button 
@@ -109,21 +126,6 @@ export default function Layout() {
                 <AIAssistant />
               </DialogContent>
             </Dialog>
-          </div>
-          <div className="flex items-center gap-4 sm:gap-6">
-            {/* Weather - Ultra minimal */}
-            {weather && (
-              <div className="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
-                <div className="flex items-center gap-2">
-                  {weather.current.weatherDescription.toLowerCase().includes('rain') ? (
-                    <CloudRain className="w-3 h-3" />
-                  ) : (
-                    <Sun className="w-3 h-3" />
-                  )}
-                  <span className="font-light">{weather.current.temperature}°</span>
-                </div>
-              </div>
-            )}
             
             {/* Settings */}
             <Button 
