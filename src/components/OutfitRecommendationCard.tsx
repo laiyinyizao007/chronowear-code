@@ -107,7 +107,7 @@ export default function OutfitRecommendationCard({
                     <img 
                       src={item.imageUrl} 
                       alt={`${item.brand} ${item.model}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-center"
                       loading="lazy"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
