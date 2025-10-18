@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, MessageSquare, Cloud } from "lucide-react";
+import { Plus, Sparkles, Camera, MapPin, Sun, Loader2, ChevronRight, Shirt, X, ShoppingCart, Heart, Calendar, RefreshCw, MessageSquare, Cloud, CloudRain, Droplets } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -496,11 +496,18 @@ export default function Home() {
     window.open(`https://www.google.com/search?q=${searchQuery}&tbm=shop`, '_blank');
   };
 
-  const getUVLevel = (uvIndex: number): { level: string; color: string } => {
-    if (uvIndex < 3) return { level: "Low", color: "text-green-600" };
-    if (uvIndex < 6) return { level: "Moderate", color: "text-yellow-600" };
-    if (uvIndex < 8) return { level: "High", color: "text-orange-600" };
-    return { level: "Very High", color: "text-red-600" };
+  const getWeatherIcon = (description: string) => {
+    const lower = description.toLowerCase();
+    if (lower.includes('rain') || lower.includes('drizzle')) return <CloudRain className="w-5 h-5" />;
+    if (lower.includes('cloud')) return <Cloud className="w-5 h-5" />;
+    return <Sun className="w-5 h-5" />;
+  };
+
+  const getUVColor = (uvIndex: number): string => {
+    if (uvIndex < 3) return "text-green-600";
+    if (uvIndex < 6) return "text-yellow-600";
+    if (uvIndex < 8) return "text-orange-600";
+    return "text-red-600";
   };
 
   if (loadError) {
@@ -514,23 +521,20 @@ export default function Home() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Weather Info Card - Compact */}
+      {/* Weather Info - Minimal */}
       {weather && (
-        <Card className="mb-4">
-          <CardContent className="py-2.5 px-4">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <div className="flex items-center gap-2 min-w-0">
-                <Sun className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="font-medium capitalize truncate">{weather.current.weatherDescription}</span>
-              </div>
-              <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                <span className="font-semibold">{Math.round(weather.daily.temperatureMax)}°/{Math.round(weather.daily.temperatureMin)}°</span>
-                <span className="text-muted-foreground hidden sm:inline">UV {weather.current.uvIndex}</span>
-                <span className="text-muted-foreground hidden sm:inline">{weather.current.humidity}%</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+          {getWeatherIcon(weather.current.weatherDescription)}
+          <span className="font-medium">
+            {Math.round(weather.daily.temperatureMax)}° / {Math.round(weather.daily.temperatureMin)}°
+          </span>
+          <div className="flex items-center gap-1.5">
+            <Sun className="w-4 h-4" />
+            <span className={getUVColor(weather.current.uvIndex)}>
+              {weather.current.uvIndex.toFixed(1)}
+            </span>
+          </div>
+        </div>
       )}
 
       {/* AI Search Bar - Minimal Farfetch style */}
@@ -591,12 +595,11 @@ export default function Home() {
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
                         <p className="text-white font-medium text-xs line-clamp-1">{outfit.title}</p>
                       </div>
-                    </div>
-                    <CardContent className="p-2">
+                      {/* Floating heart button */}
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
-                        className="w-full"
+                        className="absolute bottom-2 left-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white hover:scale-110 transition-all shadow-md"
                         onClick={async (e) => {
                           e.stopPropagation();
                           try {
@@ -628,10 +631,9 @@ export default function Home() {
                           }
                         }}
                       >
-                        <Heart className="w-4 h-4 mr-2" />
-                        Save
+                        <Heart className="w-4 h-4 text-primary" />
                       </Button>
-                    </CardContent>
+                    </div>
                   </Card>
                 </CarouselItem>
               ))}
