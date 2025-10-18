@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,13 +14,16 @@ serve(async (req) => {
   try {
     const { items, weather, hairstyle, userPhotoUrl } = await req.json();
     
-    console.log('Generating outfit image with user photo:', userPhotoUrl);
+    console.log('Generating outfit image');
     console.log('Items:', items);
+    console.log('User photo URL:', userPhotoUrl);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const HUGGING_FACE_TOKEN = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+    if (!HUGGING_FACE_TOKEN) {
+      throw new Error('HUGGING_FACE_ACCESS_TOKEN not configured');
     }
+
+    const hf = new HfInference(HUGGING_FACE_TOKEN);
 
     // Build outfit description from items
     const itemDescriptions = items
@@ -38,102 +42,27 @@ serve(async (req) => {
       ? `suitable for ${weather.weatherDescription} weather at ${weather.temperature}°C`
       : '';
 
-    // If user photo is provided, use image editing to dress the user
-    if (userPhotoUrl) {
-      const editPrompt = `Dress this person in the following outfit: ${itemDescriptions}. ${hairstyle ? `Hairstyle: ${hairstyle.name || hairstyle}. ` : ''}${weatherContext}. Keep the person's face and body features unchanged. Professional fashion photography style, studio lighting, clean white background.`;
-      
-      console.log('Edit prompt:', editPrompt);
-
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: editPrompt
-                },
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: userPhotoUrl
-                  }
-                }
-              ]
-            }
-          ],
-          modalities: ["image", "text"]
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Lovable AI error:', response.status, errorText);
-        throw new Error(`Lovable AI error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-      if (!generatedImageUrl) {
-        throw new Error('No image generated');
-      }
-
-      console.log('Image edited successfully with user photo');
-
-      return new Response(
-        JSON.stringify({ imageUrl: generatedImageUrl }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Fallback: Generate new image without user photo
-    const generatePrompt = `Full body portrait of a fashion model wearing: ${itemDescriptions}. ${hairstyle ? `Hairstyle: ${hairstyle.name || hairstyle}. ` : ''}${weatherContext}. Professional fashion photography, studio lighting, clean white background, isolated person, centered composition, high quality.`;
+    // Generate prompt for outfit image
+    const prompt = `Full body portrait of a fashion model wearing: ${itemDescriptions}. ${hairstyle ? `Hairstyle: ${hairstyle.name || hairstyle}. ` : ''}${weatherContext}. Professional fashion photography, studio lighting, clean white background, isolated person, centered composition, high quality, realistic.`;
     
-    console.log('Generate prompt:', generatePrompt);
+    console.log('Generating image with Hugging Face API');
+    console.log('Prompt:', prompt);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: generatePrompt
-          }
-        ],
-        modalities: ["image", "text"]
-      })
+    // Generate image using Hugging Face FLUX model
+    const image = await hf.textToImage({
+      inputs: prompt,
+      model: 'black-forest-labs/FLUX.1-schnell',
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      throw new Error(`Lovable AI error: ${response.status}`);
-    }
+    // Convert blob to base64
+    const arrayBuffer = await image.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const imageDataUrl = `data:image/png;base64,${base64}`;
 
-    const data = await response.json();
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    if (!generatedImageUrl) {
-      throw new Error('No image generated');
-    }
-
-    console.log('Image generated successfully');
+    console.log('Image generated successfully with Hugging Face');
 
     return new Response(
-      JSON.stringify({ imageUrl: generatedImageUrl }),
+      JSON.stringify({ imageUrl: imageDataUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
