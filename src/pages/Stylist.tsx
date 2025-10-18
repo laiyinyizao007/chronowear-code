@@ -97,8 +97,10 @@ export default function Stylist() {
       // Remove background
       const resultBlob = await removeBackground(imgElement);
       
-      // Create a data URL for display
-      const dataUrl = URL.createObjectURL(resultBlob);
+      // Create a data URL for display (use base64 so backend can access it)
+      const arrayBuffer = await resultBlob.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const dataUrl = `data:image/png;base64,${base64}`;
       setRemovedBgImageUrl(dataUrl);
       
       toast.success("Background removed successfully!");
@@ -121,15 +123,17 @@ export default function Stylist() {
       
       const { data, error } = await supabase.functions.invoke('generate-virtual-tryon', {
         body: {
-          personImageUrl: removedBgImageUrl,
+          userPhotoUrl: removedBgImageUrl, // data URL accessible by backend model
           garmentImageUrl: selectedGarment.image_url,
+          garmentType: selectedGarment.type,
         }
       });
 
       if (error) throw error;
 
-      if (data?.imageUrl) {
-        setTryOnResultUrl(data.imageUrl);
+      const url = data?.imageUrl || data?.tryonImageUrl;
+      if (url) {
+        setTryOnResultUrl(url);
         toast.success("Virtual try-on generated!");
       } else {
         throw new Error("No image generated");
@@ -141,6 +145,15 @@ export default function Stylist() {
       setGenerating(false);
     }
   };
+
+  // Auto-generate try-on when a garment is selected (mobile-friendly UX)
+  useEffect(() => {
+    if (selectedGarment && removedBgImageUrl && !generating && !processingBg) {
+      handleGenerateTryOn();
+    }
+    // We intentionally omit handleGenerateTryOn from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGarment]);
 
   const toggleLikeGarment = async (garmentId: string, currentLiked: boolean) => {
     try {
@@ -186,13 +199,13 @@ export default function Stylist() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">AI Stylist</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">AI Stylist</h1>
           <p className="text-muted-foreground">Virtual try-on & styling magic</p>
         </div>
 
         <Card className="shadow-medium">
           <CardContent className="py-12 text-center space-y-4">
-            <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
+            <Upload className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-muted-foreground" />
             <div>
               <h3 className="text-xl font-semibold mb-2">Upload Your Photo First</h3>
               <p className="text-muted-foreground mb-4">
@@ -211,7 +224,7 @@ export default function Stylist() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">AI Stylist</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">AI Stylist</h1>
         <p className="text-muted-foreground">Virtual try-on & your style collection</p>
       </div>
 
@@ -306,7 +319,7 @@ export default function Stylist() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="absolute bottom-1 right-1 h-8 w-8 bg-background/80 hover:bg-background"
+                            className="absolute bottom-1 right-1 h-7 w-7 sm:h-8 sm:w-8 bg-background/80 hover:bg-background"
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleLikeGarment(garment.id, garment.liked || false);
@@ -364,7 +377,7 @@ export default function Stylist() {
             {savedOutfits.length === 0 ? (
               <Card className="shadow-medium">
                 <CardContent className="py-12 text-center">
-                  <BookHeart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <BookHeart className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No Saved Outfits</h3>
                   <p className="text-muted-foreground mb-4">
                     Save your favorite outfits to your Stylebook
@@ -393,7 +406,7 @@ export default function Stylist() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="absolute bottom-2 right-2 h-8 w-8 bg-background/80 hover:bg-background"
+                        className="absolute bottom-2 right-2 h-7 w-7 sm:h-8 sm:w-8 bg-background/80 hover:bg-background"
                         onClick={() => toggleLikeOutfit(outfit.id, outfit.liked)}
                       >
                         <Heart className="w-4 h-4 fill-red-500 text-red-500" />
