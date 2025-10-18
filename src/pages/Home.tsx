@@ -288,85 +288,61 @@ export default function Home() {
         .from('garments')
         .select('id, type, color, material, brand, image_url')).data || [];
 
-      // Use complete mock trend data with fashion images
-      const mockTrends = [
-        {
-          title: "Elegant Evening",
-          summary: "Sophisticated evening look with all accessories",
-          hairstyle: "Elegant updo",
-          imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
-          items: [
-            { type: "Hairstyle", name: "Elegant Updo", description: "Classic sophisticated updo", fromCloset: false },
-            { type: "Dress", name: "Little Black Dress", brand: "Zara", model: "Classic", color: "Black", material: "Polyester", fromCloset: false },
-            { type: "Shoes", name: "Strappy Heels", brand: "Steve Madden", model: "Evening", color: "Black", material: "Leather", fromCloset: false },
-            { type: "Bag", name: "Clutch", brand: "Luxury", model: "Evening", color: "Gold", material: "Satin", fromCloset: false },
-            { type: "Accessories", name: "Statement Necklace", brand: "Jewelry", model: "Bold", color: "Gold", material: "Metal", fromCloset: false }
-          ]
-        },
-        {
-          title: "Weekend Casual",
-          summary: "Relaxed weekend style with comfortable accessories",
-          hairstyle: "Messy bun",
-          imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80",
-          items: [
-            { type: "Hairstyle", name: "Messy Bun", description: "Casual and effortless bun", fromCloset: false },
-            { type: "Top", name: "Oversized Sweater", brand: "H&M", model: "Cozy", color: "Gray", material: "Wool", fromCloset: false },
-            { type: "Bottom", name: "Leggings", brand: "Lululemon", model: "Align", color: "Black", material: "Nylon", fromCloset: false },
-            { type: "Shoes", name: "Slip-on Sneakers", brand: "Vans", model: "Classic", color: "White", material: "Canvas", fromCloset: false },
-            { type: "Bag", name: "Backpack", brand: "Herschel", model: "Classic", color: "Navy", material: "Polyester", fromCloset: false },
-            { type: "Accessories", name: "Sunglasses", brand: "Ray-Ban", model: "Aviator", color: "Black", material: "Metal", fromCloset: false }
-          ]
-        },
-        {
-          title: "Smart Office",
-          summary: "Professional office attire with polished details",
-          hairstyle: "Sleek straight",
-          imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&q=80",
-          items: [
-            { type: "Hairstyle", name: "Sleek Straight", description: "Professional sleek straight hair", fromCloset: false },
-            { type: "Top", name: "Blazer", brand: "Banana Republic", model: "Tailored", color: "Navy", material: "Wool blend", fromCloset: false },
-            { type: "Bottom", name: "Pencil Skirt", brand: "Ann Taylor", model: "Professional", color: "Gray", material: "Polyester", fromCloset: false },
-            { type: "Shoes", name: "Pumps", brand: "Nine West", model: "Classic", color: "Black", material: "Leather", fromCloset: false },
-            { type: "Bag", name: "Leather Tote", brand: "Coach", model: "Professional", color: "Brown", material: "Leather", fromCloset: false },
-            { type: "Accessories", name: "Minimalist Watch", brand: "Daniel Wellington", model: "Classic", color: "Rose Gold", material: "Leather", fromCloset: false }
-          ]
-        },
-        {
-          title: "Sporty Active",
-          summary: "Athletic look perfect for workouts or active days",
-          hairstyle: "High ponytail",
-          imageUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80",
-          items: [
-            { type: "Hairstyle", name: "High Ponytail", description: "Athletic high ponytail", fromCloset: false },
-            { type: "Top", name: "Sports Bra", brand: "Nike", model: "Pro", color: "Black", material: "Spandex", fromCloset: false },
-            { type: "Bottom", name: "Yoga Pants", brand: "Athleta", model: "Salutation", color: "Navy", material: "Nylon", fromCloset: false },
-            { type: "Shoes", name: "Running Shoes", brand: "Adidas", model: "Ultraboost", color: "White", material: "Mesh", fromCloset: false },
-            { type: "Bag", name: "Gym Bag", brand: "Under Armour", model: "Duffle", color: "Black", material: "Polyester", fromCloset: false },
-            { type: "Accessories", name: "Fitness Tracker", brand: "Fitbit", model: "Charge", color: "Black", material: "Silicone", fromCloset: false }
-          ]
-        },
-        {
-          title: "Bohemian Chic",
-          summary: "Free-spirited boho style with artisan accessories",
-          hairstyle: "Loose beach waves",
-          imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80",
-          items: [
-            { type: "Hairstyle", name: "Beach Waves", description: "Loose, carefree beach waves", fromCloset: false },
-            { type: "Dress", name: "Maxi Dress", brand: "Free People", model: "Flowy", color: "Floral", material: "Cotton", fromCloset: false },
-            { type: "Shoes", name: "Sandals", brand: "Birkenstock", model: "Arizona", color: "Brown", material: "Leather", fromCloset: false },
-            { type: "Bag", name: "Crossbody Bag", brand: "Fossil", model: "Boho", color: "Tan", material: "Suede", fromCloset: false },
-            { type: "Accessories", name: "Layered Necklaces", brand: "Artisan", model: "Boho", color: "Gold", material: "Mixed metals", fromCloset: false }
-          ]
+      // Call AI to generate fashion trends
+      const { data: trendsData, error: trendsError } = await supabase.functions.invoke('generate-fashion-trends', {
+        body: {
+          temperature: currentWeather.current.temperature,
+          weatherDescription: currentWeather.current.weatherDescription,
+          userGarments: currentGarments
         }
-      ];
+      });
 
-      setTrendOutfits(mockTrends);
+      if (trendsError) {
+        console.error('Error calling generate-fashion-trends:', trendsError);
+        throw trendsError;
+      }
+
+      if (trendsData?.trends) {
+        // Transform AI response to match expected format
+        const formattedTrends = trendsData.trends.map((trend: any) => ({
+          title: trend.title,
+          summary: trend.summary,
+          hairstyle: trend.hairstyle,
+          imageUrl: getRandomFashionImage(), // Use placeholder images
+          items: trend.items
+        }));
+        
+        setTrendOutfits(formattedTrends);
+      } else {
+        throw new Error('No trends data in response');
+      }
     } catch (error) {
       console.error('Error loading trend outfits:', error);
-      setTrendOutfits([]);
+      // Fallback to basic trends on error
+      setTrendOutfits([
+        {
+          title: "Casual Chic",
+          summary: "Effortless everyday style",
+          hairstyle: "Natural waves",
+          imageUrl: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80",
+          items: []
+        }
+      ]);
     } finally {
       setTrendLoading(false);
     }
+  };
+
+  // Helper function to get random fashion images
+  const getRandomFashionImage = () => {
+    const images = [
+      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=80",
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80",
+      "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=400&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80",
+      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80"
+    ];
+    return images[Math.floor(Math.random() * images.length)];
   };
 
   const generateOutfitImage = async (outfit: any) => {

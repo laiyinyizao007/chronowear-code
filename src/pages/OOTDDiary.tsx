@@ -690,9 +690,9 @@ export default function OOTDDiary() {
                 })()}
               </div>
             ) : (
-              <div className="space-y-4 p-6">
+              <div className="space-y-4 px-2">
                 {/* First row - 4 items (Mon-Thu) */}
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
                     const firstRowDays = [0, 1, 2, 3].map(i => addDays(weekStart, i));
@@ -727,8 +727,8 @@ export default function OOTDDiary() {
                               </div>
                             </div>
 
-                            {/* Vertical card image - taller */}
-                            <div className="aspect-[3/5]">
+                            {/* Vertical card image - double height */}
+                            <div className="aspect-[3/10]">
                               {hasRecord ? (
                                 <>
                                   <img
@@ -762,7 +762,7 @@ export default function OOTDDiary() {
                 </div>
 
                 {/* Second row - 3 items centered (Fri-Sun) */}
-                <div className="grid grid-cols-7 gap-3">
+                <div className="grid grid-cols-7 gap-2">
                   <div className="col-span-1" />
                   {(() => {
                     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -798,8 +798,8 @@ export default function OOTDDiary() {
                               </div>
                             </div>
 
-                            {/* Vertical card image - taller */}
-                            <div className="aspect-[3/5]">
+                            {/* Vertical card image - double height */}
+                            <div className="aspect-[3/10]">
                               {hasRecord ? (
                                 <>
                                   <img

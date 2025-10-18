@@ -23,3 +23,9 @@ verify_jwt = true
 
 [functions.remove-background]
 verify_jwt = true
+
+[functions.generate-fashion-trends]
+verify_jwt = true
+
+[functions.generate-outfit-suggestion]
+verify_jwt = true
