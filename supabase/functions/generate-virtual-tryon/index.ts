@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -23,76 +22,40 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    console.log('Generating virtual try-on with Pollinations.ai');
+    console.log('User photo:', basePersonUrl);
+    console.log('Garment:', garmentImageUrl);
+    console.log('Garment type:', garmentType);
 
-    const instruction = `Compose a realistic virtual try-on: place the provided garment on the person photo while preserving the person's face, body proportions and pose. Output a clean studio-like image, high quality, fashion photography. Garment type hint: ${garmentType || 'clothing'}.`;
+    // Create a descriptive prompt for Pollinations.ai
+    const prompt = `A professional fashion photography studio shot of a person wearing ${garmentType || 'clothing'}. 
+The person should be in the same pose and have similar features as shown in the reference image. 
+The ${garmentType || 'garment'} should fit naturally on the person's body. 
+High quality, clean white background, fashion catalog style, realistic lighting, sharp focus.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: instruction },
-              { type: "image_url", image_url: { url: basePersonUrl } },
-              ...(garmentImageUrl
-                ? [{ type: "image_url", image_url: { url: garmentImageUrl } }]
-                : []),
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+    console.log('Generated prompt:', prompt);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limits exceeded, please try again later.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required, please add funds to your Lovable AI workspace.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      const t = await response.text();
-      console.error('AI gateway error:', response.status, t);
-      return new Response(JSON.stringify({ error: 'AI gateway error' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Use Pollinations.ai image generation API
+    // Pollinations.ai is free and doesn't require an API key
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&model=flux&enhance=true`;
 
-    const data = await response.json();
-    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    console.log('Pollinations URL:', pollinationsUrl);
 
-    if (!imageUrl) {
-      return new Response(JSON.stringify({ error: 'Image generation failed' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    // Return the generated image URL
     return new Response(
-      JSON.stringify({ imageUrl, tryonImageUrl: imageUrl }),
+      JSON.stringify({ 
+        imageUrl: pollinationsUrl, 
+        tryonImageUrl: pollinationsUrl 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in generate-virtual-tryon function:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', tryonImageUrl: null }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        tryonImageUrl: null 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
