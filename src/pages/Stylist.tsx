@@ -86,11 +86,11 @@ export default function Stylist() {
   const processBackgroundRemoval = async (imageUrl: string) => {
     try {
       setProcessingBg(true);
-      toast.info("Removing background... Using Hugging Face AI (free)");
+      toast.info("AI正在移除背景，仅保留人物... 大约需要10-20秒");
       
-      console.log('Calling Hugging Face background removal API...');
+      console.log('Calling Lovable AI for background removal...');
       
-      // Call our edge function for background removal
+      // Call our edge function for AI background removal
       const { data, error } = await supabase.functions.invoke('remove-background-hf', {
         body: { imageUrl }
       });
@@ -99,7 +99,7 @@ export default function Stylist() {
 
       if (data?.imageUrl) {
         setRemovedBgImageUrl(data.imageUrl);
-        toast.success("Background removed successfully!");
+        toast.success("背景移除成功！已保留人物主体");
       } else {
         throw new Error('No processed image returned');
       }
@@ -107,7 +107,7 @@ export default function Stylist() {
     } catch (error) {
       console.error("Background removal error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Failed to remove background: ${errorMessage}. Using original photo.`);
+      toast.error(`背景移除失败: ${errorMessage}. 使用原始照片。`);
       // Fallback: use original photo if background removal fails
       setRemovedBgImageUrl(imageUrl);
     } finally {
