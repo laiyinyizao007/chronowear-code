@@ -174,15 +174,19 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bra_cup: string | null
           bust_cm: number | null
           clothing_size: string | null
           created_at: string | null
           email: string | null
+          eye_color: string | null
           full_name: string | null
           geo_location: string | null
+          hair_color: string | null
           height_cm: number | null
           hip_cm: number | null
           id: string
+          shoe_size: number | null
           style_preference: string | null
           updated_at: string | null
           waist_cm: number | null
@@ -190,15 +194,19 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bra_cup?: string | null
           bust_cm?: number | null
           clothing_size?: string | null
           created_at?: string | null
           email?: string | null
+          eye_color?: string | null
           full_name?: string | null
           geo_location?: string | null
+          hair_color?: string | null
           height_cm?: number | null
           hip_cm?: number | null
           id: string
+          shoe_size?: number | null
           style_preference?: string | null
           updated_at?: string | null
           waist_cm?: number | null
@@ -206,15 +214,19 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bra_cup?: string | null
           bust_cm?: number | null
           clothing_size?: string | null
           created_at?: string | null
           email?: string | null
+          eye_color?: string | null
           full_name?: string | null
           geo_location?: string | null
+          hair_color?: string | null
           height_cm?: number | null
           hip_cm?: number | null
           id?: string
+          shoe_size?: number | null
           style_preference?: string | null
           updated_at?: string | null
           waist_cm?: number | null

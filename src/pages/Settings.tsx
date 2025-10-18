@@ -5,15 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Upload, Loader2, Image as ImageIcon, LogOut } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User, Upload, Loader2, Image as ImageIcon, LogOut, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const [userEmail, setUserEmail] = useState<string>("");
   const [fullBodyPhotoUrl, setFullBodyPhotoUrl] = useState<string>("");
   const [stylePreference, setStylePreference] = useState<string>("");
   const [geoLocation, setGeoLocation] = useState<string>("");
+  const [locationSearch, setLocationSearch] = useState<string>("");
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  
+  // Body measurements
+  const [heightCm, setHeightCm] = useState<string>("");
+  const [weightKg, setWeightKg] = useState<string>("");
+  const [bustCm, setBustCm] = useState<string>("");
+  const [waistCm, setWaistCm] = useState<string>("");
+  const [hipCm, setHipCm] = useState<string>("");
+  const [braCup, setBraCup] = useState<string>("");
+  const [shoeSize, setShoeSize] = useState<string>("");
+  const [eyeColor, setEyeColor] = useState<string>("");
+  const [hairColor, setHairColor] = useState<string>("");
+  
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -25,6 +42,8 @@ export default function Settings() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      setUserEmail(user.email || "");
 
       // Load user settings
       const { data: settingsData, error: settingsError } = await supabase
@@ -42,7 +61,7 @@ export default function Settings() {
       // Load profile data
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("style_preference, geo_location")
+        .select("style_preference, geo_location, height_cm, weight_kg, bust_cm, waist_cm, hip_cm, bra_cup, shoe_size, eye_color, hair_color")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -51,6 +70,16 @@ export default function Settings() {
       if (profileData) {
         setStylePreference(profileData.style_preference || "");
         setGeoLocation(profileData.geo_location || "");
+        setLocationSearch(profileData.geo_location || "");
+        setHeightCm(profileData.height_cm?.toString() || "");
+        setWeightKg(profileData.weight_kg?.toString() || "");
+        setBustCm(profileData.bust_cm?.toString() || "");
+        setWaistCm(profileData.waist_cm?.toString() || "");
+        setHipCm(profileData.hip_cm?.toString() || "");
+        setBraCup(profileData.bra_cup || "");
+        setShoeSize(profileData.shoe_size?.toString() || "");
+        setEyeColor(profileData.eye_color || "");
+        setHairColor(profileData.hair_color || "");
       }
     } catch (error: any) {
       console.error("Error loading settings:", error);
@@ -118,6 +147,34 @@ export default function Settings() {
     }
   };
 
+  const handleLocationSearch = (value: string) => {
+    setLocationSearch(value);
+    if (value.length > 2) {
+      // Common cities for suggestions
+      const cities = [
+        "Tokyo, Japan", "New York, USA", "London, UK", "Paris, France", 
+        "Seoul, South Korea", "Shanghai, China", "Hong Kong", "Singapore",
+        "Los Angeles, USA", "San Francisco, USA", "Chicago, USA", "Miami, USA",
+        "Berlin, Germany", "Madrid, Spain", "Rome, Italy", "Milan, Italy",
+        "Sydney, Australia", "Melbourne, Australia", "Toronto, Canada", "Vancouver, Canada",
+        "Dubai, UAE", "Bangkok, Thailand", "Taipei, Taiwan", "Beijing, China"
+      ];
+      const filtered = cities.filter(city => 
+        city.toLowerCase().includes(value.toLowerCase())
+      );
+      setLocationSuggestions(filtered);
+      setShowLocationSuggestions(true);
+    } else {
+      setShowLocationSuggestions(false);
+    }
+  };
+
+  const selectLocation = (location: string) => {
+    setGeoLocation(location);
+    setLocationSearch(location);
+    setShowLocationSuggestions(false);
+  };
+
   const handleUpdateProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -128,6 +185,15 @@ export default function Settings() {
         .update({
           style_preference: stylePreference,
           geo_location: geoLocation,
+          height_cm: heightCm ? parseFloat(heightCm) : null,
+          weight_kg: weightKg ? parseFloat(weightKg) : null,
+          bust_cm: bustCm ? parseFloat(bustCm) : null,
+          waist_cm: waistCm ? parseFloat(waistCm) : null,
+          hip_cm: hipCm ? parseFloat(hipCm) : null,
+          bra_cup: braCup || null,
+          shoe_size: shoeSize ? parseFloat(shoeSize) : null,
+          eye_color: eyeColor || null,
+          hair_color: hairColor || null,
         })
         .eq("id", user.id);
 
@@ -165,48 +231,263 @@ export default function Settings() {
         </p>
       </div>
 
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle>Personal Style</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Tell us about your style preferences for better outfit recommendations
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="style-preference">Style Preference</Label>
-            <Select value={stylePreference} onValueChange={setStylePreference}>
-              <SelectTrigger id="style-preference">
-                <SelectValue placeholder="Select your style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="casual">Casual</SelectItem>
-                <SelectItem value="formal">Formal</SelectItem>
-                <SelectItem value="street">Street Style</SelectItem>
-                <SelectItem value="minimalist">Minimalist</SelectItem>
-                <SelectItem value="bohemian">Bohemian</SelectItem>
-                <SelectItem value="sporty">Sporty</SelectItem>
-                <SelectItem value="vintage">Vintage</SelectItem>
-                <SelectItem value="elegant">Elegant</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <Tabs defaultValue="style" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="style">Style</TabsTrigger>
+          <TabsTrigger value="measurements">Measurements</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="geo-location">Preferred Location</Label>
-            <Input
-              id="geo-location"
-              placeholder="e.g., New York, London"
-              value={geoLocation}
-              onChange={(e) => setGeoLocation(e.target.value)}
-            />
-          </div>
+        <TabsContent value="style" className="space-y-6">
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle>Personal Style</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Tell us about your style preferences for better outfit recommendations
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="style-preference">Style Preference</Label>
+                <Select value={stylePreference} onValueChange={setStylePreference}>
+                  <SelectTrigger id="style-preference">
+                    <SelectValue placeholder="Select your style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="casual">Casual</SelectItem>
+                    <SelectItem value="formal">Formal</SelectItem>
+                    <SelectItem value="street">Street Style</SelectItem>
+                    <SelectItem value="minimalist">Minimalist</SelectItem>
+                    <SelectItem value="bohemian">Bohemian</SelectItem>
+                    <SelectItem value="sporty">Sporty</SelectItem>
+                    <SelectItem value="vintage">Vintage</SelectItem>
+                    <SelectItem value="elegant">Elegant</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Button onClick={handleUpdateProfile} className="w-full">
-            Save Preferences
-          </Button>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="geo-location">Preferred Location</Label>
+                <div className="relative">
+                  <Input
+                    id="geo-location"
+                    placeholder="Search for a city..."
+                    value={locationSearch}
+                    onChange={(e) => handleLocationSearch(e.target.value)}
+                    onFocus={() => locationSuggestions.length > 0 && setShowLocationSuggestions(true)}
+                  />
+                  {showLocationSuggestions && locationSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {locationSuggestions.map((location) => (
+                        <button
+                          key={location}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                          onClick={() => selectLocation(location)}
+                        >
+                          {location}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This helps us provide location-specific outfit recommendations
+                </p>
+              </div>
+
+              <Button onClick={handleUpdateProfile} className="w-full">
+                Save Preferences
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="measurements" className="space-y-6">
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle>Body Measurements</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Provide your measurements for personalized size recommendations
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="height">Height (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    placeholder="165"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    placeholder="55"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">Body Measurements</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bust">Bust (cm)</Label>
+                    <Input
+                      id="bust"
+                      type="number"
+                      placeholder="85"
+                      value={bustCm}
+                      onChange={(e) => setBustCm(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="waist">Waist (cm)</Label>
+                    <Input
+                      id="waist"
+                      type="number"
+                      placeholder="65"
+                      value={waistCm}
+                      onChange={(e) => setWaistCm(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="hip">Hip (cm)</Label>
+                    <Input
+                      id="hip"
+                      type="number"
+                      placeholder="90"
+                      value={hipCm}
+                      onChange={(e) => setHipCm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bra-cup">Bra Cup Size</Label>
+                  <Select value={braCup} onValueChange={setBraCup}>
+                    <SelectTrigger id="bra-cup">
+                      <SelectValue placeholder="Select cup size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AA">AA</SelectItem>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                      <SelectItem value="DD">DD</SelectItem>
+                      <SelectItem value="E">E</SelectItem>
+                      <SelectItem value="F">F</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="shoe-size">Shoe Size (EU)</Label>
+                  <Input
+                    id="shoe-size"
+                    type="number"
+                    step="0.5"
+                    placeholder="38"
+                    value={shoeSize}
+                    onChange={(e) => setShoeSize(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold">Physical Features</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="eye-color">Eye Color</Label>
+                    <Select value={eyeColor} onValueChange={setEyeColor}>
+                      <SelectTrigger id="eye-color">
+                        <SelectValue placeholder="Select eye color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="brown">Brown</SelectItem>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="hazel">Hazel</SelectItem>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="amber">Amber</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="hair-color">Hair Color</Label>
+                    <Select value={hairColor} onValueChange={setHairColor}>
+                      <SelectTrigger id="hair-color">
+                        <SelectValue placeholder="Select hair color" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="black">Black</SelectItem>
+                        <SelectItem value="dark-brown">Dark Brown</SelectItem>
+                        <SelectItem value="brown">Brown</SelectItem>
+                        <SelectItem value="light-brown">Light Brown</SelectItem>
+                        <SelectItem value="blonde">Blonde</SelectItem>
+                        <SelectItem value="red">Red</SelectItem>
+                        <SelectItem value="auburn">Auburn</SelectItem>
+                        <SelectItem value="gray">Gray</SelectItem>
+                        <SelectItem value="white">White</SelectItem>
+                        <SelectItem value="other">Other/Dyed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleUpdateProfile} className="w-full">
+                Save Measurements
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account" className="space-y-6">
+          <Card className="shadow-medium">
+            <CardHeader>
+              <CardTitle>Account Information</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Your account details and settings
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Email Address</Label>
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{userEmail}</span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={handleSignOut}
+                  className="w-full text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Card className="shadow-medium">
         <CardHeader>
@@ -279,21 +560,6 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-medium">
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="outline"
-            onClick={handleSignOut}
-            className="w-full text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }
