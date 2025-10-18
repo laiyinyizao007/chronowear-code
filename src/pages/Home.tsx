@@ -675,7 +675,7 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Weather Info - Minimal */}
       {weather && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
@@ -719,100 +719,71 @@ export default function Home() {
             <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-accent" />
           </div>
         ) : trendOutfits.length > 0 ? (
-          <Carousel className="w-full">
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {trendOutfits.slice(0, 3).map((outfit, index) => (
-                <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                  <Card 
-                    className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
-                    onClick={async () => {
-                      setSelectedTrendOutfit(outfit);
-                      setShowTrendDialog(true);
-                      const { data: garments } = await supabase
-                        .from('garments')
-                        .select('id, type, color, material, brand, image_url');
-                      const updatedItems = await enrichItemsWithImages(outfit.items || [], garments || []);
-                      setSelectedTrendOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {trendOutfits.slice(0, 8).map((outfit, index) => (
+              <Card 
+                key={index}
+                className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
+                onClick={async () => {
+                  setSelectedTrendOutfit(outfit);
+                  setShowTrendDialog(true);
+                  const { data: garments } = await supabase
+                    .from('garments')
+                    .select('id, type, color, material, brand, image_url');
+                  const updatedItems = await enrichItemsWithImages(outfit.items || [], garments || []);
+                  setSelectedTrendOutfit((prev: any) => ({ ...prev, items: updatedItems }));
+                }}
+              >
+                <div className="relative aspect-[16/10] sm:aspect-[4/3] bg-muted overflow-hidden rounded-md">
+                  {outfit.imageUrl ? (
+                    <img 
+                      src={outfit.imageUrl} 
+                      alt={outfit.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <p className="text-white font-medium text-xs line-clamp-1">{outfit.title}</p>
+                  </div>
+                  {/* Floating heart button */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute bottom-2 left-2 h-7 w-7 rounded-full bg-white/90 hover:bg-white hover:scale-110 transition-all shadow-md"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (!user) throw new Error("Not authenticated");
+
+                        const { error } = await supabase
+                          .from('saved_outfits')
+                          .insert({
+                            user_id: user.id,
+                            title: outfit.title,
+                            items: outfit.items || [],
+                            hairstyle: outfit.hairstyle,
+                            summary: outfit.summary,
+                            image_url: outfit.imageUrl
+                          });
+
+                        if (error) throw error;
+                        toast({ title: "Saved", description: "Outfit saved!" });
+                      } catch (error: any) {
+                        toast({ title: "Error", description: "Failed to save outfit", variant: "destructive" });
+                      }
                     }}
                   >
-                    <div className="relative h-32 bg-muted overflow-hidden">
-                      {outfit.imageUrl ? (
-                        <img 
-                          src={outfit.imageUrl} 
-                          alt={outfit.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Sparkles className="w-12 h-12 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                        <p className="text-white font-medium text-xs line-clamp-1">{outfit.title}</p>
-                      </div>
-                      {/* Floating heart button */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute bottom-2 left-2 h-8 w-8 rounded-full bg-white/90 hover:bg-white hover:scale-110 transition-all shadow-md"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          try {
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (!user) throw new Error("Not authenticated");
-
-                            const { error } = await supabase
-                              .from('saved_outfits')
-                              .insert({
-                                user_id: user.id,
-                                title: outfit.title,
-                                items: outfit.items || [],
-                                hairstyle: outfit.hairstyle,
-                                summary: outfit.summary,
-                                image_url: outfit.imageUrl
-                              });
-
-                            if (error) throw error;
-                            toast({
-                              title: "Success",
-                              description: "Outfit saved!",
-                            });
-                          } catch (error: any) {
-                            toast({
-                              title: "Error",
-                              description: "Failed to save outfit",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                      >
-                        <Heart className="w-4 h-4 text-primary" />
-                      </Button>
-                    </div>
-                  </Card>
-                </CarouselItem>
-              ))}
-
-              {/* Explore More card */}
-              <CarouselItem className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                <Card 
-                  className="shadow-medium cursor-pointer hover:shadow-large transition-all overflow-hidden group"
-                  onClick={() => navigate('/stylist')}
-                  aria-label="Explore more trends"
-                >
-                  <div className="relative aspect-[2/3] bg-muted/60 flex items-center justify-center">
-                    <div className="text-center px-4">
-                      <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 mx-auto text-accent" />
-                      <p className="mt-2 font-semibold text-sm">Explore more</p>
-                      <p className="text-xs text-muted-foreground">See more trends</p>
-                    </div>
-                  </div>
-                </Card>
-              </CarouselItem>
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+                    <Heart className="w-4 h-4 text-primary" />
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
         ) : null}
       </div>
 
