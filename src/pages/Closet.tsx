@@ -990,10 +990,11 @@ export default function Closet() {
         </AlertDialog>
 
         <Dialog open={!!selectedGarment} onOpenChange={(open) => !open && setSelectedGarment(null)}>
-          <DialogContent className="max-w-md sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-md sm:max-w-2xl max-h-[90vh] p-0 flex flex-col">
+            <DialogHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
               <DialogTitle>Garment Details</DialogTitle>
             </DialogHeader>
+            <div className="overflow-y-auto flex-1 px-6 py-4">
             {selectedGarment && (
               <div className="space-y-4">
                 <img 
@@ -1245,6 +1246,7 @@ export default function Closet() {
                 </div>
               </div>
             )}
+            </div>
           </DialogContent>
         </Dialog>
       

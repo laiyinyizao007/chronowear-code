@@ -513,15 +513,17 @@ export default function Stylist() {
               </SheetContent>
             </Sheet>
 
-            {/* AI Recommendations */}
+            {/* AI Recommendations - Below Category Tags */}
             {aiRecommendations.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-3">AI Outfit Suggestions</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {aiRecommendations.map((item, index) => (
-                    <Card key={index} className="overflow-hidden">
-                      <CardContent className="p-3">
-                        <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-2 relative">
+              <Card className="shadow-medium">
+                <CardHeader>
+                  <CardTitle className="text-base">AI Outfit Suggestions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {aiRecommendations.map((item, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="aspect-square bg-muted rounded-lg overflow-hidden relative border border-border">
                           {item.imageUrl ? (
                             <img
                               src={item.imageUrl}
@@ -534,32 +536,32 @@ export default function Stylist() {
                             </div>
                           )}
                           {item.isFromCloset && (
-                            <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] px-2 py-1 rounded-full">
+                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-[10px] px-2 py-1 rounded-full">
                               From Closet
                             </div>
                           )}
                         </div>
                         <div className="space-y-1">
-                          <p className="text-xs font-medium line-clamp-1">{item.category}</p>
+                          <p className="text-xs font-semibold line-clamp-1">{item.category}</p>
                           <p className="text-xs text-muted-foreground line-clamp-1">{item.name}</p>
                           {item.brand && (
                             <p className="text-xs text-muted-foreground line-clamp-1">{item.brand}</p>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full mt-2 h-7 text-xs"
-                            onClick={() => handleSwapItem(item.category)}
-                          >
-                            <RefreshCw className="w-3 h-3 mr-1" />
-                            Swap
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full h-8 text-xs"
+                          onClick={() => handleSwapItem(item.category)}
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Swap
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
 
