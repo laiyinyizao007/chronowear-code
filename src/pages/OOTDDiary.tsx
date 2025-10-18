@@ -1028,82 +1028,74 @@ export default function OOTDDiary() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Navigation Controls - Compact */}
-          <div className="flex items-center justify-between gap-3">
-            {/* Placeholder for symmetry */}
-            <div className="w-20" />
+        <div className={cn("space-y-4 sm:space-y-6", viewMode === 'week' && "px-4 sm:px-6")}>
+          {/* Navigation Controls - Only in Week View */}
+          {viewMode === 'week' && (
+            <div className="flex items-center justify-between gap-3">
+              {/* Placeholder for symmetry */}
+              <div className="w-20" />
 
-            {/* Date Navigation with View Toggle */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10"
-                onClick={() => {
-                  if (viewMode === 'day') setCurrentDate(subDays(currentDate, 1));
-                  else setCurrentDate(subWeeks(currentDate, 1));
-                }}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 min-w-[140px]">
-                    <CalendarIcon className="w-4 h-4" />
-                    <span className="text-sm">{format(currentDate, 'MMM yyyy')}</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center">
-                  <Calendar
-                    mode="single"
-                    selected={currentDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setCurrentDate(date);
-                        setCalendarOpen(false);
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10"
-                onClick={() => {
-                  if (viewMode === 'day') setCurrentDate(addDays(currentDate, 1));
-                  else setCurrentDate(addWeeks(currentDate, 1));
-                }}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-
-              {/* Compact View Toggle - Single button with badge */}
-              <div className="ml-2 relative">
+              {/* Date Navigation with View Toggle */}
+              <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  onClick={() => setViewMode(viewMode === 'day' ? 'week' : 'day')}
-                  className="h-10 w-10 relative"
+                  className="h-10 w-10"
+                  onClick={() => setCurrentDate(subWeeks(currentDate, 1))}
                 >
-                  {viewMode === 'day' ? (
-                    <CalendarDays className="w-4 h-4" />
-                  ) : (
-                    <CalendarIcon className="w-4 h-4" />
-                  )}
+                  <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                  {viewMode === 'day' ? 'D' : 'W'}
+                
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2 min-w-[140px]">
+                      <CalendarIcon className="w-4 h-4" />
+                      <span className="text-sm">{format(currentDate, 'MMM yyyy')}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="center">
+                    <Calendar
+                      mode="single"
+                      selected={currentDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          setCurrentDate(date);
+                          setCalendarOpen(false);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10"
+                  onClick={() => setCurrentDate(addWeeks(currentDate, 1))}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+
+                {/* Compact View Toggle - Single button with badge */}
+                <div className="ml-2 relative">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setViewMode('day')}
+                    className="h-10 w-10 relative"
+                  >
+                    <CalendarIcon className="w-4 h-4" />
+                  </Button>
+                  <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                    W
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="w-20" />
-          </div>
+              <div className="w-20" />
+            </div>
+          )}
 
           {/* Month Display removed from day view */}
 
@@ -1149,81 +1141,83 @@ export default function OOTDDiary() {
                     )}
 
                     {/* Floating Elements */}
-                    {/* Top Bar - Date Navigation & Weather */}
-                    <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between gap-2 p-3 bg-gradient-to-b from-black/60 to-transparent">
-                      {/* Date Navigation */}
-                      <div className="flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-1 py-1 shadow-lg">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => setCurrentDate(subDays(currentDate, 1))}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        
-                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-2 px-3 rounded-full">
-                              <CalendarIcon className="w-3.5 h-3.5" />
-                              <span className="text-xs font-medium">{format(currentDate, 'MMM d, yyyy')}</span>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="center">
-                            <Calendar
-                              mode="single"
-                              selected={currentDate}
-                              onSelect={(date) => {
-                                if (date) {
-                                  setCurrentDate(date);
-                                  setCalendarOpen(false);
-                                }
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                    {/* Top Bar - Date Navigation & Weather with Gradient Background */}
+                    <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-background/20 to-transparent p-4 pb-8">
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Date Navigation */}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+                            onClick={() => setCurrentDate(subDays(currentDate, 1))}
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          
+                          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="gap-2 px-3 rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                <span className="text-xs font-medium">{format(currentDate, 'MMM d, yyyy')}</span>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="center">
+                              <Calendar
+                                mode="single"
+                                selected={currentDate}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    setCurrentDate(date);
+                                    setCalendarOpen(false);
+                                  }
+                                }}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-full"
-                          onClick={() => setCurrentDate(addDays(currentDate, 1))}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+                            onClick={() => setCurrentDate(addDays(currentDate, 1))}
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </div>
 
-                      {/* Weather & Refresh */}
-                      <div className="flex items-center gap-2">
-                        {weather && (
-                          <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-3 py-2 shadow-lg">
-                            <div className="flex items-center gap-1.5">
-                              {getWeatherIcon(weather.current.weatherCode, 'w-4 h-4')}
-                              <span className="text-lg font-bold">{Math.round(weather.current.temperature)}°</span>
-                            </div>
-                            <div className="border-l border-border/50 pl-2">
-                              <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                                <MapPin className="w-2.5 h-2.5" />
-                                {weather.location.split(',')[0]}
+                        {/* Weather & Refresh */}
+                        <div className="flex items-center gap-2">
+                          {weather && (
+                            <div className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-full px-3 py-2">
+                              <div className="flex items-center gap-1.5">
+                                {getWeatherIcon(weather.current.weatherCode, 'w-4 h-4')}
+                                <span className="text-lg font-bold">{Math.round(weather.current.temperature)}°</span>
+                              </div>
+                              <div className="border-l border-border/30 pl-2">
+                                <div className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                  <MapPin className="w-2.5 h-2.5" />
+                                  {weather.location.split(',')[0]}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                        
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleRefreshOutfit}
-                          disabled={recommendationLoading}
-                          className="h-9 w-9 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-lg"
-                        >
-                          {recommendationLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
                           )}
-                        </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleRefreshOutfit}
+                            disabled={recommendationLoading}
+                            className="h-9 w-9 bg-background/60 backdrop-blur-sm hover:bg-background/80 rounded-full"
+                          >
+                            {recommendationLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
