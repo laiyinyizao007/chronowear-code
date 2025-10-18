@@ -947,17 +947,18 @@ export default function Closet() {
                     onClick={async () => {
                       if (selectedProduct === null) return;
                       
+                      // 立即关闭抽屉
+                      setIsAddDialogOpen(false);
+                      
                       setIsSaving(true);
-                      startProcessing();
-                      setProgress(20);
+                      // 启动假进度条（预计3秒完成）
+                      startFakeProgress(3000);
                       
                       try {
                         const { data: { user } } = await supabase.auth.getUser();
                         if (!user) throw new Error("Not authenticated");
 
                         const selectedProductData = productSuggestions[selectedProduct];
-                        
-                        setProgress(40);
                         
                         // Get washing frequency and care instructions recommendation
                         let washingFrequency = null;
@@ -967,8 +968,6 @@ export default function Closet() {
                           washingFrequency = recommendation.frequency;
                           careInstructions = recommendation.care_instructions;
                         }
-
-                        setProgress(70);
 
                         const { error } = await supabase.from("garments").insert({
                           user_id: user.id,
@@ -986,11 +985,8 @@ export default function Closet() {
                         });
 
                         if (error) throw error;
-
-                        setProgress(90);
                         
-                        // Close dialog and reset states
-                        setIsAddDialogOpen(false);
+                        // Reset states
                         setProductSuggestions([]);
                         setSelectedProduct(null);
                         setUploadedImageUrl("");
@@ -1000,17 +996,16 @@ export default function Closet() {
                         // Reload garments to show the new one
                         await loadGarments();
                         
-                        setProgress(100);
+                        // 完成进度条
+                        doneProgress();
                         
-                        setTimeout(() => {
-                          stopProcessing();
-                        }, 300);
+                        toast.success("Garment saved to closet!");
                         
                         // Scroll to top to show the closet view
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       } catch (error: any) {
                         toast.error("Failed to save garment");
-                        stopProcessing();
+                        doneProgress();
                       } finally {
                         setIsSaving(false);
                       }
