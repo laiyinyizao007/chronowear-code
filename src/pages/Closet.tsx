@@ -857,7 +857,6 @@ export default function Closet() {
                         availability={product.availability}
                         selected={selectedProduct === index}
                         onSelect={async () => {
-                          setSelectedProduct(index);
                           // Save immediately when clicked
                           try {
                             const { data: { user } } = await supabase.auth.getUser();
