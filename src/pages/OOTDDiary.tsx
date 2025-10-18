@@ -1196,55 +1196,67 @@ export default function OOTDDiary() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Outfit Image */}
-                    <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-secondary/20">
-                      {generatingImage ? (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                        </div>
-                      ) : outfitImageUrl ? (
-                        <img
-                          src={outfitImageUrl}
-                          alt={outfits[0]?.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                    {/* Layout: Left 1/3 items list, Right 2/3 outfit image and details */}
+                    <div className="flex gap-4">
+                      {/* Left 1/3 - Items List */}
+                      {outfits[0]?.items && outfits[0].items.length > 0 && (
+                        <div className="w-1/3 space-y-2">
+                          <h4 className="text-sm font-medium">Items:</h4>
+                          <div className="space-y-2">
+                            {outfits[0].items.map((item: any, idx: number) => (
+                              <div 
+                                key={idx} 
+                                className={cn(
+                                  "flex flex-col gap-1 text-xs p-2 bg-secondary/30 rounded transition-opacity",
+                                  !item.fromCloset && "opacity-50"
+                                )}
+                              >
+                                <Badge variant="outline" className="text-[10px] w-fit">
+                                  {item.type}
+                                </Badge>
+                                <span className="truncate font-medium">{item.name}</span>
+                                {item.brand && (
+                                  <span className="text-[10px] text-muted-foreground truncate">{item.brand}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-                    </div>
 
-                    {/* Outfit Details */}
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-lg">{outfits[0]?.title}</h3>
-                      <p className="text-sm text-muted-foreground">{outfits[0]?.summary}</p>
-                      {outfits[0]?.hairstyle && (
-                        <p className="text-xs text-muted-foreground">
-                          <span className="font-medium">Hairstyle:</span> {outfits[0].hairstyle}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Items */}
-                    {outfits[0]?.items && outfits[0].items.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium">Items:</h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {outfits[0].items.map((item: any, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs p-2 bg-secondary/30 rounded">
-                              <Badge variant="outline" className="text-[10px]">
-                                {item.type}
-                              </Badge>
-                              <span className="flex-1 truncate">{item.name}</span>
-                              {item.fromCloset && (
-                                <Badge variant="secondary" className="text-[10px]">Closet</Badge>
-                              )}
+                      {/* Right 2/3 - Outfit Image and Details */}
+                      <div className="flex-1 space-y-4">
+                        {/* Outfit Image */}
+                        <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-secondary/20">
+                          {generatingImage ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Loader2 className="w-12 h-12 animate-spin text-primary" />
                             </div>
-                          ))}
+                          ) : outfitImageUrl ? (
+                            <img
+                              src={outfitImageUrl}
+                              alt={outfits[0]?.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Outfit Details */}
+                        <div className="space-y-2">
+                          <h3 className="font-semibold text-lg">{outfits[0]?.title}</h3>
+                          <p className="text-sm text-muted-foreground">{outfits[0]?.summary}</p>
+                          {outfits[0]?.hairstyle && (
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-medium">Hairstyle:</span> {outfits[0].hairstyle}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Action Button */}
                     <Button
