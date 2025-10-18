@@ -75,9 +75,8 @@ export default function Layout() {
   if (!user) return null;
 
   const navItems = [
-    { to: "/", icon: Home, label: "Home" },
-    { to: "/stylist", icon: Sparkles, label: "Stylist" },
     { to: "/diary", icon: Calendar, label: "OOTD" },
+    { to: "/stylist", icon: Sparkles, label: "Stylist" },
   ];
 
   return (
@@ -149,7 +148,7 @@ export default function Layout() {
       <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border z-50 safe-bottom">
         <div className="mx-auto px-4 sm:px-6 max-w-[1600px]">
           <div className="flex justify-around items-center h-16 sm:h-18">
-            {/* First nav item: Home */}
+            {/* First nav item: OOTD */}
             {navItems.slice(0, 1).map((item) => (
               <NavLink
                 key={item.to}
@@ -203,7 +202,7 @@ export default function Layout() {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Last two nav items: Stylist, OOTD */}
+            {/* Last nav item: Stylist */}
             {navItems.slice(1).map((item) => (
               <NavLink
                 key={item.to}
