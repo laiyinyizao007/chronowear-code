@@ -12,27 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-
-
-interface WeatherData {
-  location: string;
-  current: {
-    temperature: number;
-    humidity: number;
-    weatherDescription: string;
-    uvIndex: number;
-  };
-  daily: {
-    temperatureMax: number;
-    temperatureMin: number;
-    uvIndexMax: number;
-  };
-}
+import { WeatherData } from "@/types";
+import { useWeather } from "@/hooks/useWeather";
 
 export default function Home() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const { weather, fetchWeather } = useWeather();
   const [outfits, setOutfits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
@@ -79,7 +65,7 @@ export default function Home() {
 
         if (existingPick) {
           console.log('Loaded today\'s pick from database');
-          setWeather(existingPick.weather as any as WeatherData);
+          // Weather is already managed by useWeather hook
           setOutfits([{
             title: existingPick.title,
             summary: existingPick.summary,
@@ -104,33 +90,8 @@ export default function Home() {
         }
       }
       
-      // Get user's location with graceful fallback
-      let latitude = 35.6764225; // Default: Tokyo
-      let longitude = 139.650027;
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 300000
-          });
-        });
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
-      } catch (geoError: any) {
-        console.warn('Geolocation failed, using default coords:', geoError);
-      }
-
-      // Fetch weather data
-      const { data: weatherData, error: weatherError } = await supabase.functions.invoke(
-        'get-weather',
-        {
-          body: { lat: latitude, lng: longitude }
-        }
-      );
-
-      if (weatherError) throw weatherError;
-      setWeather(weatherData);
+      // Fetch weather data using hook
+      const weatherData = await fetchWeather();
 
       // Fetch user's garments
       const { data: garments } = await supabase
@@ -175,15 +136,15 @@ export default function Home() {
 
           const { data: savedPick, error: saveError } = await supabase
             .from('todays_picks')
-            .insert({
+            .insert([{
               user_id: user.id,
               date: today,
               title: outfit.title,
               summary: outfit.summary,
               hairstyle: outfit.hairstyle,
               items: outfit.items,
-              weather: weatherData
-            })
+              weather: weatherData as any
+            }])
             .select()
             .single();
 
@@ -237,15 +198,15 @@ export default function Home() {
 
           const { data: savedPick } = await supabase
             .from('todays_picks')
-            .insert({
+            .insert([{
               user_id: user.id,
               date: today,
               title: enrichedOutfits[0].title,
               summary: enrichedOutfits[0].summary,
               hairstyle: enrichedOutfits[0].hairstyle,
               items: enrichedOutfits[0].items,
-              weather: weatherData
-            })
+              weather: weatherData as any
+            }])
             .select()
             .single();
 
