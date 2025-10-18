@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Filter, Image as ImageIcon, Sparkles, Camera, Upload, Edit3, X, Scan, ChevronsUpDown, Check, Shirt, Heart, Trash2 } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getWashingRecommendation } from "@/services/garmentService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -338,15 +339,9 @@ export default function Closet() {
       let washingFrequency = null;
       let careInstructions = null;
       if (product.material) {
-        try {
-          const { data: freqData } = await supabase.functions.invoke('recommend-washing-frequency', {
-            body: { material: product.material, type: "Top" }
-          });
-          washingFrequency = freqData?.frequency || null;
-          careInstructions = freqData?.care_instructions || null;
-        } catch (error) {
-          console.error('Failed to get care recommendations:', error);
-        }
+        const recommendation = await getWashingRecommendation(product.material, "Top");
+        washingFrequency = recommendation.frequency;
+        careInstructions = recommendation.care_instructions;
       }
 
       const { error } = await supabase.from("garments").insert({
@@ -396,15 +391,9 @@ export default function Closet() {
       let washingFrequency = null;
       let careInstructions = null;
       if (material) {
-        try {
-          const { data: freqData } = await supabase.functions.invoke('recommend-washing-frequency', {
-            body: { material, type }
-          });
-          washingFrequency = freqData?.frequency || null;
-          careInstructions = freqData?.care_instructions || null;
-        } catch (error) {
-          console.error('Failed to get care recommendations:', error);
-        }
+        const recommendation = await getWashingRecommendation(material, type);
+        washingFrequency = recommendation.frequency;
+        careInstructions = recommendation.care_instructions;
       }
 
       const { error } = await supabase.from("garments").insert({

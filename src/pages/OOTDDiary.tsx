@@ -32,6 +32,7 @@ import {
 import { useTodaysPick } from "@/hooks/useTodaysPick";
 import { searchProductInfo } from "@/services/outfitService";
 import { getLocationAndWeather as getLocationAndWeatherService } from "@/services/weatherService";
+import { identifyGarmentsFromImage } from "@/services/garmentService";
 
 interface IdentifiedProduct {
   brand: string;
@@ -203,23 +204,6 @@ export default function OOTDDiary() {
     }
   };
 
-  const identifyGarments = async (imageUrl: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("identify-garment", {
-        body: { imageUrl },
-      });
-
-      if (error) throw error;
-
-      if (data.garments && Array.isArray(data.garments)) {
-        return data.garments;
-      }
-      return [];
-    } catch (error: any) {
-      console.error("Garment identification error:", error);
-      return [];
-    }
-  };
 
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -277,7 +261,7 @@ export default function OOTDDiary() {
 
       // Identify garments
       setProcessingProgress(55);
-      const garments = await identifyGarments(publicUrl);
+      const garments = await identifyGarmentsFromImage(publicUrl);
 
       // Search product info for each garment
       setProcessingProgress(70);
