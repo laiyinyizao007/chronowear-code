@@ -13,11 +13,12 @@ interface IdentifiedGarment {
  * Uses Google Lens reverse image search + Gemini AI analysis
  */
 export const identifyGarmentsFromImage = async (
-  imageUrl: string
+  imageUrl: string,
+  getMoreResults: boolean = false
 ): Promise<IdentifiedGarment[]> => {
   try {
     const { data, error } = await supabase.functions.invoke("identify-garment", {
-      body: { imageUrl },
+      body: { imageUrl, getMoreResults },
     });
 
     if (error) throw error;

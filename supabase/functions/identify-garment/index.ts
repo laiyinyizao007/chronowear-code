@@ -11,8 +11,8 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl } = await req.json();
-    console.log('Received request with imageUrl:', imageUrl);
+    const { imageUrl, getMoreResults } = await req.json();
+    console.log('Received request with imageUrl:', imageUrl, 'getMoreResults:', getMoreResults);
     
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
@@ -27,7 +27,7 @@ serve(async (req) => {
     console.log('Starting Gemini Vision analysis for:', imageUrl);
     
     // Use Gemini Vision API directly to analyze the garment image
-    return await analyzeGarmentImage(imageUrl, GEMINI_API_KEY, corsHeaders);
+    return await analyzeGarmentImage(imageUrl, getMoreResults || false, GEMINI_API_KEY, corsHeaders);
   } catch (error) {
     console.error('Error in identify-garment main handler:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -40,9 +40,9 @@ serve(async (req) => {
 });
 
 // Main function to analyze garment image using Gemini Vision API
-async function analyzeGarmentImage(imageUrl: string, apiKey: string, corsHeaders: Record<string, string>) {
+async function analyzeGarmentImage(imageUrl: string, getMoreResults: boolean, apiKey: string, corsHeaders: Record<string, string>) {
   console.log('Using Gemini Vision API to analyze garment image');
-  console.log('Image URL:', imageUrl);
+  console.log('Image URL:', imageUrl, 'Get more results:', getMoreResults);
   
   try {
     // Fetch and convert image to base64
@@ -71,22 +71,46 @@ async function analyzeGarmentImage(imageUrl: string, apiKey: string, corsHeaders
     const base64Image = btoa(binaryString);
     console.log('Image converted to base64, size:', base64Image.length, 'bytes');
     
-    // Enhanced prompt for better garment identification
-    const prompt = `Analyze this clothing/outfit image carefully and identify ALL visible garments and accessories.
+    // Different prompts based on whether getting more or initial results
+    const prompt = getMoreResults ? 
+      `Analyze this clothing/outfit image and provide 3 ALTERNATIVE product identifications that are DIFFERENT from previous results. Focus on:
+- Less common but plausible brand interpretations
+- Alternative style descriptions
+- Similar items from mid-tier or affordable brands
 
-For EACH distinct item you can see (even if partially visible), provide:
-1. Brand name (if recognizable from logos, patterns, or style - make educated guesses based on fashion knowledge)
+For EACH of the 3 alternative items, provide:
+1. Brand name (suggest alternative brands or use "Generic" if uncertain)
+2. Model/product name or style description  
+3. Type (Top, Bottom, Shoes, Bag, Accessory, or Outerwear)
+4. Dominant color
+5. Material type
+
+Return ONLY this exact JSON format:
+{
+  "garments": [
+    {
+      "brand": "Brand Name",
+      "model": "Model/Style Name",
+      "type": "Top|Bottom|Shoes|Bag|Accessory|Outerwear",
+      "color": "Color Name",
+      "material": "Material Type"
+    }
+  ]
+}` :
+      `Analyze this clothing/outfit image carefully and identify the 3 MOST LIKELY products.
+
+For EACH of the top 3 matches, provide:
+1. Brand name (make educated guesses based on logos, patterns, or style)
 2. Specific model/product name or style description
 3. Type (must be one of: Top, Bottom, Shoes, Bag, Accessory, Outerwear)
 4. Dominant color
 5. Material type (cotton, denim, leather, synthetic, etc.)
 
 IMPORTANT:
-- Identify EVERY separate item visible
-- For brand, use your knowledge of fashion brands and their signature styles
-- If brand is unknown, use "Generic" or make an educated guess based on style
-- Be specific with model names (e.g., "Stan Smith", "501 Original Fit")
-- Include accessories like bags, watches, belts, hats
+- Focus on the 3 most probable matches
+- Use fashion knowledge to identify brands from visual cues
+- Be specific with model names when possible
+- Include all visible items (clothing and accessories)
 
 Return ONLY this exact JSON format (no other text):
 {

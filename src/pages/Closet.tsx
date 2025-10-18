@@ -22,7 +22,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -70,6 +84,7 @@ export default function Closet() {
   const [garments, setGarments] = useState<Garment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [identifyingProducts, setIdentifyingProducts] = useState(false);
   const [productSuggestions, setProductSuggestions] = useState<ProductInfo[]>([]);
@@ -304,22 +319,29 @@ export default function Closet() {
     }
   };
 
-  const identifyProducts = async (imageUrl: string) => {
+  const identifyProducts = async (imageUrl: string, getMoreResults: boolean = false) => {
     setIdentifyingProducts(true);
-    setProcessingProgress(50);
+    if (!getMoreResults) {
+      setProcessingProgress(50);
+    }
+    
     try {
-      // Use unified garment service
-      const garments = await identifyGarmentsFromImage(imageUrl);
+      // Use unified garment service with getMoreResults flag
+      const garments = await identifyGarmentsFromImage(imageUrl, getMoreResults);
       
       if (!garments || garments.length === 0) {
         toast.info("No garments identified in the image");
-        setProcessingProgress(100);
+        if (!getMoreResults) {
+          setProcessingProgress(100);
+          setIsProcessing(false);
+        }
         setIdentifyingProducts(false);
-        setIsProcessing(false);
         return;
       }
 
-      setProcessingProgress(70);
+      if (!getMoreResults) {
+        setProcessingProgress(70);
+      }
       
       // Fetch detailed product info for each identified garment
       const productPromises = garments.map(async (garment: any) => {
@@ -349,39 +371,56 @@ export default function Closet() {
       });
 
       const products = await Promise.all(productPromises);
-      setProductSuggestions(products);
       
-      // Pre-fill newGarment with first product data
-      if (products.length > 0) {
-        const firstProduct = products[0];
-        setNewGarment({
-          image_url: imageUrl,
-          type: firstProduct.type || "",
-          color: firstProduct.color || "",
-          season: "All-Season",
-          brand: firstProduct.brand || "",
-          material: firstProduct.material || "",
-          washing_frequency: firstProduct.washing_frequency || "",
-          care_instructions: firstProduct.care_instructions || "",
-          official_price: firstProduct.official_price || null,
-          acquired_date: new Date().toISOString().split('T')[0],
-        });
+      if (getMoreResults) {
+        // Append new results to existing ones
+        setProductSuggestions(prev => [...prev, ...products]);
+        toast.success(`${products.length} more product${products.length > 1 ? 's' : ''} loaded!`);
+      } else {
+        setProductSuggestions(products);
+        
+        // Pre-fill newGarment with first product data
+        if (products.length > 0) {
+          const firstProduct = products[0];
+          setNewGarment({
+            image_url: imageUrl,
+            type: firstProduct.type || "",
+            color: firstProduct.color || "",
+            season: "All-Season",
+            brand: firstProduct.brand || "",
+            material: firstProduct.material || "",
+            washing_frequency: firstProduct.washing_frequency || "",
+            care_instructions: firstProduct.care_instructions || "",
+            official_price: firstProduct.official_price || null,
+            acquired_date: new Date().toISOString().split('T')[0],
+          });
+        }
+        
+        setProcessingProgress(100);
+        toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified!`);
+        setIsAddDialogOpen(true);
+        setIsProcessing(false);
+        setProcessingProgress(0);
       }
-      
-      setProcessingProgress(100);
-      
-      toast.success(`${products.length} product${products.length > 1 ? 's' : ''} identified!`);
-      setIsAddDialogOpen(true);
-      setIsProcessing(false);
-      setProcessingProgress(0);
     } catch (error: any) {
       console.error('Error identifying products:', error);
       toast.error("Failed to identify products");
-      setIsProcessing(false);
-      setProcessingProgress(0);
+      if (!getMoreResults) {
+        setIsProcessing(false);
+        setProcessingProgress(0);
+      }
     } finally {
       setIdentifyingProducts(false);
+      if (getMoreResults) {
+        setIsLoadingMore(false);
+      }
     }
+  };
+
+  const loadMoreProducts = async () => {
+    if (!uploadedImageUrl || isLoadingMore) return;
+    setIsLoadingMore(true);
+    await identifyProducts(uploadedImageUrl, true);
   };
 
   const handleSaveSelectedProduct = async () => {
@@ -548,14 +587,18 @@ export default function Closet() {
                 </span>
               )}
             </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
+            <Sheet open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <SheetTrigger asChild>
                 <Button className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Garment
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-4 sm:p-6">
+              <SheetHeader>
+                <SheetTitle>Add New Garment</SheetTitle>
+                <SheetClose className="absolute right-4 top-4" />
+              </SheetHeader>
               
               {productSuggestions.length === 0 && !showManualForm ? (
                 <div className="space-y-4 py-8">
@@ -840,82 +883,104 @@ export default function Closet() {
                   </div>
                 </form>
               ) : (
-                <div className="space-y-4">
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {productSuggestions.map((product, index) => (
-                      <ProductCard
-                        key={index}
-                        brand={product.brand}
-                        model={product.model}
-                        price={product.price}
-                        style={product.style}
-                        features={product.features}
-                        imageUrl={product.imageUrl}
-                        material={product.material}
-                        color={product.color}
-                        availability={product.availability}
-                        selected={selectedProduct === index}
-                        onSelect={async () => {
-                          // Save immediately when clicked
-                          try {
-                            const { data: { user } } = await supabase.auth.getUser();
-                            if (!user) throw new Error("Not authenticated");
+                <div className="space-y-6">
+                  <Carousel className="w-full">
+                    <CarouselContent className="-ml-4">
+                      {productSuggestions.map((product, index) => (
+                        <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                          <ProductCard
+                            brand={product.brand}
+                            model={product.model}
+                            price={product.price}
+                            style={product.style}
+                            features={product.features}
+                            imageUrl={product.imageUrl}
+                            material={product.material}
+                            color={product.color}
+                            availability={product.availability}
+                            selected={selectedProduct === index}
+                            onSelect={async () => {
+                              // Save immediately when clicked
+                              try {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) throw new Error("Not authenticated");
 
-                            const selectedProductData = productSuggestions[index];
-                            
-                            // Get washing frequency and care instructions recommendation
-                            let washingFrequency = null;
-                            let careInstructions = null;
-                            if (selectedProductData.material) {
-                              const recommendation = await getWashingRecommendation(selectedProductData.material, selectedProductData.type || "Top");
-                              washingFrequency = recommendation.frequency;
-                              careInstructions = recommendation.care_instructions;
-                            }
+                                const selectedProductData = productSuggestions[index];
+                                
+                                // Get washing frequency and care instructions recommendation
+                                let washingFrequency = null;
+                                let careInstructions = null;
+                                if (selectedProductData.material) {
+                                  const recommendation = await getWashingRecommendation(selectedProductData.material, selectedProductData.type || "Top");
+                                  washingFrequency = recommendation.frequency;
+                                  careInstructions = recommendation.care_instructions;
+                                }
 
-                            const { error } = await supabase.from("garments").insert({
-                              user_id: user.id,
-                              image_url: uploadedImageUrl,
-                              type: selectedProductData.type || "Top",
-                              color: selectedProductData.color || "",
-                              season: "All-Season",
-                              brand: selectedProductData.brand,
-                              material: selectedProductData.material || "",
-                              washing_frequency: washingFrequency,
-                              care_instructions: careInstructions,
-                              official_price: selectedProductData.official_price || null,
-                              currency: currency,
-                              usage_count: 0,
-                            });
+                                const { error } = await supabase.from("garments").insert({
+                                  user_id: user.id,
+                                  image_url: uploadedImageUrl,
+                                  type: selectedProductData.type || "Top",
+                                  color: selectedProductData.color || "",
+                                  season: "All-Season",
+                                  brand: selectedProductData.brand,
+                                  material: selectedProductData.material || "",
+                                  washing_frequency: washingFrequency,
+                                  care_instructions: careInstructions,
+                                  official_price: selectedProductData.official_price || null,
+                                  currency: currency,
+                                  usage_count: 0,
+                                });
 
-                            if (error) throw error;
+                                if (error) throw error;
 
-                            toast.success("Garment added to closet!");
-                            
-                            // Close dialog and reset states
-                            setIsAddDialogOpen(false);
-                            setProductSuggestions([]);
-                            setSelectedProduct(null);
-                            setUploadedImageUrl("");
-                            setShowManualForm(false);
-                            setIsProcessing(false);
-                            
-                            // Reload garments to show the new one
-                            await loadGarments();
-                            
-                            // Scroll to top to show the closet view
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          } catch (error: any) {
-                            toast.error("Failed to save garment");
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
+                                toast.success("Garment added to closet!");
+                                
+                                // Close dialog and reset states
+                                setIsAddDialogOpen(false);
+                                setProductSuggestions([]);
+                                setSelectedProduct(null);
+                                setUploadedImageUrl("");
+                                setShowManualForm(false);
+                                setIsProcessing(false);
+                                
+                                // Reload garments to show the new one
+                                await loadGarments();
+                                
+                                // Scroll to top to show the closet view
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              } catch (error: any) {
+                                toast.error("Failed to save garment");
+                              }
+                            }}
+                          />
+                        </CarouselItem>
+                      ))}
+                      
+                      {/* More Card */}
+                      <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                        <Card 
+                          className="h-full cursor-pointer hover:shadow-lg transition-all duration-300 hover:border-primary"
+                          onClick={loadMoreProducts}
+                        >
+                          <CardContent className="flex flex-col items-center justify-center h-full min-h-[400px] p-6">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+                              <Plus className="w-10 h-10 text-muted-foreground" />
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">Load More</h3>
+                            <p className="text-sm text-muted-foreground text-center">
+                              {isLoadingMore ? "Loading..." : "Get more product suggestions"}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </CarouselItem>
+                    </CarouselContent>
+                    <CarouselPrevious className="hidden md:flex" />
+                    <CarouselNext className="hidden md:flex" />
+                  </Carousel>
                 </div>
               )}
-              </DialogContent>
-            </Dialog>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
@@ -1041,11 +1106,12 @@ export default function Closet() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={!!selectedGarment} onOpenChange={(open) => !open && setSelectedGarment(null)}>
-          <DialogContent className="max-w-md sm:max-w-2xl max-h-[90vh] p-0 flex flex-col">
-            <DialogHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
-              <DialogTitle>Garment Details</DialogTitle>
-            </DialogHeader>
+        <Sheet open={!!selectedGarment} onOpenChange={(open) => !open && setSelectedGarment(null)}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col overflow-hidden">
+            <SheetHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+              <SheetTitle>Garment Details</SheetTitle>
+              <SheetClose className="absolute right-4 top-4" />
+            </SheetHeader>
             <div className="overflow-y-auto flex-1 px-6 py-4">
             {selectedGarment && (
               <div className="space-y-4">
@@ -1326,8 +1392,8 @@ export default function Closet() {
               </div>
             )}
             </div>
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       
       {isProcessing && (
         <div className="fixed top-20 left-0 right-0 bg-background/95 backdrop-blur-sm border-b shadow-md p-4 z-[60] animate-fade-in">
