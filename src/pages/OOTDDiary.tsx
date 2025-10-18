@@ -1126,140 +1126,125 @@ export default function OOTDDiary() {
                 </Card>
               ) : outfits.length > 0 && (
                 <>
-                  <Card className="overflow-hidden shadow-elegant">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-primary" />
-                          Today's Pick
-                        </CardTitle>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleRefreshOutfit}
-                          disabled={recommendationLoading}
-                          className="h-8 w-8"
-                        >
-                          {recommendationLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
-                          )}
-                        </Button>
+                  {/* Today's Pick - Fullscreen with overlay */}
+                  <div className="relative overflow-hidden rounded-lg aspect-[3/4] max-w-lg mx-auto">
+                    {/* Background Image */}
+                    {generatingImage ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
+                        <Loader2 className="w-12 h-12 animate-spin text-primary" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="flex flex-col">
-                        {/* Top section - Items and Image aligned */}
-                        <div className="flex">
-                          {/* Left sidebar - Items list */}
-                          {outfits[0]?.items && outfits[0].items.length > 0 && (
-                            <div className="w-20 bg-secondary/20 p-2 flex flex-col flex-shrink-0">
-                              <div className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide px-1 mb-2">
-                                Items
-                              </div>
-                              <div className="space-y-2 flex-1">
-                                {outfits[0].items.map((item: any, idx: number) => (
-                                  <div 
-                                    key={idx} 
-                                    className={cn(
-                                      "relative aspect-square rounded overflow-hidden bg-background transition-opacity group cursor-pointer",
-                                      !item.fromCloset && "opacity-20"
-                                    )}
-                                    onClick={() => {
-                                      setSelectedItem(item);
-                                      setItemDetailOpen(true);
-                                    }}
-                                  >
-                                    {item.imageUrl ? (
-                                      <img
-                                        src={item.imageUrl}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center bg-secondary/50">
-                                        <span className="text-[9px] text-muted-foreground text-center p-1 leading-tight">
-                                          {item.type}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {/* Overlay on hover */}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
-                                      <span className="text-[8px] text-white text-center leading-tight">
-                                        {item.name}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                    ) : outfitImageUrl ? (
+                      <img
+                        src={outfitImageUrl}
+                        alt={outfits[0]?.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-secondary/20">
+                        <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                      </div>
+                    )}
 
-                          {/* Right side - Main content */}
-                          <div className="flex-1 p-4 flex flex-col">
-                            {/* Title */}
-                            <div className="text-center mb-3">
-                              <h3 className="font-bold text-lg uppercase tracking-wide">{outfits[0]?.title}</h3>
-                            </div>
+                    {/* Gradient Overlays */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
-                            {/* Outfit Image - aligned with left items */}
-                            <div className="relative flex-1 rounded-lg overflow-hidden bg-secondary/20">
-                              {generatingImage ? (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                                </div>
-                              ) : outfitImageUrl ? (
+                    {/* Top Controls */}
+                    <div className="absolute top-4 right-4 flex gap-2 z-10">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRefreshOutfit}
+                        disabled={recommendationLoading}
+                        className="h-10 w-10 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                      >
+                        {recommendationLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleLikeStatus}
+                        className="h-10 w-10 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                      >
+                        <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                      </Button>
+                    </div>
+
+                    {/* Items List - Left Side */}
+                    {outfits[0]?.items && outfits[0].items.length > 0 && (
+                      <div className="absolute left-4 top-4 bottom-20 w-20 flex flex-col gap-2 z-10">
+                        <div className="text-[9px] font-medium text-white/90 uppercase tracking-wide px-1 mb-1 bg-black/30 backdrop-blur-sm rounded py-1">
+                          Items
+                        </div>
+                        <div className="space-y-2 flex-1 overflow-y-auto">
+                          {outfits[0].items.map((item: any, idx: number) => (
+                            <div 
+                              key={idx} 
+                              className={cn(
+                                "relative aspect-square rounded overflow-hidden bg-background/90 backdrop-blur-sm transition-opacity group cursor-pointer",
+                                !item.fromCloset && "opacity-20"
+                              )}
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setItemDetailOpen(true);
+                              }}
+                            >
+                              {item.imageUrl ? (
                                 <img
-                                  src={outfitImageUrl}
-                                  alt={outfits[0]?.title}
+                                  src={item.imageUrl}
+                                  alt={item.name}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                                <div className="w-full h-full flex items-center justify-center bg-secondary/50">
+                                  <span className="text-[9px] text-muted-foreground text-center p-1 leading-tight">
+                                    {item.type}
+                                  </span>
                                 </div>
                               )}
-                              
-                              {/* Overlay text at bottom */}
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                                <p className="text-white text-xs leading-relaxed">
-                                  {outfits[0]?.summary}
-                                </p>
+                              {/* Overlay on hover */}
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1">
+                                <span className="text-[8px] text-white text-center leading-tight">
+                                  {item.name}
+                                </span>
                               </div>
-                              
-                              {/* Heart button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={toggleLikeStatus}
-                                className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-                              >
-                                <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                              </Button>
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Bottom section - Log button */}
-                        <div className="p-4 pt-0">
-                          <Button
-                            variant="default"
-                            className="w-full"
-                            onClick={() => {
-                              setSelectedDateForLog(currentDate);
-                              setIsAddDialogOpen(true);
-                              markAddedToOOTD();
-                            }}
-                            disabled={addedToOOTD}
-                          >
-                            <CalendarDays className="w-4 h-4 mr-2" />
-                            {addedToOOTD ? 'Added to OOTD' : 'Log'}
-                          </Button>
+                          ))}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+
+                    {/* Bottom Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+                      {/* Title */}
+                      <h3 className="font-bold text-xl text-white uppercase tracking-wide text-center mb-2">
+                        {outfits[0]?.title}
+                      </h3>
+                      
+                      {/* Summary */}
+                      <p className="text-white/90 text-sm leading-relaxed text-center mb-4">
+                        {outfits[0]?.summary}
+                      </p>
+
+                      {/* Log Button */}
+                      <Button
+                        variant="default"
+                        className="w-full bg-white text-primary hover:bg-white/90"
+                        onClick={() => {
+                          setSelectedDateForLog(currentDate);
+                          setIsAddDialogOpen(true);
+                          markAddedToOOTD();
+                        }}
+                        disabled={addedToOOTD}
+                      >
+                        <CalendarDays className="w-4 h-4 mr-2" />
+                        {addedToOOTD ? 'Added to OOTD' : 'Log'}
+                      </Button>
+                    </div>
+                  </div>
 
                   {/* Weather Section - No Border, Below Today's Pick */}
                   {weather && (
