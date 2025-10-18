@@ -327,10 +327,17 @@ export default function Home() {
         
         // Otherwise fetch from search API
         try {
+          console.log(`Calling search-product-info for: ${item.brand} ${item.model}`);
           const { data, error } = await supabase.functions.invoke('search-product-info', {
             body: { brand: item.brand, model: item.model }
           });
-          if (!error && data?.imageUrl) return { ...item, imageUrl: data.imageUrl };
+          console.log(`Response for ${item.brand} ${item.model}:`, { data, error });
+          if (!error && data?.imageUrl) {
+            console.log(`Got image URL: ${data.imageUrl}`);
+            return { ...item, imageUrl: data.imageUrl };
+          } else {
+            console.warn(`No image URL received for ${item.brand} ${item.model}:`, error);
+          }
         } catch (e) {
           console.error('Image fetch failed:', e);
         }

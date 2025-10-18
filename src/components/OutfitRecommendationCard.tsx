@@ -41,22 +41,26 @@ export default function OutfitRecommendationCard({
           }
 
           try {
-            console.log(`Fetching image for: ${item.brand} ${item.model}`);
+            console.log(`OutfitRecommendationCard: Fetching image for: ${item.brand} ${item.model}`);
             const { data, error } = await supabase.functions.invoke('search-product-info', {
               body: { brand: item.brand, model: item.model }
             });
             
+            console.log(`OutfitRecommendationCard: Response for ${item.brand} ${item.model}:`, { data, error });
+            
             if (error) {
-              console.error(`Error fetching product info for ${item.brand} ${item.model}:`, error);
+              console.error(`OutfitRecommendationCard: Error fetching product info for ${item.brand} ${item.model}:`, error);
               return item;
             }
 
             if (data?.imageUrl) {
-              console.log(`Got image URL for ${item.brand} ${item.model}:`, data.imageUrl);
+              console.log(`OutfitRecommendationCard: Got image URL for ${item.brand} ${item.model}:`, data.imageUrl);
               return { ...item, imageUrl: data.imageUrl };
+            } else {
+              console.warn(`OutfitRecommendationCard: No imageUrl in response for ${item.brand} ${item.model}`);
             }
           } catch (error) {
-            console.error(`Failed to fetch image for ${item.brand} ${item.model}:`, error);
+            console.error(`OutfitRecommendationCard: Failed to fetch image for ${item.brand} ${item.model}:`, error);
           }
           return item;
         })
