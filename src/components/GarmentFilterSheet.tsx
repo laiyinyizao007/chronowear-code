@@ -109,24 +109,6 @@ export default function GarmentFilterSheet({
 
           <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-4">
-              {/* FAVORITES FILTER */}
-              <div className="py-3 px-2">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="favorites"
-                    checked={selectedFilters.liked}
-                    onCheckedChange={handleLikedChange}
-                    className="border-muted-foreground/30"
-                  />
-                  <Label
-                    htmlFor="favorites"
-                    className="text-sm font-medium tracking-wider cursor-pointer flex-1"
-                  >
-                    FAVORITES ONLY
-                  </Label>
-                </div>
-              </div>
-
               {/* TYPE FILTER */}
               <Collapsible open={openSections.type} onOpenChange={() => toggleSection('type')}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full py-3 hover:bg-muted/50 px-2 rounded-sm transition-colors">

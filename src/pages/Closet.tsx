@@ -472,18 +472,26 @@ export default function Closet() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Closet</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Closet</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {filteredGarments.length} {filteredGarments.length === garments.length ? 'items' : `of ${garments.length} items`}
             </p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant={filters.liked ? "default" : "outline"}
+              size="icon"
+              onClick={() => setFilters(prev => ({ ...prev, liked: !prev.liked }))}
+              className="relative"
+            >
+              <Heart className={`w-4 h-4 ${filters.liked ? 'fill-current' : ''}`} />
+            </Button>
             <Select value={sortBy} onValueChange={(value: "newest" | "frequency") => setSortBy(value)}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[120px] sm:w-[140px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -506,12 +514,12 @@ export default function Closet() {
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Garment
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle>
                   <div className="flex items-center gap-2">
