@@ -1823,31 +1823,31 @@ export default function OOTDDiary() {
 
       {/* Item Detail Dialog */}
       <Dialog open={itemDetailOpen} onOpenChange={setItemDetailOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               OUTFIT DETAILS
             </DialogTitle>
           </DialogHeader>
           
           {selectedItem && (
-            <div className="space-y-4">
-              {/* Item thumbnails */}
-              <div className="flex gap-2 overflow-x-auto pb-2">
+            <div className="space-y-3 sm:space-y-4">
+              {/* Item thumbnails - scrollable horizontally */}
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                 {outfits[0]?.items?.map((item: any, idx: number) => (
                   <div
                     key={idx}
                     className={cn(
-                      "w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer border-2 transition-all",
-                      item === selectedItem ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"
+                      "w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer border-2 transition-all",
+                      item === selectedItem ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-60 hover:opacity-100"
                     )}
                     onClick={() => setSelectedItem(item)}
                   >
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-secondary/50 flex items-center justify-center text-[10px] text-center p-1">
+                      <div className="w-full h-full bg-secondary/50 flex items-center justify-center text-[9px] sm:text-[10px] text-center p-1">
                         {item.type}
                       </div>
                     )}
@@ -1855,8 +1855,8 @@ export default function OOTDDiary() {
                 ))}
               </div>
 
-              {/* Main image */}
-              <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-secondary/20">
+              {/* Main image - mobile optimized */}
+              <div className="relative aspect-[3/4] sm:aspect-[3/4] rounded-lg overflow-hidden bg-secondary/20">
                 {outfitImageUrl ? (
                   <img
                     src={outfitImageUrl}
@@ -1865,23 +1865,23 @@ export default function OOTDDiary() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Sparkles className="w-12 h-12 text-muted-foreground/40" />
+                    <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground/40" />
                   </div>
                 )}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                  className="absolute top-2 right-2 h-8 w-8 sm:h-10 sm:w-10 bg-background/80 hover:bg-background backdrop-blur-sm"
                   onClick={toggleLikeStatus}
                 >
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
                 </Button>
               </div>
 
-              {/* Item details */}
-              <div className="space-y-2 text-center">
-                <div className="flex items-center justify-center gap-2">
-                  <h3 className="font-bold text-lg uppercase">{selectedItem.name}</h3>
+              {/* Item details - mobile optimized text */}
+              <div className="space-y-2 text-center px-2">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <h3 className="font-bold text-base sm:text-lg uppercase">{selectedItem.name}</h3>
                   {selectedItem.type && (
                     <Badge variant="secondary" className="text-xs">
                       {selectedItem.type}
@@ -1894,20 +1894,20 @@ export default function OOTDDiary() {
                 )}
 
                 {(selectedItem.color || selectedItem.material) && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     {selectedItem.color && <span>• {selectedItem.color}</span>}
                     {selectedItem.material && <span>• {selectedItem.material}</span>}
                   </div>
                 )}
 
                 {selectedItem.style && (
-                  <p className="text-sm text-muted-foreground italic">{selectedItem.style}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground italic">{selectedItem.style}</p>
                 )}
               </div>
 
-              {/* Add to OOTD button */}
+              {/* Add to OOTD button - mobile optimized */}
               <Button
-                className="w-full"
+                className="w-full h-11 sm:h-10 text-sm sm:text-base"
                 onClick={() => {
                   setSelectedDateForLog(currentDate);
                   setItemDetailOpen(false);
