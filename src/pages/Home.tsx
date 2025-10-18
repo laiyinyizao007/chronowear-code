@@ -274,6 +274,8 @@ export default function Home() {
   const generateOutfitImage = async (outfit: any) => {
     try {
       setGeneratingImage(true);
+      console.log('Generating outfit image with items:', outfit.items?.length || 0);
+      
       const { data, error } = await supabase.functions.invoke('generate-outfit-image', {
         body: {
           items: outfit.items || [],
@@ -282,13 +284,23 @@ export default function Home() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Outfit image generation error:', error);
+        throw error;
+      }
+      
       if (data?.imageUrl) {
+        console.log('Outfit image generated successfully');
         setOutfitImageUrl(data.imageUrl);
+      } else {
+        console.warn('No image URL returned from generate-outfit-image');
       }
     } catch (error) {
       console.error('AI image generation unavailable:', error);
-      // Silently fail - image generation is optional
+      // 使用第一个物品的图片作为fallback
+      if (outfit.items?.[0]?.imageUrl) {
+        console.log('Using first item image as fallback');
+      }
     } finally {
       setGeneratingImage(false);
     }
@@ -687,10 +699,10 @@ export default function Home() {
                   {/* Right: Outfit Image (2/3 width) */}
                   <div className="w-2/3 space-y-2">
                     <h3 className="text-sm font-semibold">{outfits[0].title}</h3>
-                    <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                    <div className="relative aspect-[3/4] bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 rounded-lg overflow-hidden">
                     {generatingImage ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
                       </div>
                     ) : outfitImageUrl ? (
                       <img 
@@ -699,9 +711,24 @@ export default function Home() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        <Sparkles className="w-12 h-12" />
-                      </div>
+                      /* Fallback: 显示第一个物品的图片或占位符 */
+                      outfits[0].items?.[0]?.imageUrl ? (
+                        <div className="relative w-full h-full">
+                          <img 
+                            src={outfits[0].items[0].imageUrl} 
+                            alt="Outfit preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                            <p className="text-white text-xs">Preview - Full outfit image generating...</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-3">
+                          <Sparkles className="w-12 h-12" />
+                          <p className="text-xs text-center px-4">Outfit visualization coming soon</p>
+                        </div>
+                      )
                     )}
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2">{outfits[0].summary}</p>
