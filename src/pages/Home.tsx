@@ -119,8 +119,8 @@ export default function Home() {
         loadTrendOutfits(weatherData, garments || []);
       } catch (aiError) {
         console.error('AI service unavailable:', aiError);
-        // Use complete mock data when AI is unavailable
-        setOutfits([
+        // Use complete mock data when AI is unavailable and immediately enrich with images
+        const basicOutfits = [
           {
             title: "Casual Chic",
             summary: "Perfect casual outfit for today's weather with complete accessories",
@@ -133,21 +133,18 @@ export default function Home() {
               { type: "Bag", name: "Tote Bag", brand: "Canvas", model: "Classic", color: "Beige", material: "Canvas", fromCloset: false },
               { type: "Accessories", name: "Watch", brand: "Casio", model: "Simple", color: "Silver", material: "Metal", fromCloset: false }
             ]
-          },
-          {
-            title: "Business Casual",
-            summary: "Professional yet comfortable outfit with all essentials",
-            hairstyle: "Sleek low ponytail",
-            items: [
-              { type: "Hairstyle", name: "Low Ponytail", description: "Sleek and professional low ponytail", fromCloset: false },
-              { type: "Top", name: "Silk Blouse", brand: "Zara", model: "Professional", color: "Cream", material: "Silk", fromCloset: false },
-              { type: "Bottom", name: "Tailored Pants", brand: "Mango", model: "Office", color: "Black", material: "Polyester", fromCloset: false },
-              { type: "Shoes", name: "Heels", brand: "Clarks", model: "Comfort", color: "Black", material: "Leather", fromCloset: false },
-              { type: "Bag", name: "Structured Handbag", brand: "Michael Kors", model: "Professional", color: "Brown", material: "Leather", fromCloset: false },
-              { type: "Accessories", name: "Pearl Earrings", brand: "Classic", model: "Simple", color: "White", material: "Pearl", fromCloset: false }
-            ]
           }
-        ]);
+        ];
+
+        console.log('Enriching basic recommendation with images...');
+        const enrichedOutfits = await Promise.all(
+          basicOutfits.map(async (outfit) => {
+            const enrichedItems = await enrichItemsWithImages(outfit.items, garments || []);
+            return { ...outfit, items: enrichedItems };
+          })
+        );
+        
+        setOutfits(enrichedOutfits);
         setTrendOutfits([]);
         toast({
           title: "AI Service Unavailable",
@@ -750,11 +747,35 @@ export default function Home() {
                   <div className="space-y-2">
                     {outfits[0].items?.map((item: any, index: number) => (
                       <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors">
-                        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
-                          <Shirt className="w-6 h-6 text-muted-foreground" />
+                        <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={`${item.brand || ''} ${item.model || item.name}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  target.style.display = 'none';
+                                  parent.innerHTML = `
+                                    <div class="w-full h-full flex items-center justify-center bg-muted">
+                                      <svg class="w-6 h-6 text-muted-foreground" stroke-width="1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                      </svg>
+                                    </div>
+                                  `;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Shirt className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.type}</p>
+                          <p className="font-medium text-sm truncate">{item.name || item.type}</p>
                           <p className="text-xs text-muted-foreground truncate">
                             {item.color} {item.brand && `• ${item.brand}`}
                           </p>
