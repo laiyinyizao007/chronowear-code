@@ -33,6 +33,7 @@ import { useTodaysPick } from "@/hooks/useTodaysPick";
 import { searchProductInfo } from "@/services/outfitService";
 import { getLocationAndWeather as getLocationAndWeatherService } from "@/services/weatherService";
 import { identifyGarmentsFromImage } from "@/services/garmentService";
+import { ootdRecordSchema, garmentSchema, validateData } from "@/lib/validations";
 
 interface IdentifiedProduct {
   brand: string;
@@ -337,7 +338,7 @@ export default function OOTDDiary() {
         selectedProductIndices.has(index)
       );
 
-      // Save OOTD record with selected date
+      // Validate and save OOTD record
       const recordDate = selectedDateForLog || new Date();
       const recordData = {
         user_id: user.id,
@@ -349,7 +350,14 @@ export default function OOTDDiary() {
         products: JSON.stringify(selectedProducts),
       };
 
-      const { error: recordError } = await supabase.from("ootd_records").insert([recordData]);
+      const validation = validateData(ootdRecordSchema, recordData);
+      if (!validation.success) {
+        const errorMsg = validation.errors?.join(', ') || 'Invalid input';
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const { error: recordError } = await supabase.from("ootd_records").insert([validation.data as any]);
 
       if (recordError) throw recordError;
 
@@ -1504,15 +1512,24 @@ export default function OOTDDiary() {
                         return;
                       }
 
-                      // Add to closet
-                      const { error } = await supabase.from('garments').insert({
+                      // Validate and add to closet
+                      const garmentData = {
                         user_id: user.id,
                         type: selectedItem.type || 'clothing',
                         brand: selectedItem.brand || 'Unknown',
-                        color: selectedItem.color,
-                        material: selectedItem.material,
+                        color: selectedItem.color || '',
+                        material: selectedItem.material || '',
                         image_url: selectedItem.imageUrl || '',
-                      });
+                      };
+
+                      const validation = validateData(garmentSchema, garmentData);
+                      if (!validation.success) {
+                        const errorMsg = validation.errors?.join(', ') || 'Invalid input';
+                        toast.error(errorMsg);
+                        throw new Error(errorMsg);
+                      }
+
+                      const { error } = await supabase.from('garments').insert([validation.data as any]);
 
                       if (error) throw error;
                       toast.success("Added to closet!");

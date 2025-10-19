@@ -43,6 +43,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import ProductCard from "@/components/ProductCard";
 import GarmentFilterSheet from "@/components/GarmentFilterSheet";
+import { removeBackground, loadImage } from "@/lib/backgroundRemoval";
+import { cn } from "@/lib/utils";
+import { garmentSchema, validateData } from "@/lib/validations";
 
 interface Garment {
   id: string;
@@ -454,7 +457,8 @@ export default function Closet() {
         careInstructions = recommendation.care_instructions;
       }
 
-      const { error } = await supabase.from("garments").insert({
+      // Validate input data
+      const garmentData = {
         user_id: user.id,
         image_url: uploadedImageUrl,
         type: "Top", // Default, can be enhanced later
@@ -464,8 +468,16 @@ export default function Closet() {
         material: product.material || "",
         washing_frequency: washingFrequency,
         care_instructions: careInstructions,
-        usage_count: 0,
-      });
+      };
+
+      const validation = validateData(garmentSchema, garmentData);
+      if (!validation.success) {
+        const errorMsg = validation.errors?.join(', ') || 'Invalid input';
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const { error } = await supabase.from("garments").insert([validation.data as any]);
 
       if (error) throw error;
 
@@ -506,7 +518,8 @@ export default function Closet() {
         careInstructions = recommendation.care_instructions;
       }
 
-      const { error } = await supabase.from("garments").insert({
+      // Validate input data
+      const garmentData = {
         user_id: user.id,
         image_url: imageUrl,
         type,
@@ -516,8 +529,16 @@ export default function Closet() {
         material,
         washing_frequency: washingFrequency,
         care_instructions: careInstructions,
-        usage_count: 0,
-      });
+      };
+
+      const validation = validateData(garmentSchema, garmentData);
+      if (!validation.success) {
+        const errorMsg = validation.errors?.join(', ') || 'Invalid input';
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const { error } = await supabase.from("garments").insert([validation.data as any]);
 
       if (error) throw error;
 
@@ -969,7 +990,8 @@ export default function Closet() {
                           careInstructions = recommendation.care_instructions;
                         }
 
-                        const { error } = await supabase.from("garments").insert({
+                        // Validate input data
+                        const garmentData = {
                           user_id: user.id,
                           image_url: uploadedImageUrl,
                           type: selectedProductData.type || "Top",
@@ -981,8 +1003,16 @@ export default function Closet() {
                           care_instructions: careInstructions,
                           official_price: selectedProductData.official_price || null,
                           currency: currency,
-                          usage_count: 0,
-                        });
+                        };
+
+                        const validation = validateData(garmentSchema, garmentData);
+                        if (!validation.success) {
+                          const errorMsg = validation.errors?.join(', ') || 'Invalid input';
+                          toast.error(errorMsg);
+                          throw new Error(errorMsg);
+                        }
+
+                        const { error } = await supabase.from("garments").insert([validation.data as any]);
 
                         if (error) throw error;
                         

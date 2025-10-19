@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Upload, Loader2, Image as ImageIcon, LogOut, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { profileUpdateSchema, validateData } from "@/lib/validations";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -184,23 +185,33 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Prepare and validate profile data
+      const profileData = {
+        style_preference: stylePreference || null,
+        geo_location: geoLocation || null,
+        height_cm: heightCm ? parseFloat(heightCm) : null,
+        weight_kg: weightKg ? parseFloat(weightKg) : null,
+        bust_cm: bustCm ? parseFloat(bustCm) : null,
+        waist_cm: waistCm ? parseFloat(waistCm) : null,
+        hip_cm: hipCm ? parseFloat(hipCm) : null,
+        bra_cup: braCup || null,
+        shoe_size: shoeSize ? parseFloat(shoeSize) : null,
+        eye_color: eyeColor || null,
+        hair_color: hairColor || null,
+        gender: gender || null,
+        date_of_birth: dateOfBirth || null,
+      };
+
+      const validation = validateData(profileUpdateSchema, profileData);
+      if (!validation.success) {
+        const errorMsg = validation.errors?.join(', ') || 'Invalid input';
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          style_preference: stylePreference,
-          geo_location: geoLocation,
-          height_cm: heightCm ? parseFloat(heightCm) : null,
-          weight_kg: weightKg ? parseFloat(weightKg) : null,
-          bust_cm: bustCm ? parseFloat(bustCm) : null,
-          waist_cm: waistCm ? parseFloat(waistCm) : null,
-          hip_cm: hipCm ? parseFloat(hipCm) : null,
-          bra_cup: braCup || null,
-          shoe_size: shoeSize ? parseFloat(shoeSize) : null,
-          eye_color: eyeColor || null,
-          hair_color: hairColor || null,
-          gender: gender || null,
-          date_of_birth: dateOfBirth || null,
-        })
+        .update(validation.data)
         .eq("id", user.id);
 
       if (error) throw error;

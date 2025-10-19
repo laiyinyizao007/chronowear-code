@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Outfit, WeatherData, OutfitItem } from "@/types";
+import { todaysPickSchema, validateOrThrow } from "@/lib/validations";
 
 /**
  * Search product information including image
@@ -181,6 +182,7 @@ export const createFallbackOutfit = async (
 
 /**
  * Save today's pick to database (uses upsert to avoid duplicate key conflicts)
+ * Validates data before saving
  */
 export const saveTodaysPick = async (
   userId: string,
@@ -188,17 +190,22 @@ export const saveTodaysPick = async (
   outfit: Outfit,
   weather: WeatherData
 ): Promise<any> => {
+  // Validate input data
+  const pickData = {
+    user_id: userId,
+    date,
+    title: outfit.title,
+    summary: outfit.summary,
+    hairstyle: outfit.hairstyle,
+    items: outfit.items as any,
+    weather: weather as any,
+  };
+
+  const validatedData = validateOrThrow(todaysPickSchema, pickData);
+
   const { data, error } = await supabase
     .from("todays_picks")
-    .upsert({
-      user_id: userId,
-      date,
-      title: outfit.title,
-      summary: outfit.summary,
-      hairstyle: outfit.hairstyle,
-      items: outfit.items as any,
-      weather: weather as any,
-    }, {
+    .upsert(validatedData as any, {
       onConflict: 'user_id,date',
       ignoreDuplicates: false
     })
