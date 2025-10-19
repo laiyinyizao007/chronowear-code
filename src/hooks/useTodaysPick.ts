@@ -81,11 +81,7 @@ export const useTodaysPick = () => {
         }
       }
 
-      // Need to generate new recommendation
-      // Delete existing record if present to avoid duplicate key error
-      if (existingPick) {
-        await deleteTodaysPick(user.id, today);
-      }
+      // Need to generate new recommendation (upsert will handle existing records)
 
       const { data: garments } = await supabase
         .from("garments")

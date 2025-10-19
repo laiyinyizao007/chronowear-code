@@ -180,7 +180,7 @@ export const createFallbackOutfit = async (
 };
 
 /**
- * Save today's pick to database
+ * Save today's pick to database (uses upsert to avoid duplicate key conflicts)
  */
 export const saveTodaysPick = async (
   userId: string,
@@ -190,7 +190,7 @@ export const saveTodaysPick = async (
 ): Promise<any> => {
   const { data, error } = await supabase
     .from("todays_picks")
-    .insert([{
+    .upsert({
       user_id: userId,
       date,
       title: outfit.title,
@@ -198,7 +198,10 @@ export const saveTodaysPick = async (
       hairstyle: outfit.hairstyle,
       items: outfit.items as any,
       weather: weather as any,
-    }])
+    }, {
+      onConflict: 'user_id,date',
+      ignoreDuplicates: false
+    })
     .select()
     .single();
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -120,6 +120,9 @@ export default function OOTDDiary() {
     markAddedToOOTD
   } = useTodaysPick();
   
+  // 防止重复调用的 ref
+  const loadingWeatherRef = useRef(false);
+  
   // Derived states for compatibility with existing UI
   const outfits = outfit ? [outfit] : [];
   const outfitImageUrl = imageUrl;
@@ -133,15 +136,16 @@ export default function OOTDDiary() {
     if (viewMode === 'day') {
       loadWeatherAndTodaysPick();
     }
-  }, []);
-
-  useEffect(() => {
-    if (viewMode === 'day') {
-      loadWeatherAndTodaysPick();
-    }
-  }, [viewMode]);
+  }, [viewMode]); // 合并为单个 effect，依赖 viewMode
   
   const loadWeatherAndTodaysPick = async () => {
+    // 防止重复调用
+    if (loadingWeatherRef.current) {
+      console.log('Already loading weather and today\'s pick, skipping...');
+      return;
+    }
+    
+    loadingWeatherRef.current = true;
     try {
       // Get weather first
       const { data: { user } } = await supabase.auth.getUser();
@@ -159,6 +163,8 @@ export default function OOTDDiary() {
       }
     } catch (error) {
       console.error('Error loading weather and today\'s pick:', error);
+    } finally {
+      loadingWeatherRef.current = false;
     }
   };
   
