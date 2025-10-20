@@ -64,6 +64,16 @@ export default function AuthPage() {
       // Clear any existing sessions and storage to prevent conflicts
       await supabase.auth.signOut({ scope: 'local' });
       
+      // Clear all auth-related localStorage items
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('supabase') || key.includes('auth'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
