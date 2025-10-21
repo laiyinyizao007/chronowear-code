@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw, Book, ExternalLink } from "lucide-react";
+import { Sparkles, Wand2, Loader2, Upload, Heart, BookHeart, ShirtIcon, UtensilsCrossed, Glasses, Watch, Sparkle, RefreshCw, Book, ExternalLink, Plus, Shirt, Footprints, ShoppingBag, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,6 +28,13 @@ interface AIRecommendedItem {
   closetItemId?: string;
 }
 
+interface OutfitSlot {
+  type: string;
+  label: string;
+  icon: any;
+  garment: Garment | null;
+}
+
 export default function Stylist() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("virtual-tryon");
@@ -48,6 +55,15 @@ export default function Stylist() {
   const [swapCategory, setSwapCategory] = useState<string>("");
   const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [outfitSlots, setOutfitSlots] = useState<OutfitSlot[]>([
+    { type: "hairstyle", label: "发型", icon: Sparkle, garment: null },
+    { type: "hat", label: "帽子", icon: Crown, garment: null },
+    { type: "accessories", label: "首饰", icon: Watch, garment: null },
+    { type: "top", label: "上衣", icon: Shirt, garment: null },
+    { type: "bottom", label: "下衣", icon: UtensilsCrossed, garment: null },
+    { type: "shoes", label: "鞋子", icon: Footprints, garment: null },
+    { type: "bag", label: "包包", icon: ShoppingBag, garment: null },
+  ]);
 
   const categories = [
     { id: "trends", label: "Fashion Trends", icon: Sparkles },
@@ -80,6 +96,20 @@ export default function Stylist() {
   const handleSelectGarment = (garment: Garment) => {
     setSelectedGarment(garment);
     setIsDrawerOpen(false);
+  };
+
+  const handleSelectSlotGarment = (slotType: string, garment: Garment) => {
+    setOutfitSlots(prev => 
+      prev.map(slot => 
+        slot.type === slotType ? { ...slot, garment } : slot
+      )
+    );
+    setIsDrawerOpen(false);
+  };
+
+  const handleOpenSlotDrawer = (slotType: string) => {
+    setSelectedCategory(slotType);
+    setIsDrawerOpen(true);
   };
 
   useEffect(() => {
@@ -425,11 +455,46 @@ export default function Stylist() {
         </TabsList>
 
         <TabsContent value="virtual-tryon" className="space-y-4 mt-6">
-          {/* New Layout - Full body photo on top, category tags below */}
-          <div className="space-y-4">
-            {/* Full Body Photo Display */}
-            <div className="relative">
-              <div className="h-[50vh] sm:h-[55vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
+          {/* New Layout - Outfit slots on left, full body photo on right */}
+          <div className="flex gap-4">
+            {/* Left Column - Outfit Slots */}
+            <div className="flex flex-col gap-3 w-24 sm:w-28">
+              {outfitSlots.map((slot) => {
+                const Icon = slot.icon;
+                return (
+                  <button
+                    key={slot.type}
+                    onClick={() => handleOpenSlotDrawer(slot.type)}
+                    className="relative group"
+                  >
+                    <div className={`aspect-square rounded-lg border-2 transition-all overflow-hidden ${
+                      slot.garment 
+                        ? "border-primary/50 hover:border-primary" 
+                        : "border-dashed border-border hover:border-primary/50"
+                    }`}>
+                      {slot.garment ? (
+                        <img
+                          src={slot.garment.image_url}
+                          alt={slot.garment.type}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-muted/30">
+                          <Plus className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] sm:text-xs text-center mt-1 text-muted-foreground">
+                      {slot.label}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right Column - Full Body Photo Display */}
+            <div className="flex-1 relative">
+              <div className="h-[70vh] bg-gradient-to-br from-primary/5 via-background to-accent/5 rounded-2xl overflow-hidden relative border border-border/50">
                 {processingBg ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                     <div className="text-center space-y-3">
@@ -441,19 +506,19 @@ export default function Stylist() {
                   <img
                     src={tryOnResultUrl}
                     alt="Virtual try-on result"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 ) : removedBgImageUrl ? (
                   <img
                     src={removedBgImageUrl}
                     alt="Your photo"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <img
                     src={fullBodyPhotoUrl}
                     alt="Your photo"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 )}
                 
@@ -481,188 +546,164 @@ export default function Stylist() {
                 </div>
               </div>
             </div>
-
-            {/* Category Tags */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {categories.map((category) => {
-                const Icon = category.icon;
-                const hasAIRecommendation = aiRecommendations.some(r => r.category === category.id);
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryClick(category.id)}
-                    className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 transition-all flex-shrink-0 relative ${
-                      hasAIRecommendation ? "border-primary/50 bg-primary/5" : "border-border/50 hover:border-primary/50"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-xs font-medium whitespace-nowrap">{category.label}</span>
-                    {hasAIRecommendation && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selection Drawer */}
-            <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <SheetContent side="bottom" className="h-[45vh] bg-background border-t z-50">
-                <SheetHeader>
-                  <SheetTitle>
-                    Select {categories.find(c => c.id === selectedCategory)?.label}
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 flex items-center justify-center h-[calc(100%-4rem)]">
-                  {filteredGarments.length === 0 ? (
-                    <div className="text-center">
-                      <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground mb-3">
-                        No {selectedCategory} items yet
-                      </p>
-                      <Button size="sm" onClick={() => window.location.href = "/closet"}>
-                        Add Garments
-                      </Button>
-                    </div>
-                  ) : (
-                    <Carousel className="w-full">
-                      <CarouselContent className="-ml-2">
-                        {filteredGarments.map((garment) => (
-                          <CarouselItem key={garment.id} className="basis-1/3 sm:basis-1/4 pl-2">
-                            <div 
-                              onClick={() => handleSelectGarment(garment)}
-                              className="cursor-pointer"
-                            >
-                              <div className="border-2 hover:border-primary transition-all rounded-lg overflow-hidden bg-background">
-                                <div className="aspect-square bg-muted overflow-hidden">
-                                  <img
-                                    src={garment.image_url}
-                                    alt={`${garment.brand} ${garment.type}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className="p-2 text-center">
-                                  <p className="text-xs font-medium truncate">{garment.brand}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{garment.type}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious className="left-0" />
-                      <CarouselNext className="right-0" />
-                    </Carousel>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* Swap Item Drawer */}
-            <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
-              <SheetContent side="bottom" className="h-[45vh] bg-background border-t z-50">
-                <SheetHeader>
-                  <SheetTitle>
-                    Replace with Your {categories.find(c => c.id === swapCategory)?.label}
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 flex items-center justify-center h-[calc(100%-4rem)]">
-                  {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).length === 0 ? (
-                    <div className="text-center">
-                      <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground mb-3">
-                        No {swapCategory} items in your closet
-                      </p>
-                      <Button size="sm" onClick={() => window.location.href = "/closet"}>
-                        Add Garments
-                      </Button>
-                    </div>
-                  ) : (
-                    <Carousel className="w-full">
-                      <CarouselContent className="-ml-2">
-                        {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).map((garment) => (
-                          <CarouselItem key={garment.id} className="basis-1/3 sm:basis-1/4 pl-2">
-                            <div 
-                              onClick={() => handleReplaceWithClosetItem(garment, swapCategory)}
-                              className="cursor-pointer"
-                            >
-                              <div className="border-2 hover:border-primary transition-all rounded-lg overflow-hidden bg-background">
-                                <div className="aspect-square bg-muted overflow-hidden">
-                                  <img
-                                    src={garment.image_url}
-                                    alt={`${garment.brand} ${garment.type}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className="p-2 text-center">
-                                  <p className="text-xs font-medium truncate">{garment.brand}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{garment.type}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious className="left-0" />
-                      <CarouselNext className="right-0" />
-                    </Carousel>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* AI Recommendations - Below Category Tags */}
-            {aiRecommendations.length > 0 && (
-              <Card className="shadow-medium">
-                <CardHeader>
-                  <CardTitle className="text-base">AI Outfit Suggestions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {aiRecommendations.map((item, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="aspect-square bg-muted rounded-lg overflow-hidden relative border border-border">
-                          {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ShirtIcon className="w-12 h-12 text-muted-foreground" />
-                            </div>
-                          )}
-                          {item.isFromCloset && (
-                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-[10px] px-2 py-1 rounded-full">
-                              From Closet
-                            </div>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-semibold line-clamp-1">{item.category}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{item.name}</p>
-                          {item.brand && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">{item.brand}</p>
-                          )}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full h-8 text-xs"
-                          onClick={() => handleSwapItem(item.category)}
-                        >
-                          <RefreshCw className="w-3 h-3 mr-1" />
-                          Swap
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
+          {/* Selection Drawer */}
+          <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+            <SheetContent side="bottom" className="h-[45vh] bg-background border-t z-50">
+              <SheetHeader>
+                <SheetTitle>
+                  选择 {outfitSlots.find(s => s.type === selectedCategory)?.label || selectedCategory}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 flex items-center justify-center h-[calc(100%-4rem)]">
+                {filteredGarments.length === 0 ? (
+                  <div className="text-center">
+                    <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      暂无 {outfitSlots.find(s => s.type === selectedCategory)?.label} 单品
+                    </p>
+                    <Button size="sm" onClick={() => window.location.href = "/closet"}>
+                      添加衣物
+                    </Button>
+                  </div>
+                ) : (
+                  <Carousel className="w-full">
+                    <CarouselContent className="-ml-2">
+                      {filteredGarments.map((garment) => (
+                        <CarouselItem key={garment.id} className="basis-1/3 sm:basis-1/4 pl-2">
+                          <div 
+                            onClick={() => handleSelectSlotGarment(selectedCategory, garment)}
+                            className="cursor-pointer"
+                          >
+                            <div className="border-2 hover:border-primary transition-all rounded-lg overflow-hidden bg-background">
+                              <div className="aspect-square bg-muted overflow-hidden">
+                                <img
+                                  src={garment.image_url}
+                                  alt={`${garment.brand} ${garment.type}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="p-2 text-center">
+                                <p className="text-xs font-medium truncate">{garment.brand}</p>
+                                <p className="text-xs text-muted-foreground truncate">{garment.type}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="left-0" />
+                    <CarouselNext className="right-0" />
+                  </Carousel>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Swap Item Drawer */}
+          <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
+            <SheetContent side="bottom" className="h-[45vh] bg-background border-t z-50">
+              <SheetHeader>
+                <SheetTitle>
+                  Replace with Your {categories.find(c => c.id === swapCategory)?.label}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 flex items-center justify-center h-[calc(100%-4rem)]">
+                {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).length === 0 ? (
+                  <div className="text-center">
+                    <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      No {swapCategory} items in your closet
+                    </p>
+                    <Button size="sm" onClick={() => window.location.href = "/closet"}>
+                      Add Garments
+                    </Button>
+                  </div>
+                ) : (
+                  <Carousel className="w-full">
+                    <CarouselContent className="-ml-2">
+                      {garments.filter(g => g.type.toLowerCase().includes(swapCategory)).map((garment) => (
+                        <CarouselItem key={garment.id} className="basis-1/3 sm:basis-1/4 pl-2">
+                          <div 
+                            onClick={() => handleReplaceWithClosetItem(garment, swapCategory)}
+                            className="cursor-pointer"
+                          >
+                            <div className="border-2 hover:border-primary transition-all rounded-lg overflow-hidden bg-background">
+                              <div className="aspect-square bg-muted overflow-hidden">
+                                <img
+                                  src={garment.image_url}
+                                  alt={`${garment.brand} ${garment.type}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="p-2 text-center">
+                                <p className="text-xs font-medium truncate">{garment.brand}</p>
+                                <p className="text-xs text-muted-foreground truncate">{garment.type}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="left-0" />
+                    <CarouselNext className="right-0" />
+                  </Carousel>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* AI Recommendations */}
+          {aiRecommendations.length > 0 && (
+            <Card className="shadow-medium">
+              <CardHeader>
+                <CardTitle className="text-base">AI Outfit Suggestions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {aiRecommendations.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="aspect-square bg-muted rounded-lg overflow-hidden relative border border-border">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ShirtIcon className="w-12 h-12 text-muted-foreground" />
+                          </div>
+                        )}
+                        {item.isFromCloset && (
+                          <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-[10px] px-2 py-1 rounded-full">
+                            From Closet
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold line-clamp-1">{item.category}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{item.name}</p>
+                        {item.brand && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">{item.brand}</p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full h-8 text-xs"
+                        onClick={() => handleSwapItem(item.category)}
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Swap
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="stylebook" className="space-y-6 mt-6">
