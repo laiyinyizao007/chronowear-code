@@ -131,13 +131,29 @@ export default function OOTDDiary() {
   const isLiked = todaysPick?.is_liked || false;
   const addedToOOTD = todaysPick?.added_to_ootd || false;
   const recommendationLoading = todayPickLoading;
+  
+  // Debug logging
+  console.log('OOTD Day View State:', {
+    viewMode,
+    weather: weather ? 'loaded' : 'null',
+    outfit: outfit ? 'loaded' : 'null',
+    outfits: outfits.length,
+    todayPickLoading,
+    recommendationLoading,
+    imageUrl: imageUrl ? 'loaded' : 'empty'
+  });
 
   useEffect(() => {
     loadRecords();
+  }, []); // Only load records once on mount
+  
+  useEffect(() => {
     if (viewMode === 'day') {
+      // Reset the loading ref when entering day view
+      loadingWeatherRef.current = false;
       loadWeatherAndTodaysPick();
     }
-  }, [viewMode]); // 合并为单个 effect，依赖 viewMode
+  }, [viewMode]); // Load weather and today's pick when view mode changes
   
   const loadWeatherAndTodaysPick = async () => {
     // 防止重复调用
@@ -150,20 +166,27 @@ export default function OOTDDiary() {
     try {
       // Get weather first
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('No user found');
+        return;
+      }
       
-      let currentLat = 35.6764225;
-      let currentLng = 139.650027;
-      
+      console.log('Fetching weather...');
       try {
         const { location, weather: weatherData } = await getLocationAndWeatherService();
+        console.log('Weather fetched:', weatherData);
         setWeather(weatherData);
-        await loadTodaysPick(weatherData);
+        
+        console.log('Loading today\'s pick...');
+        const pick = await loadTodaysPick(weatherData);
+        console.log('Today\'s pick loaded:', pick);
       } catch (error) {
         console.error('Failed to load weather:', error);
+        toast.error("Failed to load weather and recommendations");
       }
     } catch (error) {
       console.error('Error loading weather and today\'s pick:', error);
+      toast.error("Failed to load data");
     } finally {
       loadingWeatherRef.current = false;
     }
@@ -813,7 +836,7 @@ export default function OOTDDiary() {
                     <Skeleton className="h-4 w-full" />
                   </CardContent>
                 </Card>
-              ) : outfits.length > 0 && (
+              ) : outfits.length > 0 ? (
                 <>
                   <Card className="overflow-hidden shadow-elegant">
                     <CardHeader className="pb-4">
@@ -962,6 +985,30 @@ export default function OOTDDiary() {
                   </Card>
 
                 </>
+              ) : (
+                <Card className="overflow-hidden shadow-elegant">
+                  <CardContent className="py-12 text-center space-y-4">
+                    <Sparkles className="w-12 h-12 mx-auto text-muted-foreground" />
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">No Recommendations Yet</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        We couldn't generate outfit recommendations. This might be due to:
+                      </p>
+                      <ul className="text-xs text-muted-foreground space-y-1 mb-4">
+                        <li>• No items in your closet</li>
+                        <li>• Weather data unavailable</li>
+                        <li>• Temporary service issue</li>
+                      </ul>
+                      <Button onClick={() => {
+                        loadingWeatherRef.current = false;
+                        loadWeatherAndTodaysPick();
+                      }}>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Try Again
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
             </div>
