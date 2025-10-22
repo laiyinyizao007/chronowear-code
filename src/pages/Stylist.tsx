@@ -56,13 +56,13 @@ export default function Stylist() {
   const [trendOutfits, setTrendOutfits] = useState<any[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [outfitSlots, setOutfitSlots] = useState<OutfitSlot[]>([
-    { type: "hairstyle", label: "发型", icon: Sparkle, garment: null },
-    { type: "hat", label: "帽子", icon: Crown, garment: null },
-    { type: "accessories", label: "首饰", icon: Watch, garment: null },
-    { type: "top", label: "上衣", icon: Shirt, garment: null },
-    { type: "bottom", label: "下衣", icon: UtensilsCrossed, garment: null },
-    { type: "shoes", label: "鞋子", icon: Footprints, garment: null },
-    { type: "bag", label: "包包", icon: ShoppingBag, garment: null },
+    { type: "hairstyle", label: "Hairstyle", icon: Sparkle, garment: null },
+    { type: "hat", label: "Hat", icon: Crown, garment: null },
+    { type: "accessories", label: "Accessories", icon: Watch, garment: null },
+    { type: "top", label: "Top", icon: Shirt, garment: null },
+    { type: "bottom", label: "Bottom", icon: UtensilsCrossed, garment: null },
+    { type: "shoes", label: "Shoes", icon: Footprints, garment: null },
+    { type: "bag", label: "Bag", icon: ShoppingBag, garment: null },
   ]);
 
   const categories = [
@@ -458,35 +458,40 @@ export default function Stylist() {
           {/* New Layout - Outfit slots on left, full body photo on right */}
           <div className="flex gap-4">
             {/* Left Column - Outfit Slots */}
-            <div className="flex flex-col gap-3 w-24 sm:w-28">
+            <div className="flex flex-col gap-2">
               {outfitSlots.map((slot) => {
                 const Icon = slot.icon;
                 return (
                   <button
                     key={slot.type}
                     onClick={() => handleOpenSlotDrawer(slot.type)}
-                    className="relative group"
-                  >
-                    <div className={`aspect-square rounded-lg border-2 transition-all overflow-hidden ${
+                    className={`relative group w-20 h-14 rounded-lg border-2 transition-all overflow-hidden flex items-center justify-center ${
                       slot.garment 
                         ? "border-primary/50 hover:border-primary" 
                         : "border-dashed border-border hover:border-primary/50"
-                    }`}>
-                      {slot.garment ? (
+                    }`}
+                  >
+                    {slot.garment ? (
+                      <>
                         <img
                           src={slot.garment.image_url}
                           alt={slot.garment.type}
-                          className="w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted/30">
-                          <Plus className="w-6 h-6 text-muted-foreground" />
+                        <div className="absolute inset-x-0 bottom-0 bg-background/90 backdrop-blur-sm px-1 py-0.5">
+                          <p className="text-[9px] font-medium text-center leading-tight truncate">
+                            {slot.label}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                    <p className="text-[10px] sm:text-xs text-center mt-1 text-muted-foreground">
-                      {slot.label}
-                    </p>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-0.5">
+                        <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <p className="text-[9px] font-medium text-muted-foreground group-hover:text-primary transition-colors leading-tight">
+                          {slot.label}
+                        </p>
+                      </div>
+                    )}
                   </button>
                 );
               })}
