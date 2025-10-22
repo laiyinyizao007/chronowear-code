@@ -148,9 +148,11 @@ export default function OOTDDiary() {
   }, []); // Only load records once on mount
   
   useEffect(() => {
+    console.log('[Weather] View mode changed to:', viewMode);
     if (viewMode === 'day') {
       // Reset the loading ref when entering day view
       loadingWeatherRef.current = false;
+      console.log('[Weather] Triggering weather load for day view');
       loadWeatherAndTodaysPick();
     }
   }, [viewMode]); // Load weather and today's pick when view mode changes
@@ -163,32 +165,57 @@ export default function OOTDDiary() {
     }
     
     loadingWeatherRef.current = true;
+    console.log('[Weather] Starting to load weather and today\'s pick...');
+    
     try {
       // Get weather first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.log('No user found');
+        console.log('[Weather] No user found');
+        toast.error("Please login to view recommendations");
         return;
       }
       
-      console.log('Fetching weather...');
+      console.log('[Weather] User authenticated, fetching weather...');
+      
       try {
         const { location, weather: weatherData } = await getLocationAndWeatherService();
-        console.log('Weather fetched:', weatherData);
-        setWeather(weatherData);
+        console.log('[Weather] Weather data received:', {
+          location: weatherData.location,
+          temp: weatherData.current.temperature,
+          description: weatherData.current.weatherDescription
+        });
         
-        console.log('Loading today\'s pick...');
+        setWeather(weatherData);
+        toast.success(`Weather loaded: ${weatherData.current.temperature}°${weatherData.temperatureUnit || 'C'}`);
+        
+        console.log('[Weather] Loading today\'s pick...');
         const pick = await loadTodaysPick(weatherData);
-        console.log('Today\'s pick loaded:', pick);
-      } catch (error) {
-        console.error('Failed to load weather:', error);
-        toast.error("Failed to load weather and recommendations");
+        console.log('[Weather] Today\'s pick loaded successfully');
+        
+      } catch (weatherError: any) {
+        console.error('[Weather] Failed to load weather:', weatherError);
+        const errorMsg = weatherError?.message || 'Unknown error';
+        toast.error(`Weather error: ${errorMsg}. Using default location.`);
+        
+        // Try with default location as fallback
+        try {
+          console.log('[Weather] Retrying with default location...');
+          const { location, weather: weatherData } = await getLocationAndWeatherService();
+          setWeather(weatherData);
+          await loadTodaysPick(weatherData);
+          toast.success("Loaded with default location");
+        } catch (fallbackError) {
+          console.error('[Weather] Fallback also failed:', fallbackError);
+          toast.error("Unable to load weather data");
+        }
       }
-    } catch (error) {
-      console.error('Error loading weather and today\'s pick:', error);
-      toast.error("Failed to load data");
+    } catch (error: any) {
+      console.error('[Weather] Critical error:', error);
+      toast.error(`Failed to load: ${error?.message || 'Unknown error'}`);
     } finally {
       loadingWeatherRef.current = false;
+      console.log('[Weather] Loading completed');
     }
   };
   
