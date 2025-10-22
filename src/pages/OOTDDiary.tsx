@@ -964,21 +964,23 @@ export default function OOTDDiary() {
                           </div>
                         </div>
 
-                        {/* Bottom section - Log button */}
-                        <div className="p-4 pt-0">
-                          <Button
-                            variant="default"
-                            className="w-full"
-                            onClick={() => {
-                              setSelectedDateForLog(currentDate);
-                              setIsAddDialogOpen(true);
-                              markAddedToOOTD();
-                            }}
-                            disabled={addedToOOTD}
-                          >
-                            <CalendarDays className="w-4 h-4 mr-2" />
-                            {addedToOOTD ? 'Added to OOTD' : 'Log'}
-                          </Button>
+                        {/* Bottom section - Log button - Fixed at bottom */}
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+                          <div className="max-w-2xl mx-auto">
+                            <Button
+                              variant="default"
+                              className="w-full"
+                              onClick={() => {
+                                setSelectedDateForLog(currentDate);
+                                setIsAddDialogOpen(true);
+                                markAddedToOOTD();
+                              }}
+                              disabled={addedToOOTD}
+                            >
+                              <CalendarDays className="w-4 h-4 mr-2" />
+                              {addedToOOTD ? 'Added to OOTD' : 'Log'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
