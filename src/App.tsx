@@ -9,6 +9,9 @@ import Closet from "./pages/Closet";
 import Stylist from "./pages/Stylist";
 import OOTDDiary from "./pages/OOTDDiary";
 import Settings from "./pages/Settings";
+import SimpleDebug from "./pages/SimpleDebug";
+import DatabaseTest from "./pages/DatabaseTest";
+import LoginTest from "./pages/LoginTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +24,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/debug" element={<SimpleDebug />} />
+          <Route path="/db-test" element={<DatabaseTest />} />
+          <Route path="/login-test" element={<LoginTest />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Navigate to="/diary" replace />} />
             <Route path="/closet" element={<Closet />} />

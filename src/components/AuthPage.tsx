@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Shirt, Mail, Lock, Loader2 } from "lucide-react";
+import { diagnoseSupabaseAuth } from "@/utils/supabaseDebug";
+import { trackUserLogin } from "@/utils/userActivity";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -15,15 +17,72 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Debug function to check current environment
+  const debugAuthEnvironment = async () => {
+    const diagnostics = await diagnoseSupabaseAuth();
+    
+    // Additional manual checks
+    console.log("\n🔧 OAuth Configuration Requirements:");
+    console.log("Supabase Auth Settings should include:");
+    console.log(`  Site URL: ${diagnostics.origin}`);
+    console.log(`  Redirect URLs: ${diagnostics.redirectUrl}`);
+    console.log(`  Google OAuth redirect URI: ${diagnostics.authCallbackUrl}`);
+    
+    // Show current localStorage for debugging
+    console.log("\n💾 Storage State:");
+    console.log("  LocalStorage keys:", Object.keys(localStorage));
+    console.log("  SessionStorage keys:", Object.keys(sessionStorage));
+    
+    return diagnostics;
+  };
+
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Session check error:", error);
+          // Clear problematic session data
+          await supabase.auth.signOut({ scope: 'local' });
+          return;
+        }
+        if (session) {
+          console.log("Valid session found, redirecting to app");
+          navigate("/");
+        } else {
+          console.log("No session found, staying on auth page");
+        }
+      } catch (error) {
+        console.error("Session check failed:", error);
       }
     };
     checkUser();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session ? "Session exists" : "No session");
+        
+        if (event === 'SIGNED_IN' && session) {
+          toast.success("Successfully signed in!");
+          // Track user login activity (non-blocking)
+          try {
+            trackUserLogin();
+            console.log('✅ User login tracking initiated');
+          } catch (error) {
+            console.warn('⚠️ User login tracking failed (non-critical):', error);
+          }
+          navigate("/");
+        } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log("Token refreshed");
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -37,6 +96,15 @@ export default function AuthPage() {
           password,
         });
         if (error) throw error;
+        
+        // Track login activity (non-blocking)
+        try {
+          trackUserLogin();
+          console.log('✅ User login tracking initiated (email login)');
+        } catch (error) {
+          console.warn('⚠️ User login tracking failed (non-critical):', error);
+        }
+        
         toast.success("Welcome back!");
         navigate("/");
       } else {
@@ -51,8 +119,9 @@ export default function AuthPage() {
         toast.success("Account created! You can now log in.");
         setIsLogin(true);
       }
-    } catch (error: any) {
-      toast.error(error.message || "Authentication failed");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Authentication failed";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -61,32 +130,42 @@ export default function AuthPage() {
   const handleGoogleAuth = async () => {
     setLoading(true);
     try {
-      // Clear any existing sessions and storage to prevent conflicts
-      await supabase.auth.signOut({ scope: 'local' });
+      // Force logout and clear all local auth data
+      await supabase.auth.signOut({ scope: 'global' });
       
-      // Clear all auth-related localStorage items
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.includes('supabase') || key.includes('auth'))) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
+      // Clear all storage comprehensively
+      localStorage.clear();
+      sessionStorage.clear();
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log("Starting Google OAuth with redirect to:", `${window.location.origin}/`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'select_account', // Force account selection to avoid cached credentials
+            prompt: 'consent select_account', // Force fresh consent and account selection
+            hd: undefined, // Remove domain restrictions if any
           },
+          skipBrowserRedirect: false,
         },
       });
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error(error.message || "Google sign-in failed");
+      
+      if (error) {
+        console.error("Google OAuth error:", error);
+        throw error;
+      }
+      
+      console.log("Google OAuth initiated successfully:", data);
+      
+    } catch (error: unknown) {
+      console.error("Google sign-in error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Google sign-in failed. Please try again.";
+      toast.error(errorMessage);
       setLoading(false);
     }
   };
@@ -189,6 +268,47 @@ export default function AuthPage() {
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
+          </div>
+
+          {/* Debug section - remove in production */}
+          <div className="text-center space-y-2 pt-4 border-t border-muted">
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={debugAuthEnvironment}
+                className="text-xs"
+              >
+                🔍 Debug Info
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  toast.success("Cache cleared!");
+                }}
+                className="text-xs text-muted-foreground"
+              >
+                🧹 Clear Cache
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                const diagnostics = await debugAuthEnvironment();
+                navigator.clipboard.writeText(JSON.stringify(diagnostics, null, 2));
+                toast.success("Diagnostic info copied to clipboard!");
+              }}
+              className="text-xs w-full"
+            >
+              📋 Copy Config for Supabase
+            </Button>
           </div>
         </CardContent>
       </Card>

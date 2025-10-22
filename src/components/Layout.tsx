@@ -11,28 +11,73 @@ import AIAssistant from "./AIAssistant";
 import { useWeather } from "@/hooks/useWeather";
 import { useProgress } from "@/contexts/ProgressContext";
 import { toast } from "sonner";
+import { trackUserLogin } from "@/utils/userActivity";
 
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const { weather, fetchWeather } = useWeather();
   const { progress, isProcessing, startFakeProgress, doneProgress } = useProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) {
+    const initAuth = async () => {
+      try {
+        console.log("Layout: Checking initial session...");
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Layout: Session error:", error);
+          navigate("/auth");
+          return;
+        }
+
+        console.log("Layout: Session check result:", session ? "Session found" : "No session");
+        setUser(session?.user ?? null);
+        
+        if (!session?.user) {
+          console.log("Layout: No user session, redirecting to auth");
+          navigate("/auth");
+        } else {
+          console.log("Layout: User authenticated:", session.user.email);
+          // Track user login activity for existing session (non-blocking)
+          try {
+            trackUserLogin();
+            console.log('✅ User session tracking initiated');
+          } catch (error) {
+            console.warn('⚠️ User session tracking failed (non-critical):', error);
+          }
+        }
+      } catch (error) {
+        console.error("Layout: Auth initialization error:", error);
         navigate("/auth");
+      } finally {
+        setLoading(false);
       }
-    });
+    };
+
+    initAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Layout: Auth state changed:", event, session ? "Session exists" : "No session");
       setUser(session?.user ?? null);
-      if (!session?.user) {
+      setLoading(false);
+      
+      if (!session?.user && event !== 'INITIAL_SESSION') {
+        console.log("Layout: No user in auth change, redirecting to auth");
         navigate("/auth");
+      } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        // Track user login activity on sign in or token refresh (non-blocking)
+        console.log("Layout: Tracking login activity for event:", event);
+        try {
+          trackUserLogin();
+          console.log('✅ User activity tracking initiated for event:', event);
+        } catch (error) {
+          console.warn('⚠️ User activity tracking failed (non-critical):', error);
+        }
       }
     });
 
@@ -45,7 +90,7 @@ export default function Layout() {
         console.error('Failed to load weather:', error);
       });
     }
-  }, [user]);
+  }, [user, fetchWeather]);
 
   // Compute and expose bottom offset for toasts based on actual nav height
   useEffect(() => {
@@ -98,7 +143,7 @@ export default function Layout() {
         .getPublicUrl(fileName);
 
       navigate(`/closet?action=add&imageUrl=${encodeURIComponent(publicUrl)}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       doneProgress();
       toast.error("Failed to upload image");
     }

@@ -416,12 +416,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity: {
+        Row: {
+          id: string
+          user_id: string
+          first_login_at: string
+          last_login_at: string
+          login_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          first_login_at?: string
+          last_login_at?: string
+          login_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          first_login_at?: string
+          last_login_at?: string
+          login_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_user_login_activity: {
+        Args: {
+          user_uuid?: string | null
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
