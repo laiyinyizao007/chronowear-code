@@ -191,12 +191,16 @@ export const saveTodaysPick = async (
   weather: WeatherData
 ): Promise<any> => {
   // Validate input data
+  const hairstyleStr = typeof (outfit as any).hairstyle === 'object'
+    ? (outfit as any).hairstyle?.name || JSON.stringify((outfit as any).hairstyle)
+    : (outfit as any).hairstyle;
+
   const pickData = {
     user_id: userId,
     date,
     title: outfit.title,
     summary: outfit.summary,
-    hairstyle: outfit.hairstyle,
+    hairstyle: hairstyleStr,
     items: outfit.items as any,
     weather: weather as any,
   };

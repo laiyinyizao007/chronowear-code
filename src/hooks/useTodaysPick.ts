@@ -91,6 +91,12 @@ export const useTodaysPick = () => {
       try {
         outfits = await generateOutfitRecommendation(weather, garments || []);
         
+        // Normalize hairstyle to string if AI returns an object
+        if (outfits[0] && typeof (outfits[0] as any).hairstyle === 'object') {
+          const hs = (outfits[0] as any).hairstyle;
+          (outfits[0] as any).hairstyle = hs?.name || JSON.stringify(hs);
+        }
+        
         // Enrich items with images from closet or product search
         if (outfits[0]?.items) {
           const enrichedItems = await enrichItemsWithImages(
