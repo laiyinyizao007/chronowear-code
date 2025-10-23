@@ -1,53 +1,78 @@
 /**
- * 验证用户活动跟踪已完全集成到 profiles 表
- * 检查代码和数据库的一致性
+ * User Activity Integration Verification Test
+ * 
+ * This script verifies that user activity tracking has been successfully
+ * integrated into the profiles table and that the legacy user_activity
+ * table is no longer in use.
+ * 
+ * Test Coverage:
+ * 1. Profiles table contains required activity tracking fields
+ * 2. Legacy user_activity table does not exist or is not used
+ * 3. Code references use profiles table instead of user_activity
+ * 4. Database RPC functions are properly configured
+ * 
+ * Usage:
+ *   node test-activity-integration.js
+ * 
+ * @module test-activity-integration
  */
 
 import { createClient } from '@supabase/supabase-js';
 
+// Supabase connection configuration
 const supabaseUrl = 'https://udiheaprrtgegajidwqd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkaWhlYXBycnRnZWdhamlkd3FkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0NzMwNTYsImV4cCI6MjA3NTA0OTA1Nn0.R6mTpPC6EPQWhCrJ3Z9uUXIP74lgzxqVgtawlf-fp1M';
 
-console.log('🔗 连接到 Supabase:', supabaseUrl);
-console.log('🔑 使用匿名密钥');
+console.log('🔗 Connecting to Supabase:', supabaseUrl);
+console.log('🔑 Using anonymous key');
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-console.log('🔍 验证用户活动跟踪集成状态...\n');
+console.log('🔍 Verifying user activity tracking integration...\n');
 
+/**
+ * Main verification function
+ * 
+ * Performs comprehensive checks to ensure:
+ * - Profiles table has required fields
+ * - Legacy table is not in use
+ * - Database functions are configured
+ * 
+ * @returns {Promise<boolean>} True if all verifications pass
+ */
 async function verifyActivityIntegration() {
   try {
-    // 1. 验证 profiles 表包含活动跟踪字段
-    console.log('1️⃣ 检查 profiles 表结构...');
+    // Test 1: Verify profiles table contains activity tracking fields
+    console.log('1️⃣ Checking profiles table structure...');
     const { data: profileStructure, error: structureError } = await supabase
       .from('profiles')
       .select('*')
       .limit(1);
     
     if (structureError) {
-      console.error('❌ profiles 表不存在:', structureError.message);
+      console.error('❌ Profiles table does not exist:', structureError.message);
       return false;
     }
     
-    // 检查必要的活动跟踪字段
+    // Check for required activity tracking fields
     const requiredFields = ['first_login_at', 'last_login_at', 'login_count'];
     const hasAllFields = profileStructure.length > 0 && 
       requiredFields.every(field => Object.keys(profileStructure[0]).includes(field));
     
     if (hasAllFields) {
-      console.log('✅ profiles 表包含所有用户活动跟踪字段');
-      console.log('   📋 字段:', requiredFields.join(', '));
+      console.log('✅ Profiles table contains all activity tracking fields');
+      console.log('   📋 Fields:', requiredFields.join(', '));
     } else {
-      console.error('❌ profiles 表缺少活动跟踪字段');
-      console.log('   🔍 需要字段:', requiredFields.join(', '));
+      console.error('❌ Profiles table missing activity tracking fields');
+      console.log('   🔍 Required fields:', requiredFields.join(', '));
       if (profileStructure.length > 0) {
-        console.log('   📋 现有字段:', Object.keys(profileStructure[0]).join(', '));
+        console.log('   📋 Existing fields:', Object.keys(profileStructure[0]).join(', '));
       }
       return false;
     }
     
-    // 2. 验证 user_activity 表不存在（应该已删除/不使用）
-    console.log('\n2️⃣ 验证旧的 user_activity 表状态...');
+    // Test 2: Verify legacy user_activity table status
+    console.log('\n2️⃣ Verifying legacy user_activity table status...');
     const { data: oldTable, error: oldTableError } = await supabase
       .from('user_activity')
       .select('count', { count: 'exact' });

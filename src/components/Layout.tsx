@@ -1,3 +1,23 @@
+/**
+ * Layout Component - Main Application Shell
+ * 
+ * Provides the authenticated application layout including:
+ * - Authentication guard and session management
+ * - Bottom navigation bar
+ * - Weather display
+ * - AI assistant
+ * - Image upload functionality
+ * - Progress indicators
+ * 
+ * Features:
+ * - Auto-redirects to /auth if not authenticated
+ * - Tracks user login activity
+ * - Manages weather data fetching
+ * - Handles file uploads and camera capture
+ * 
+ * @module components/Layout
+ */
+
 import { useEffect, useState, useRef } from "react";
 import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +33,11 @@ import { useProgress } from "@/contexts/ProgressContext";
 import { toast } from "sonner";
 import { trackUserLogin } from "@/utils/userActivity";
 
+/**
+ * Main layout component with authentication and navigation
+ * 
+ * @returns Authenticated application layout
+ */
 export default function Layout() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -21,6 +46,14 @@ export default function Layout() {
   const { progress, isProcessing, startFakeProgress, doneProgress } = useProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Initialize authentication and set up session listeners
+   * 
+   * - Checks for existing session on mount
+   * - Redirects to /auth if no valid session
+   * - Tracks user login activity (non-blocking)
+   * - Sets up auth state change listener
+   */
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -41,7 +74,8 @@ export default function Layout() {
           navigate("/auth");
         } else {
           console.log("Layout: User authenticated:", session.user.email);
-          // Track user login activity for existing session (non-blocking)
+          
+          // Track user login activity (non-blocking, non-critical)
           try {
             trackUserLogin();
             console.log('✅ User session tracking initiated');
